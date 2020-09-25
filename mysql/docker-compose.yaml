@@ -1,0 +1,15 @@
+version: '2'
+services:
+    mysql:
+        network_mode: "bridge"
+        environment:
+            MYSQL_ROOT_PASSWORD: "passwd4root"
+            MYSQL_USER: 'lime'
+            MYSQL_PASS: 'passwd4lime'
+        image: "library/mysql:latest" 
+        restart: always
+        volumes:
+            - "./db:/var/lib/mysql"
+            - "./init:/docker-entrypoint-initdb.d/"
+        ports:
+            - "3306:3306"

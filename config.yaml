@@ -1,0 +1,2 @@
+mysql:
+  source: "root:passwd4root@tcp(127.0.0.1:3306)/lime?parseTime=True"
