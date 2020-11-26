@@ -24,10 +24,17 @@ type config struct {
 
 // hooks per client, for fast access.
 type hooks struct {
-	Menu       []ent.Hook
-	Permission []ent.Hook
-	Role       []ent.Hook
-	User       []ent.Hook
+	Application []ent.Hook
+	Build       []ent.Hook
+	HelmConfig  []ent.Hook
+	Instance    []ent.Hook
+	K8sCluster  []ent.Hook
+	Menu        []ent.Hook
+	Namespace   []ent.Hook
+	Permission  []ent.Hook
+	Project     []ent.Hook
+	Role        []ent.Hook
+	User        []ent.Hook
 }
 
 // Options applies the options on the config object.

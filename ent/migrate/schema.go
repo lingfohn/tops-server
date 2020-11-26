@@ -8,6 +8,143 @@ import (
 )
 
 var (
+	// ApplicationsColumns holds the columns for the "applications" table.
+	ApplicationsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "multi", Type: field.TypeBool, Default: true},
+		{Name: "projectId", Type: field.TypeInt},
+		{Name: "namespaceId", Type: field.TypeInt},
+		{Name: "createdAt", Type: field.TypeTime},
+		{Name: "updatedAt", Type: field.TypeTime},
+		{Name: "application_config", Type: field.TypeInt, Nullable: true},
+		{Name: "namespace_applications", Type: field.TypeInt, Nullable: true},
+		{Name: "project_applications", Type: field.TypeInt, Nullable: true},
+	}
+	// ApplicationsTable holds the schema information for the "applications" table.
+	ApplicationsTable = &schema.Table{
+		Name:       "applications",
+		Columns:    ApplicationsColumns,
+		PrimaryKey: []*schema.Column{ApplicationsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:  "applications_helm_configs_config",
+				Columns: []*schema.Column{ApplicationsColumns[7]},
+
+				RefColumns: []*schema.Column{HelmConfigsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:  "applications_namespaces_applications",
+				Columns: []*schema.Column{ApplicationsColumns[8]},
+
+				RefColumns: []*schema.Column{NamespacesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:  "applications_projects_applications",
+				Columns: []*schema.Column{ApplicationsColumns[9]},
+
+				RefColumns: []*schema.Column{ProjectsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "application_namespace_applications_project_applications",
+				Unique:  true,
+				Columns: []*schema.Column{ApplicationsColumns[8], ApplicationsColumns[9]},
+			},
+		},
+	}
+	// BuildsColumns holds the columns for the "builds" table.
+	BuildsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "instance_builds", Type: field.TypeInt, Nullable: true},
+	}
+	// BuildsTable holds the schema information for the "builds" table.
+	BuildsTable = &schema.Table{
+		Name:       "builds",
+		Columns:    BuildsColumns,
+		PrimaryKey: []*schema.Column{BuildsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:  "builds_instances_builds",
+				Columns: []*schema.Column{BuildsColumns[2]},
+
+				RefColumns: []*schema.Column{InstancesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
+	// HelmConfigsColumns holds the columns for the "helm_configs" table.
+	HelmConfigsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "chartVersion", Type: field.TypeString},
+		{Name: "active", Type: field.TypeString},
+		{Name: "enableServcie", Type: field.TypeBool},
+		{Name: "serviceType", Type: field.TypeString, Default: "ClusterIP"},
+		{Name: "nodePort", Type: field.TypeInt},
+		{Name: "limitMem", Type: field.TypeString},
+		{Name: "limitCPU", Type: field.TypeString},
+		{Name: "reqCPU", Type: field.TypeString},
+		{Name: "reqMem", Type: field.TypeString},
+		{Name: "createdAt", Type: field.TypeTime},
+		{Name: "updatedAt", Type: field.TypeTime},
+	}
+	// HelmConfigsTable holds the schema information for the "helm_configs" table.
+	HelmConfigsTable = &schema.Table{
+		Name:        "helm_configs",
+		Columns:     HelmConfigsColumns,
+		PrimaryKey:  []*schema.Column{HelmConfigsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{},
+	}
+	// InstancesColumns holds the columns for the "instances" table.
+	InstancesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "application_instances", Type: field.TypeInt, Nullable: true},
+		{Name: "instance_config", Type: field.TypeInt, Nullable: true},
+	}
+	// InstancesTable holds the schema information for the "instances" table.
+	InstancesTable = &schema.Table{
+		Name:       "instances",
+		Columns:    InstancesColumns,
+		PrimaryKey: []*schema.Column{InstancesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:  "instances_applications_instances",
+				Columns: []*schema.Column{InstancesColumns[2]},
+
+				RefColumns: []*schema.Column{ApplicationsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:  "instances_helm_configs_config",
+				Columns: []*schema.Column{InstancesColumns[3]},
+
+				RefColumns: []*schema.Column{HelmConfigsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
+	// K8sClustersColumns holds the columns for the "k8s_clusters" table.
+	K8sClustersColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "cluster", Type: field.TypeString},
+		{Name: "helmApi", Type: field.TypeString},
+		{Name: "accessToken", Type: field.TypeString, Nullable: true},
+		{Name: "createdAt", Type: field.TypeTime},
+		{Name: "updatedAt", Type: field.TypeTime},
+	}
+	// K8sClustersTable holds the schema information for the "k8s_clusters" table.
+	K8sClustersTable = &schema.Table{
+		Name:        "k8s_clusters",
+		Columns:     K8sClustersColumns,
+		PrimaryKey:  []*schema.Column{K8sClustersColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{},
+	}
 	// MenusColumns holds the columns for the "menus" table.
 	MenusColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -42,6 +179,29 @@ var (
 			},
 		},
 	}
+	// NamespacesColumns holds the columns for the "namespaces" table.
+	NamespacesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "createdAt", Type: field.TypeTime},
+		{Name: "updatedAt", Type: field.TypeTime},
+		{Name: "k8s_cluster_namespaces", Type: field.TypeInt, Nullable: true},
+	}
+	// NamespacesTable holds the schema information for the "namespaces" table.
+	NamespacesTable = &schema.Table{
+		Name:       "namespaces",
+		Columns:    NamespacesColumns,
+		PrimaryKey: []*schema.Column{NamespacesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:  "namespaces_k8s_clusters_namespaces",
+				Columns: []*schema.Column{NamespacesColumns[4]},
+
+				RefColumns: []*schema.Column{K8sClustersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
 	// PermissionsColumns holds the columns for the "permissions" table.
 	PermissionsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -59,6 +219,25 @@ var (
 		Name:        "permissions",
 		Columns:     PermissionsColumns,
 		PrimaryKey:  []*schema.Column{PermissionsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{},
+	}
+	// ProjectsColumns holds the columns for the "projects" table.
+	ProjectsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "projectName", Type: field.TypeString, Unique: true},
+		{Name: "proType", Type: field.TypeString},
+		{Name: "description", Type: field.TypeString, Nullable: true},
+		{Name: "gitlab", Type: field.TypeString, Unique: true},
+		{Name: "port", Type: field.TypeInt},
+		{Name: "debugPort", Type: field.TypeInt},
+		{Name: "createdAt", Type: field.TypeTime},
+		{Name: "updatedAt", Type: field.TypeTime},
+	}
+	// ProjectsTable holds the schema information for the "projects" table.
+	ProjectsTable = &schema.Table{
+		Name:        "projects",
+		Columns:     ProjectsColumns,
+		PrimaryKey:  []*schema.Column{ProjectsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{},
 	}
 	// RolesColumns holds the columns for the "roles" table.
@@ -103,13 +282,27 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		ApplicationsTable,
+		BuildsTable,
+		HelmConfigsTable,
+		InstancesTable,
+		K8sClustersTable,
 		MenusTable,
+		NamespacesTable,
 		PermissionsTable,
+		ProjectsTable,
 		RolesTable,
 		UsersTable,
 	}
 )
 
 func init() {
+	ApplicationsTable.ForeignKeys[0].RefTable = HelmConfigsTable
+	ApplicationsTable.ForeignKeys[1].RefTable = NamespacesTable
+	ApplicationsTable.ForeignKeys[2].RefTable = ProjectsTable
+	BuildsTable.ForeignKeys[0].RefTable = InstancesTable
+	InstancesTable.ForeignKeys[0].RefTable = ApplicationsTable
+	InstancesTable.ForeignKeys[1].RefTable = HelmConfigsTable
 	MenusTable.ForeignKeys[0].RefTable = MenusTable
+	NamespacesTable.ForeignKeys[0].RefTable = K8sClustersTable
 }

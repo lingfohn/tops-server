@@ -53,6 +53,10 @@ func (Menu) Fields() []ent.Field {
 // Edges of the Menu.
 func (Menu) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("submenus", Menu.Type).StructTag(`json:"submenus,omitempty"`).From("parent").StructTag(`json:"parent,omitempty"`).Unique(),
+		edge.To("submenus", Menu.Type).
+			StructTag(`json:"submenus,omitempty"`).
+			From("parent").
+			StructTag(`json:"parent,omitempty"`).
+			Unique(),
 	}
 }

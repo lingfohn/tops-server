@@ -6,11 +6,32 @@ import (
 	"github.com/facebookincubator/ent/dialect/sql"
 )
 
+// Application is the predicate function for application builders.
+type Application func(*sql.Selector)
+
+// Build is the predicate function for build builders.
+type Build func(*sql.Selector)
+
+// HelmConfig is the predicate function for helmconfig builders.
+type HelmConfig func(*sql.Selector)
+
+// Instance is the predicate function for instance builders.
+type Instance func(*sql.Selector)
+
+// K8sCluster is the predicate function for k8scluster builders.
+type K8sCluster func(*sql.Selector)
+
 // Menu is the predicate function for menu builders.
 type Menu func(*sql.Selector)
 
+// Namespace is the predicate function for namespace builders.
+type Namespace func(*sql.Selector)
+
 // Permission is the predicate function for permission builders.
 type Permission func(*sql.Selector)
+
+// Project is the predicate function for project builders.
+type Project func(*sql.Selector)
 
 // Role is the predicate function for role builders.
 type Role func(*sql.Selector)

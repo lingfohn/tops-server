@@ -12,10 +12,24 @@ import (
 // Tx is a transactional client that is created by calling Client.Tx().
 type Tx struct {
 	config
+	// Application is the client for interacting with the Application builders.
+	Application *ApplicationClient
+	// Build is the client for interacting with the Build builders.
+	Build *BuildClient
+	// HelmConfig is the client for interacting with the HelmConfig builders.
+	HelmConfig *HelmConfigClient
+	// Instance is the client for interacting with the Instance builders.
+	Instance *InstanceClient
+	// K8sCluster is the client for interacting with the K8sCluster builders.
+	K8sCluster *K8sClusterClient
 	// Menu is the client for interacting with the Menu builders.
 	Menu *MenuClient
+	// Namespace is the client for interacting with the Namespace builders.
+	Namespace *NamespaceClient
 	// Permission is the client for interacting with the Permission builders.
 	Permission *PermissionClient
+	// Project is the client for interacting with the Project builders.
+	Project *ProjectClient
 	// Role is the client for interacting with the Role builders.
 	Role *RoleClient
 	// User is the client for interacting with the User builders.
@@ -77,8 +91,15 @@ func (tx *Tx) Client() *Client {
 }
 
 func (tx *Tx) init() {
+	tx.Application = NewApplicationClient(tx.config)
+	tx.Build = NewBuildClient(tx.config)
+	tx.HelmConfig = NewHelmConfigClient(tx.config)
+	tx.Instance = NewInstanceClient(tx.config)
+	tx.K8sCluster = NewK8sClusterClient(tx.config)
 	tx.Menu = NewMenuClient(tx.config)
+	tx.Namespace = NewNamespaceClient(tx.config)
 	tx.Permission = NewPermissionClient(tx.config)
+	tx.Project = NewProjectClient(tx.config)
 	tx.Role = NewRoleClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 }
@@ -90,7 +111,7 @@ func (tx *Tx) init() {
 // of them in order to commit or rollback the transaction.
 //
 // If a closed transaction is embedded in one of the generated entities, and the entity
-// applies a query, for example: Menu.QueryXXX(), the query will be executed
+// applies a query, for example: Application.QueryXXX(), the query will be executed
 // through the driver which created this transaction.
 //
 // Note that txDriver is not goroutine safe.

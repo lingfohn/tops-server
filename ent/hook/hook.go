@@ -9,6 +9,71 @@ import (
 	"github.com/lingfohn/lime/ent"
 )
 
+// The ApplicationFunc type is an adapter to allow the use of ordinary
+// function as Application mutator.
+type ApplicationFunc func(context.Context, *ent.ApplicationMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ApplicationFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.ApplicationMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ApplicationMutation", m)
+	}
+	return f(ctx, mv)
+}
+
+// The BuildFunc type is an adapter to allow the use of ordinary
+// function as Build mutator.
+type BuildFunc func(context.Context, *ent.BuildMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f BuildFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.BuildMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BuildMutation", m)
+	}
+	return f(ctx, mv)
+}
+
+// The HelmConfigFunc type is an adapter to allow the use of ordinary
+// function as HelmConfig mutator.
+type HelmConfigFunc func(context.Context, *ent.HelmConfigMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f HelmConfigFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.HelmConfigMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.HelmConfigMutation", m)
+	}
+	return f(ctx, mv)
+}
+
+// The InstanceFunc type is an adapter to allow the use of ordinary
+// function as Instance mutator.
+type InstanceFunc func(context.Context, *ent.InstanceMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f InstanceFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.InstanceMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.InstanceMutation", m)
+	}
+	return f(ctx, mv)
+}
+
+// The K8sClusterFunc type is an adapter to allow the use of ordinary
+// function as K8sCluster mutator.
+type K8sClusterFunc func(context.Context, *ent.K8sClusterMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f K8sClusterFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.K8sClusterMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.K8sClusterMutation", m)
+	}
+	return f(ctx, mv)
+}
+
 // The MenuFunc type is an adapter to allow the use of ordinary
 // function as Menu mutator.
 type MenuFunc func(context.Context, *ent.MenuMutation) (ent.Value, error)
@@ -22,6 +87,19 @@ func (f MenuFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error)
 	return f(ctx, mv)
 }
 
+// The NamespaceFunc type is an adapter to allow the use of ordinary
+// function as Namespace mutator.
+type NamespaceFunc func(context.Context, *ent.NamespaceMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f NamespaceFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.NamespaceMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.NamespaceMutation", m)
+	}
+	return f(ctx, mv)
+}
+
 // The PermissionFunc type is an adapter to allow the use of ordinary
 // function as Permission mutator.
 type PermissionFunc func(context.Context, *ent.PermissionMutation) (ent.Value, error)
@@ -31,6 +109,19 @@ func (f PermissionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, 
 	mv, ok := m.(*ent.PermissionMutation)
 	if !ok {
 		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PermissionMutation", m)
+	}
+	return f(ctx, mv)
+}
+
+// The ProjectFunc type is an adapter to allow the use of ordinary
+// function as Project mutator.
+type ProjectFunc func(context.Context, *ent.ProjectMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ProjectFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.ProjectMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ProjectMutation", m)
 	}
 	return f(ctx, mv)
 }

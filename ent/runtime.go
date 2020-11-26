@@ -5,8 +5,13 @@ package ent
 import (
 	"time"
 
+	"github.com/lingfohn/lime/ent/application"
+	"github.com/lingfohn/lime/ent/helmconfig"
+	"github.com/lingfohn/lime/ent/k8scluster"
 	"github.com/lingfohn/lime/ent/menu"
+	"github.com/lingfohn/lime/ent/namespace"
 	"github.com/lingfohn/lime/ent/permission"
+	"github.com/lingfohn/lime/ent/project"
 	"github.com/lingfohn/lime/ent/role"
 	"github.com/lingfohn/lime/ent/schema"
 	"github.com/lingfohn/lime/ent/user"
@@ -16,6 +21,54 @@ import (
 // code (default values, validators or hooks) and stitches it
 // to their package variables.
 func init() {
+	applicationFields := schema.Application{}.Fields()
+	_ = applicationFields
+	// applicationDescMulti is the schema descriptor for multi field.
+	applicationDescMulti := applicationFields[1].Descriptor()
+	// application.DefaultMulti holds the default value on creation for the multi field.
+	application.DefaultMulti = applicationDescMulti.Default.(bool)
+	// applicationDescCreatedAt is the schema descriptor for createdAt field.
+	applicationDescCreatedAt := applicationFields[4].Descriptor()
+	// application.DefaultCreatedAt holds the default value on creation for the createdAt field.
+	application.DefaultCreatedAt = applicationDescCreatedAt.Default.(func() time.Time)
+	// applicationDescUpdatedAt is the schema descriptor for updatedAt field.
+	applicationDescUpdatedAt := applicationFields[5].Descriptor()
+	// application.DefaultUpdatedAt holds the default value on creation for the updatedAt field.
+	application.DefaultUpdatedAt = applicationDescUpdatedAt.Default.(func() time.Time)
+	// application.UpdateDefaultUpdatedAt holds the default value on update for the updatedAt field.
+	application.UpdateDefaultUpdatedAt = applicationDescUpdatedAt.UpdateDefault.(func() time.Time)
+	helmconfigFields := schema.HelmConfig{}.Fields()
+	_ = helmconfigFields
+	// helmconfigDescEnableService is the schema descriptor for enableService field.
+	helmconfigDescEnableService := helmconfigFields[2].Descriptor()
+	// helmconfig.DefaultEnableService holds the default value on creation for the enableService field.
+	helmconfig.DefaultEnableService = helmconfigDescEnableService.Default.(bool)
+	// helmconfigDescServiceType is the schema descriptor for serviceType field.
+	helmconfigDescServiceType := helmconfigFields[3].Descriptor()
+	// helmconfig.DefaultServiceType holds the default value on creation for the serviceType field.
+	helmconfig.DefaultServiceType = helmconfigDescServiceType.Default.(string)
+	// helmconfigDescCreatedAt is the schema descriptor for createdAt field.
+	helmconfigDescCreatedAt := helmconfigFields[9].Descriptor()
+	// helmconfig.DefaultCreatedAt holds the default value on creation for the createdAt field.
+	helmconfig.DefaultCreatedAt = helmconfigDescCreatedAt.Default.(func() time.Time)
+	// helmconfigDescUpdatedAt is the schema descriptor for updatedAt field.
+	helmconfigDescUpdatedAt := helmconfigFields[10].Descriptor()
+	// helmconfig.DefaultUpdatedAt holds the default value on creation for the updatedAt field.
+	helmconfig.DefaultUpdatedAt = helmconfigDescUpdatedAt.Default.(func() time.Time)
+	// helmconfig.UpdateDefaultUpdatedAt holds the default value on update for the updatedAt field.
+	helmconfig.UpdateDefaultUpdatedAt = helmconfigDescUpdatedAt.UpdateDefault.(func() time.Time)
+	k8sclusterFields := schema.K8sCluster{}.Fields()
+	_ = k8sclusterFields
+	// k8sclusterDescCreatedAt is the schema descriptor for createdAt field.
+	k8sclusterDescCreatedAt := k8sclusterFields[3].Descriptor()
+	// k8scluster.DefaultCreatedAt holds the default value on creation for the createdAt field.
+	k8scluster.DefaultCreatedAt = k8sclusterDescCreatedAt.Default.(func() time.Time)
+	// k8sclusterDescUpdatedAt is the schema descriptor for updatedAt field.
+	k8sclusterDescUpdatedAt := k8sclusterFields[4].Descriptor()
+	// k8scluster.DefaultUpdatedAt holds the default value on creation for the updatedAt field.
+	k8scluster.DefaultUpdatedAt = k8sclusterDescUpdatedAt.Default.(func() time.Time)
+	// k8scluster.UpdateDefaultUpdatedAt holds the default value on update for the updatedAt field.
+	k8scluster.UpdateDefaultUpdatedAt = k8sclusterDescUpdatedAt.UpdateDefault.(func() time.Time)
 	menuFields := schema.Menu{}.Fields()
 	_ = menuFields
 	// menuDescWeight is the schema descriptor for weight field.
@@ -32,6 +85,18 @@ func init() {
 	menu.DefaultUpdatedAt = menuDescUpdatedAt.Default.(func() time.Time)
 	// menu.UpdateDefaultUpdatedAt holds the default value on update for the updatedAt field.
 	menu.UpdateDefaultUpdatedAt = menuDescUpdatedAt.UpdateDefault.(func() time.Time)
+	namespaceFields := schema.Namespace{}.Fields()
+	_ = namespaceFields
+	// namespaceDescCreatedAt is the schema descriptor for createdAt field.
+	namespaceDescCreatedAt := namespaceFields[1].Descriptor()
+	// namespace.DefaultCreatedAt holds the default value on creation for the createdAt field.
+	namespace.DefaultCreatedAt = namespaceDescCreatedAt.Default.(func() time.Time)
+	// namespaceDescUpdatedAt is the schema descriptor for updatedAt field.
+	namespaceDescUpdatedAt := namespaceFields[2].Descriptor()
+	// namespace.DefaultUpdatedAt holds the default value on creation for the updatedAt field.
+	namespace.DefaultUpdatedAt = namespaceDescUpdatedAt.Default.(func() time.Time)
+	// namespace.UpdateDefaultUpdatedAt holds the default value on update for the updatedAt field.
+	namespace.UpdateDefaultUpdatedAt = namespaceDescUpdatedAt.UpdateDefault.(func() time.Time)
 	permissionFields := schema.Permission{}.Fields()
 	_ = permissionFields
 	// permissionDescStatus is the schema descriptor for status field.
@@ -48,6 +113,18 @@ func init() {
 	permission.DefaultUpdatedAt = permissionDescUpdatedAt.Default.(func() time.Time)
 	// permission.UpdateDefaultUpdatedAt holds the default value on update for the updatedAt field.
 	permission.UpdateDefaultUpdatedAt = permissionDescUpdatedAt.UpdateDefault.(func() time.Time)
+	projectFields := schema.Project{}.Fields()
+	_ = projectFields
+	// projectDescCreatedAt is the schema descriptor for createdAt field.
+	projectDescCreatedAt := projectFields[6].Descriptor()
+	// project.DefaultCreatedAt holds the default value on creation for the createdAt field.
+	project.DefaultCreatedAt = projectDescCreatedAt.Default.(func() time.Time)
+	// projectDescUpdatedAt is the schema descriptor for updatedAt field.
+	projectDescUpdatedAt := projectFields[7].Descriptor()
+	// project.DefaultUpdatedAt holds the default value on creation for the updatedAt field.
+	project.DefaultUpdatedAt = projectDescUpdatedAt.Default.(func() time.Time)
+	// project.UpdateDefaultUpdatedAt holds the default value on update for the updatedAt field.
+	project.UpdateDefaultUpdatedAt = projectDescUpdatedAt.UpdateDefault.(func() time.Time)
 	roleFields := schema.Role{}.Fields()
 	_ = roleFields
 	// roleDescStatus is the schema descriptor for status field.

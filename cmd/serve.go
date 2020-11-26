@@ -70,9 +70,7 @@ func serve(cmd *cobra.Command, args []string) {
 	r.GET("/api/user/nav", middleware.JSONRenderWrap(handler.UserNav))
 
 	// menu
-
 	mh := handler.NewMenuHandler()
-
 	r.POST("/api/auth/menus", middleware.JSONRenderWrap(mh.CreateMenu))
 	r.GET("/api/auth/menus", middleware.JSONRenderWrap(mh.QueryMenu))
 	r.PUT("/api/auth/menus/:id", middleware.JSONRenderWrap(mh.ModifyMenu))
@@ -112,6 +110,20 @@ func serve(cmd *cobra.Command, args []string) {
 	r.DELETE("/api/auth/roles/:id", middleware.JSONRenderWrap(rh.DeleteRole))
 	r.GET("/api/auth/roles", middleware.JSONRenderWrap(rh.RoleList))
 	r.PUT("/api/auth/roles/:id", middleware.JSONRenderWrap(rh.ModifyRole))
+	// 项目管理
+	proh := handler.NewProjectHandler()
+	r.GET("/api/projects",middleware.JSONRenderWrap(proh.QueryProject))
+	r.POST("/api/projects",middleware.JSONRenderWrap(proh.CreateProject))
+
+	// K8sCluster
+	kch := handler.NewK8sClusterHandler()
+	r.POST("/api/k8sclusters",middleware.JSONRenderWrap(kch.CreateK8sCluster))
+	r.GET("/api/k8sclusters",middleware.JSONRenderWrap(kch.QueryK8sCluster))
+
+	// Application
+	ah := handler.NewApplicationHandler()
+	r.GET("/api/applications",middleware.JSONRenderWrap(ah.QueryApplication))
+	r.POST("/api/applications",middleware.JSONRenderWrap(ah.CreateApplication))
 	// 404 路由
 	r.NoRoute(func(c *gin.Context) {
 		claims := jwt.ExtractClaims(c)

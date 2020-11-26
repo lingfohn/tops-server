@@ -6,8 +6,15 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/lingfohn/lime/ent/application"
+	"github.com/lingfohn/lime/ent/build"
+	"github.com/lingfohn/lime/ent/helmconfig"
+	"github.com/lingfohn/lime/ent/instance"
+	"github.com/lingfohn/lime/ent/k8scluster"
 	"github.com/lingfohn/lime/ent/menu"
+	"github.com/lingfohn/lime/ent/namespace"
 	"github.com/lingfohn/lime/ent/permission"
+	"github.com/lingfohn/lime/ent/project"
 	"github.com/lingfohn/lime/ent/role"
 	"github.com/lingfohn/lime/ent/user"
 
@@ -23,11 +30,2522 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeMenu       = "Menu"
-	TypePermission = "Permission"
-	TypeRole       = "Role"
-	TypeUser       = "User"
+	TypeApplication = "Application"
+	TypeBuild       = "Build"
+	TypeHelmConfig  = "HelmConfig"
+	TypeInstance    = "Instance"
+	TypeK8sCluster  = "K8sCluster"
+	TypeMenu        = "Menu"
+	TypeNamespace   = "Namespace"
+	TypePermission  = "Permission"
+	TypeProject     = "Project"
+	TypeRole        = "Role"
+	TypeUser        = "User"
 )
+
+// ApplicationMutation represents an operation that mutate the Applications
+// nodes in the graph.
+type ApplicationMutation struct {
+	config
+	op               Op
+	typ              string
+	id               *int
+	name             *string
+	multi            *bool
+	projectId        *int
+	addprojectId     *int
+	namespaceId      *int
+	addnamespaceId   *int
+	createdAt        *time.Time
+	updatedAt        *time.Time
+	clearedFields    map[string]struct{}
+	namespace        *int
+	clearednamespace bool
+	project          *int
+	clearedproject   bool
+	instances        map[int]struct{}
+	removedinstances map[int]struct{}
+	_config          *int
+	cleared_config   bool
+}
+
+var _ ent.Mutation = (*ApplicationMutation)(nil)
+
+// newApplicationMutation creates new mutation for $n.Name.
+func newApplicationMutation(c config, op Op) *ApplicationMutation {
+	return &ApplicationMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeApplication,
+		clearedFields: make(map[string]struct{}),
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ApplicationMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ApplicationMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, fmt.Errorf("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the id value in the mutation. Note that, the id
+// is available only if it was provided to the builder.
+func (m *ApplicationMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// SetName sets the name field.
+func (m *ApplicationMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the name value in the mutation.
+func (m *ApplicationMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetName reset all changes of the name field.
+func (m *ApplicationMutation) ResetName() {
+	m.name = nil
+}
+
+// SetMulti sets the multi field.
+func (m *ApplicationMutation) SetMulti(b bool) {
+	m.multi = &b
+}
+
+// Multi returns the multi value in the mutation.
+func (m *ApplicationMutation) Multi() (r bool, exists bool) {
+	v := m.multi
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetMulti reset all changes of the multi field.
+func (m *ApplicationMutation) ResetMulti() {
+	m.multi = nil
+}
+
+// SetProjectId sets the projectId field.
+func (m *ApplicationMutation) SetProjectId(i int) {
+	m.projectId = &i
+	m.addprojectId = nil
+}
+
+// ProjectId returns the projectId value in the mutation.
+func (m *ApplicationMutation) ProjectId() (r int, exists bool) {
+	v := m.projectId
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// AddProjectId adds i to projectId.
+func (m *ApplicationMutation) AddProjectId(i int) {
+	if m.addprojectId != nil {
+		*m.addprojectId += i
+	} else {
+		m.addprojectId = &i
+	}
+}
+
+// AddedProjectId returns the value that was added to the projectId field in this mutation.
+func (m *ApplicationMutation) AddedProjectId() (r int, exists bool) {
+	v := m.addprojectId
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetProjectId reset all changes of the projectId field.
+func (m *ApplicationMutation) ResetProjectId() {
+	m.projectId = nil
+	m.addprojectId = nil
+}
+
+// SetNamespaceId sets the namespaceId field.
+func (m *ApplicationMutation) SetNamespaceId(i int) {
+	m.namespaceId = &i
+	m.addnamespaceId = nil
+}
+
+// NamespaceId returns the namespaceId value in the mutation.
+func (m *ApplicationMutation) NamespaceId() (r int, exists bool) {
+	v := m.namespaceId
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// AddNamespaceId adds i to namespaceId.
+func (m *ApplicationMutation) AddNamespaceId(i int) {
+	if m.addnamespaceId != nil {
+		*m.addnamespaceId += i
+	} else {
+		m.addnamespaceId = &i
+	}
+}
+
+// AddedNamespaceId returns the value that was added to the namespaceId field in this mutation.
+func (m *ApplicationMutation) AddedNamespaceId() (r int, exists bool) {
+	v := m.addnamespaceId
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetNamespaceId reset all changes of the namespaceId field.
+func (m *ApplicationMutation) ResetNamespaceId() {
+	m.namespaceId = nil
+	m.addnamespaceId = nil
+}
+
+// SetCreatedAt sets the createdAt field.
+func (m *ApplicationMutation) SetCreatedAt(t time.Time) {
+	m.createdAt = &t
+}
+
+// CreatedAt returns the createdAt value in the mutation.
+func (m *ApplicationMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.createdAt
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetCreatedAt reset all changes of the createdAt field.
+func (m *ApplicationMutation) ResetCreatedAt() {
+	m.createdAt = nil
+}
+
+// SetUpdatedAt sets the updatedAt field.
+func (m *ApplicationMutation) SetUpdatedAt(t time.Time) {
+	m.updatedAt = &t
+}
+
+// UpdatedAt returns the updatedAt value in the mutation.
+func (m *ApplicationMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updatedAt
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetUpdatedAt reset all changes of the updatedAt field.
+func (m *ApplicationMutation) ResetUpdatedAt() {
+	m.updatedAt = nil
+}
+
+// SetNamespaceID sets the namespace edge to Namespace by id.
+func (m *ApplicationMutation) SetNamespaceID(id int) {
+	m.namespace = &id
+}
+
+// ClearNamespace clears the namespace edge to Namespace.
+func (m *ApplicationMutation) ClearNamespace() {
+	m.clearednamespace = true
+}
+
+// NamespaceCleared returns if the edge namespace was cleared.
+func (m *ApplicationMutation) NamespaceCleared() bool {
+	return m.clearednamespace
+}
+
+// NamespaceID returns the namespace id in the mutation.
+func (m *ApplicationMutation) NamespaceID() (id int, exists bool) {
+	if m.namespace != nil {
+		return *m.namespace, true
+	}
+	return
+}
+
+// NamespaceIDs returns the namespace ids in the mutation.
+// Note that ids always returns len(ids) <= 1 for unique edges, and you should use
+// NamespaceID instead. It exists only for internal usage by the builders.
+func (m *ApplicationMutation) NamespaceIDs() (ids []int) {
+	if id := m.namespace; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetNamespace reset all changes of the namespace edge.
+func (m *ApplicationMutation) ResetNamespace() {
+	m.namespace = nil
+	m.clearednamespace = false
+}
+
+// SetProjectID sets the project edge to Project by id.
+func (m *ApplicationMutation) SetProjectID(id int) {
+	m.project = &id
+}
+
+// ClearProject clears the project edge to Project.
+func (m *ApplicationMutation) ClearProject() {
+	m.clearedproject = true
+}
+
+// ProjectCleared returns if the edge project was cleared.
+func (m *ApplicationMutation) ProjectCleared() bool {
+	return m.clearedproject
+}
+
+// ProjectID returns the project id in the mutation.
+func (m *ApplicationMutation) ProjectID() (id int, exists bool) {
+	if m.project != nil {
+		return *m.project, true
+	}
+	return
+}
+
+// ProjectIDs returns the project ids in the mutation.
+// Note that ids always returns len(ids) <= 1 for unique edges, and you should use
+// ProjectID instead. It exists only for internal usage by the builders.
+func (m *ApplicationMutation) ProjectIDs() (ids []int) {
+	if id := m.project; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetProject reset all changes of the project edge.
+func (m *ApplicationMutation) ResetProject() {
+	m.project = nil
+	m.clearedproject = false
+}
+
+// AddInstanceIDs adds the instances edge to Instance by ids.
+func (m *ApplicationMutation) AddInstanceIDs(ids ...int) {
+	if m.instances == nil {
+		m.instances = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.instances[ids[i]] = struct{}{}
+	}
+}
+
+// RemoveInstanceIDs removes the instances edge to Instance by ids.
+func (m *ApplicationMutation) RemoveInstanceIDs(ids ...int) {
+	if m.removedinstances == nil {
+		m.removedinstances = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.removedinstances[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedInstances returns the removed ids of instances.
+func (m *ApplicationMutation) RemovedInstancesIDs() (ids []int) {
+	for id := range m.removedinstances {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// InstancesIDs returns the instances ids in the mutation.
+func (m *ApplicationMutation) InstancesIDs() (ids []int) {
+	for id := range m.instances {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetInstances reset all changes of the instances edge.
+func (m *ApplicationMutation) ResetInstances() {
+	m.instances = nil
+	m.removedinstances = nil
+}
+
+// SetConfigID sets the config edge to HelmConfig by id.
+func (m *ApplicationMutation) SetConfigID(id int) {
+	m._config = &id
+}
+
+// ClearConfig clears the config edge to HelmConfig.
+func (m *ApplicationMutation) ClearConfig() {
+	m.cleared_config = true
+}
+
+// ConfigCleared returns if the edge config was cleared.
+func (m *ApplicationMutation) ConfigCleared() bool {
+	return m.cleared_config
+}
+
+// ConfigID returns the config id in the mutation.
+func (m *ApplicationMutation) ConfigID() (id int, exists bool) {
+	if m._config != nil {
+		return *m._config, true
+	}
+	return
+}
+
+// ConfigIDs returns the config ids in the mutation.
+// Note that ids always returns len(ids) <= 1 for unique edges, and you should use
+// ConfigID instead. It exists only for internal usage by the builders.
+func (m *ApplicationMutation) ConfigIDs() (ids []int) {
+	if id := m._config; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetConfig reset all changes of the config edge.
+func (m *ApplicationMutation) ResetConfig() {
+	m._config = nil
+	m.cleared_config = false
+}
+
+// Op returns the operation name.
+func (m *ApplicationMutation) Op() Op {
+	return m.op
+}
+
+// Type returns the node type of this mutation (Application).
+func (m *ApplicationMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during
+// this mutation. Note that, in order to get all numeric
+// fields that were in/decremented, call AddedFields().
+func (m *ApplicationMutation) Fields() []string {
+	fields := make([]string, 0, 6)
+	if m.name != nil {
+		fields = append(fields, application.FieldName)
+	}
+	if m.multi != nil {
+		fields = append(fields, application.FieldMulti)
+	}
+	if m.projectId != nil {
+		fields = append(fields, application.FieldProjectId)
+	}
+	if m.namespaceId != nil {
+		fields = append(fields, application.FieldNamespaceId)
+	}
+	if m.createdAt != nil {
+		fields = append(fields, application.FieldCreatedAt)
+	}
+	if m.updatedAt != nil {
+		fields = append(fields, application.FieldUpdatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name.
+// The second boolean value indicates that this field was
+// not set, or was not define in the schema.
+func (m *ApplicationMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case application.FieldName:
+		return m.Name()
+	case application.FieldMulti:
+		return m.Multi()
+	case application.FieldProjectId:
+		return m.ProjectId()
+	case application.FieldNamespaceId:
+		return m.NamespaceId()
+	case application.FieldCreatedAt:
+		return m.CreatedAt()
+	case application.FieldUpdatedAt:
+		return m.UpdatedAt()
+	}
+	return nil, false
+}
+
+// SetField sets the value for the given name. It returns an
+// error if the field is not defined in the schema, or if the
+// type mismatch the field type.
+func (m *ApplicationMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case application.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case application.FieldMulti:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMulti(v)
+		return nil
+	case application.FieldProjectId:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProjectId(v)
+		return nil
+	case application.FieldNamespaceId:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNamespaceId(v)
+		return nil
+	case application.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case application.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Application field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented
+// or decremented during this mutation.
+func (m *ApplicationMutation) AddedFields() []string {
+	var fields []string
+	if m.addprojectId != nil {
+		fields = append(fields, application.FieldProjectId)
+	}
+	if m.addnamespaceId != nil {
+		fields = append(fields, application.FieldNamespaceId)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was in/decremented
+// from a field with the given name. The second value indicates
+// that this field was not set, or was not define in the schema.
+func (m *ApplicationMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case application.FieldProjectId:
+		return m.AddedProjectId()
+	case application.FieldNamespaceId:
+		return m.AddedNamespaceId()
+	}
+	return nil, false
+}
+
+// AddField adds the value for the given name. It returns an
+// error if the field is not defined in the schema, or if the
+// type mismatch the field type.
+func (m *ApplicationMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case application.FieldProjectId:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddProjectId(v)
+		return nil
+	case application.FieldNamespaceId:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddNamespaceId(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Application numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared
+// during this mutation.
+func (m *ApplicationMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicates if this field was
+// cleared in this mutation.
+func (m *ApplicationMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value for the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ApplicationMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown Application nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation regarding the
+// given field name. It returns an error if the field is not
+// defined in the schema.
+func (m *ApplicationMutation) ResetField(name string) error {
+	switch name {
+	case application.FieldName:
+		m.ResetName()
+		return nil
+	case application.FieldMulti:
+		m.ResetMulti()
+		return nil
+	case application.FieldProjectId:
+		m.ResetProjectId()
+		return nil
+	case application.FieldNamespaceId:
+		m.ResetNamespaceId()
+		return nil
+	case application.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case application.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown Application field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this
+// mutation.
+func (m *ApplicationMutation) AddedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.namespace != nil {
+		edges = append(edges, application.EdgeNamespace)
+	}
+	if m.project != nil {
+		edges = append(edges, application.EdgeProject)
+	}
+	if m.instances != nil {
+		edges = append(edges, application.EdgeInstances)
+	}
+	if m._config != nil {
+		edges = append(edges, application.EdgeConfig)
+	}
+	return edges
+}
+
+// AddedIDs returns all ids (to other nodes) that were added for
+// the given edge name.
+func (m *ApplicationMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case application.EdgeNamespace:
+		if id := m.namespace; id != nil {
+			return []ent.Value{*id}
+		}
+	case application.EdgeProject:
+		if id := m.project; id != nil {
+			return []ent.Value{*id}
+		}
+	case application.EdgeInstances:
+		ids := make([]ent.Value, 0, len(m.instances))
+		for id := range m.instances {
+			ids = append(ids, id)
+		}
+		return ids
+	case application.EdgeConfig:
+		if id := m._config; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this
+// mutation.
+func (m *ApplicationMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.removedinstances != nil {
+		edges = append(edges, application.EdgeInstances)
+	}
+	return edges
+}
+
+// RemovedIDs returns all ids (to other nodes) that were removed for
+// the given edge name.
+func (m *ApplicationMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case application.EdgeInstances:
+		ids := make([]ent.Value, 0, len(m.removedinstances))
+		for id := range m.removedinstances {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this
+// mutation.
+func (m *ApplicationMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.clearednamespace {
+		edges = append(edges, application.EdgeNamespace)
+	}
+	if m.clearedproject {
+		edges = append(edges, application.EdgeProject)
+	}
+	if m.cleared_config {
+		edges = append(edges, application.EdgeConfig)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean indicates if this edge was
+// cleared in this mutation.
+func (m *ApplicationMutation) EdgeCleared(name string) bool {
+	switch name {
+	case application.EdgeNamespace:
+		return m.clearednamespace
+	case application.EdgeProject:
+		return m.clearedproject
+	case application.EdgeConfig:
+		return m.cleared_config
+	}
+	return false
+}
+
+// ClearEdge clears the value for the given name. It returns an
+// error if the edge name is not defined in the schema.
+func (m *ApplicationMutation) ClearEdge(name string) error {
+	switch name {
+	case application.EdgeNamespace:
+		m.ClearNamespace()
+		return nil
+	case application.EdgeProject:
+		m.ClearProject()
+		return nil
+	case application.EdgeConfig:
+		m.ClearConfig()
+		return nil
+	}
+	return fmt.Errorf("unknown Application unique edge %s", name)
+}
+
+// ResetEdge resets all changes in the mutation regarding the
+// given edge name. It returns an error if the edge is not
+// defined in the schema.
+func (m *ApplicationMutation) ResetEdge(name string) error {
+	switch name {
+	case application.EdgeNamespace:
+		m.ResetNamespace()
+		return nil
+	case application.EdgeProject:
+		m.ResetProject()
+		return nil
+	case application.EdgeInstances:
+		m.ResetInstances()
+		return nil
+	case application.EdgeConfig:
+		m.ResetConfig()
+		return nil
+	}
+	return fmt.Errorf("unknown Application edge %s", name)
+}
+
+// BuildMutation represents an operation that mutate the Builds
+// nodes in the graph.
+type BuildMutation struct {
+	config
+	op              Op
+	typ             string
+	id              *int
+	name            *string
+	clearedFields   map[string]struct{}
+	instance        *int
+	clearedinstance bool
+}
+
+var _ ent.Mutation = (*BuildMutation)(nil)
+
+// newBuildMutation creates new mutation for $n.Name.
+func newBuildMutation(c config, op Op) *BuildMutation {
+	return &BuildMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeBuild,
+		clearedFields: make(map[string]struct{}),
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m BuildMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m BuildMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, fmt.Errorf("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the id value in the mutation. Note that, the id
+// is available only if it was provided to the builder.
+func (m *BuildMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// SetName sets the name field.
+func (m *BuildMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the name value in the mutation.
+func (m *BuildMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetName reset all changes of the name field.
+func (m *BuildMutation) ResetName() {
+	m.name = nil
+}
+
+// SetInstanceID sets the instance edge to Instance by id.
+func (m *BuildMutation) SetInstanceID(id int) {
+	m.instance = &id
+}
+
+// ClearInstance clears the instance edge to Instance.
+func (m *BuildMutation) ClearInstance() {
+	m.clearedinstance = true
+}
+
+// InstanceCleared returns if the edge instance was cleared.
+func (m *BuildMutation) InstanceCleared() bool {
+	return m.clearedinstance
+}
+
+// InstanceID returns the instance id in the mutation.
+func (m *BuildMutation) InstanceID() (id int, exists bool) {
+	if m.instance != nil {
+		return *m.instance, true
+	}
+	return
+}
+
+// InstanceIDs returns the instance ids in the mutation.
+// Note that ids always returns len(ids) <= 1 for unique edges, and you should use
+// InstanceID instead. It exists only for internal usage by the builders.
+func (m *BuildMutation) InstanceIDs() (ids []int) {
+	if id := m.instance; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetInstance reset all changes of the instance edge.
+func (m *BuildMutation) ResetInstance() {
+	m.instance = nil
+	m.clearedinstance = false
+}
+
+// Op returns the operation name.
+func (m *BuildMutation) Op() Op {
+	return m.op
+}
+
+// Type returns the node type of this mutation (Build).
+func (m *BuildMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during
+// this mutation. Note that, in order to get all numeric
+// fields that were in/decremented, call AddedFields().
+func (m *BuildMutation) Fields() []string {
+	fields := make([]string, 0, 1)
+	if m.name != nil {
+		fields = append(fields, build.FieldName)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name.
+// The second boolean value indicates that this field was
+// not set, or was not define in the schema.
+func (m *BuildMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case build.FieldName:
+		return m.Name()
+	}
+	return nil, false
+}
+
+// SetField sets the value for the given name. It returns an
+// error if the field is not defined in the schema, or if the
+// type mismatch the field type.
+func (m *BuildMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case build.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Build field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented
+// or decremented during this mutation.
+func (m *BuildMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was in/decremented
+// from a field with the given name. The second value indicates
+// that this field was not set, or was not define in the schema.
+func (m *BuildMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value for the given name. It returns an
+// error if the field is not defined in the schema, or if the
+// type mismatch the field type.
+func (m *BuildMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Build numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared
+// during this mutation.
+func (m *BuildMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicates if this field was
+// cleared in this mutation.
+func (m *BuildMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value for the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *BuildMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown Build nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation regarding the
+// given field name. It returns an error if the field is not
+// defined in the schema.
+func (m *BuildMutation) ResetField(name string) error {
+	switch name {
+	case build.FieldName:
+		m.ResetName()
+		return nil
+	}
+	return fmt.Errorf("unknown Build field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this
+// mutation.
+func (m *BuildMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.instance != nil {
+		edges = append(edges, build.EdgeInstance)
+	}
+	return edges
+}
+
+// AddedIDs returns all ids (to other nodes) that were added for
+// the given edge name.
+func (m *BuildMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case build.EdgeInstance:
+		if id := m.instance; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this
+// mutation.
+func (m *BuildMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all ids (to other nodes) that were removed for
+// the given edge name.
+func (m *BuildMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this
+// mutation.
+func (m *BuildMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedinstance {
+		edges = append(edges, build.EdgeInstance)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean indicates if this edge was
+// cleared in this mutation.
+func (m *BuildMutation) EdgeCleared(name string) bool {
+	switch name {
+	case build.EdgeInstance:
+		return m.clearedinstance
+	}
+	return false
+}
+
+// ClearEdge clears the value for the given name. It returns an
+// error if the edge name is not defined in the schema.
+func (m *BuildMutation) ClearEdge(name string) error {
+	switch name {
+	case build.EdgeInstance:
+		m.ClearInstance()
+		return nil
+	}
+	return fmt.Errorf("unknown Build unique edge %s", name)
+}
+
+// ResetEdge resets all changes in the mutation regarding the
+// given edge name. It returns an error if the edge is not
+// defined in the schema.
+func (m *BuildMutation) ResetEdge(name string) error {
+	switch name {
+	case build.EdgeInstance:
+		m.ResetInstance()
+		return nil
+	}
+	return fmt.Errorf("unknown Build edge %s", name)
+}
+
+// HelmConfigMutation represents an operation that mutate the HelmConfigs
+// nodes in the graph.
+type HelmConfigMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *int
+	chartVersion  *string
+	active        *string
+	enableService *bool
+	serviceType   *string
+	nodePort      *int
+	addnodePort   *int
+	limitMem      *string
+	limitCPU      *string
+	reqCPU        *string
+	reqMem        *string
+	createdAt     *time.Time
+	updatedAt     *time.Time
+	clearedFields map[string]struct{}
+}
+
+var _ ent.Mutation = (*HelmConfigMutation)(nil)
+
+// newHelmConfigMutation creates new mutation for $n.Name.
+func newHelmConfigMutation(c config, op Op) *HelmConfigMutation {
+	return &HelmConfigMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeHelmConfig,
+		clearedFields: make(map[string]struct{}),
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m HelmConfigMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m HelmConfigMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, fmt.Errorf("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the id value in the mutation. Note that, the id
+// is available only if it was provided to the builder.
+func (m *HelmConfigMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// SetChartVersion sets the chartVersion field.
+func (m *HelmConfigMutation) SetChartVersion(s string) {
+	m.chartVersion = &s
+}
+
+// ChartVersion returns the chartVersion value in the mutation.
+func (m *HelmConfigMutation) ChartVersion() (r string, exists bool) {
+	v := m.chartVersion
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetChartVersion reset all changes of the chartVersion field.
+func (m *HelmConfigMutation) ResetChartVersion() {
+	m.chartVersion = nil
+}
+
+// SetActive sets the active field.
+func (m *HelmConfigMutation) SetActive(s string) {
+	m.active = &s
+}
+
+// Active returns the active value in the mutation.
+func (m *HelmConfigMutation) Active() (r string, exists bool) {
+	v := m.active
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetActive reset all changes of the active field.
+func (m *HelmConfigMutation) ResetActive() {
+	m.active = nil
+}
+
+// SetEnableService sets the enableService field.
+func (m *HelmConfigMutation) SetEnableService(b bool) {
+	m.enableService = &b
+}
+
+// EnableService returns the enableService value in the mutation.
+func (m *HelmConfigMutation) EnableService() (r bool, exists bool) {
+	v := m.enableService
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetEnableService reset all changes of the enableService field.
+func (m *HelmConfigMutation) ResetEnableService() {
+	m.enableService = nil
+}
+
+// SetServiceType sets the serviceType field.
+func (m *HelmConfigMutation) SetServiceType(s string) {
+	m.serviceType = &s
+}
+
+// ServiceType returns the serviceType value in the mutation.
+func (m *HelmConfigMutation) ServiceType() (r string, exists bool) {
+	v := m.serviceType
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetServiceType reset all changes of the serviceType field.
+func (m *HelmConfigMutation) ResetServiceType() {
+	m.serviceType = nil
+}
+
+// SetNodePort sets the nodePort field.
+func (m *HelmConfigMutation) SetNodePort(i int) {
+	m.nodePort = &i
+	m.addnodePort = nil
+}
+
+// NodePort returns the nodePort value in the mutation.
+func (m *HelmConfigMutation) NodePort() (r int, exists bool) {
+	v := m.nodePort
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// AddNodePort adds i to nodePort.
+func (m *HelmConfigMutation) AddNodePort(i int) {
+	if m.addnodePort != nil {
+		*m.addnodePort += i
+	} else {
+		m.addnodePort = &i
+	}
+}
+
+// AddedNodePort returns the value that was added to the nodePort field in this mutation.
+func (m *HelmConfigMutation) AddedNodePort() (r int, exists bool) {
+	v := m.addnodePort
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetNodePort reset all changes of the nodePort field.
+func (m *HelmConfigMutation) ResetNodePort() {
+	m.nodePort = nil
+	m.addnodePort = nil
+}
+
+// SetLimitMem sets the limitMem field.
+func (m *HelmConfigMutation) SetLimitMem(s string) {
+	m.limitMem = &s
+}
+
+// LimitMem returns the limitMem value in the mutation.
+func (m *HelmConfigMutation) LimitMem() (r string, exists bool) {
+	v := m.limitMem
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetLimitMem reset all changes of the limitMem field.
+func (m *HelmConfigMutation) ResetLimitMem() {
+	m.limitMem = nil
+}
+
+// SetLimitCPU sets the limitCPU field.
+func (m *HelmConfigMutation) SetLimitCPU(s string) {
+	m.limitCPU = &s
+}
+
+// LimitCPU returns the limitCPU value in the mutation.
+func (m *HelmConfigMutation) LimitCPU() (r string, exists bool) {
+	v := m.limitCPU
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetLimitCPU reset all changes of the limitCPU field.
+func (m *HelmConfigMutation) ResetLimitCPU() {
+	m.limitCPU = nil
+}
+
+// SetReqCPU sets the reqCPU field.
+func (m *HelmConfigMutation) SetReqCPU(s string) {
+	m.reqCPU = &s
+}
+
+// ReqCPU returns the reqCPU value in the mutation.
+func (m *HelmConfigMutation) ReqCPU() (r string, exists bool) {
+	v := m.reqCPU
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetReqCPU reset all changes of the reqCPU field.
+func (m *HelmConfigMutation) ResetReqCPU() {
+	m.reqCPU = nil
+}
+
+// SetReqMem sets the reqMem field.
+func (m *HelmConfigMutation) SetReqMem(s string) {
+	m.reqMem = &s
+}
+
+// ReqMem returns the reqMem value in the mutation.
+func (m *HelmConfigMutation) ReqMem() (r string, exists bool) {
+	v := m.reqMem
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetReqMem reset all changes of the reqMem field.
+func (m *HelmConfigMutation) ResetReqMem() {
+	m.reqMem = nil
+}
+
+// SetCreatedAt sets the createdAt field.
+func (m *HelmConfigMutation) SetCreatedAt(t time.Time) {
+	m.createdAt = &t
+}
+
+// CreatedAt returns the createdAt value in the mutation.
+func (m *HelmConfigMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.createdAt
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetCreatedAt reset all changes of the createdAt field.
+func (m *HelmConfigMutation) ResetCreatedAt() {
+	m.createdAt = nil
+}
+
+// SetUpdatedAt sets the updatedAt field.
+func (m *HelmConfigMutation) SetUpdatedAt(t time.Time) {
+	m.updatedAt = &t
+}
+
+// UpdatedAt returns the updatedAt value in the mutation.
+func (m *HelmConfigMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updatedAt
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetUpdatedAt reset all changes of the updatedAt field.
+func (m *HelmConfigMutation) ResetUpdatedAt() {
+	m.updatedAt = nil
+}
+
+// Op returns the operation name.
+func (m *HelmConfigMutation) Op() Op {
+	return m.op
+}
+
+// Type returns the node type of this mutation (HelmConfig).
+func (m *HelmConfigMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during
+// this mutation. Note that, in order to get all numeric
+// fields that were in/decremented, call AddedFields().
+func (m *HelmConfigMutation) Fields() []string {
+	fields := make([]string, 0, 11)
+	if m.chartVersion != nil {
+		fields = append(fields, helmconfig.FieldChartVersion)
+	}
+	if m.active != nil {
+		fields = append(fields, helmconfig.FieldActive)
+	}
+	if m.enableService != nil {
+		fields = append(fields, helmconfig.FieldEnableService)
+	}
+	if m.serviceType != nil {
+		fields = append(fields, helmconfig.FieldServiceType)
+	}
+	if m.nodePort != nil {
+		fields = append(fields, helmconfig.FieldNodePort)
+	}
+	if m.limitMem != nil {
+		fields = append(fields, helmconfig.FieldLimitMem)
+	}
+	if m.limitCPU != nil {
+		fields = append(fields, helmconfig.FieldLimitCPU)
+	}
+	if m.reqCPU != nil {
+		fields = append(fields, helmconfig.FieldReqCPU)
+	}
+	if m.reqMem != nil {
+		fields = append(fields, helmconfig.FieldReqMem)
+	}
+	if m.createdAt != nil {
+		fields = append(fields, helmconfig.FieldCreatedAt)
+	}
+	if m.updatedAt != nil {
+		fields = append(fields, helmconfig.FieldUpdatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name.
+// The second boolean value indicates that this field was
+// not set, or was not define in the schema.
+func (m *HelmConfigMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case helmconfig.FieldChartVersion:
+		return m.ChartVersion()
+	case helmconfig.FieldActive:
+		return m.Active()
+	case helmconfig.FieldEnableService:
+		return m.EnableService()
+	case helmconfig.FieldServiceType:
+		return m.ServiceType()
+	case helmconfig.FieldNodePort:
+		return m.NodePort()
+	case helmconfig.FieldLimitMem:
+		return m.LimitMem()
+	case helmconfig.FieldLimitCPU:
+		return m.LimitCPU()
+	case helmconfig.FieldReqCPU:
+		return m.ReqCPU()
+	case helmconfig.FieldReqMem:
+		return m.ReqMem()
+	case helmconfig.FieldCreatedAt:
+		return m.CreatedAt()
+	case helmconfig.FieldUpdatedAt:
+		return m.UpdatedAt()
+	}
+	return nil, false
+}
+
+// SetField sets the value for the given name. It returns an
+// error if the field is not defined in the schema, or if the
+// type mismatch the field type.
+func (m *HelmConfigMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case helmconfig.FieldChartVersion:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetChartVersion(v)
+		return nil
+	case helmconfig.FieldActive:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetActive(v)
+		return nil
+	case helmconfig.FieldEnableService:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnableService(v)
+		return nil
+	case helmconfig.FieldServiceType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetServiceType(v)
+		return nil
+	case helmconfig.FieldNodePort:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNodePort(v)
+		return nil
+	case helmconfig.FieldLimitMem:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLimitMem(v)
+		return nil
+	case helmconfig.FieldLimitCPU:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLimitCPU(v)
+		return nil
+	case helmconfig.FieldReqCPU:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReqCPU(v)
+		return nil
+	case helmconfig.FieldReqMem:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReqMem(v)
+		return nil
+	case helmconfig.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case helmconfig.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown HelmConfig field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented
+// or decremented during this mutation.
+func (m *HelmConfigMutation) AddedFields() []string {
+	var fields []string
+	if m.addnodePort != nil {
+		fields = append(fields, helmconfig.FieldNodePort)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was in/decremented
+// from a field with the given name. The second value indicates
+// that this field was not set, or was not define in the schema.
+func (m *HelmConfigMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case helmconfig.FieldNodePort:
+		return m.AddedNodePort()
+	}
+	return nil, false
+}
+
+// AddField adds the value for the given name. It returns an
+// error if the field is not defined in the schema, or if the
+// type mismatch the field type.
+func (m *HelmConfigMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case helmconfig.FieldNodePort:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddNodePort(v)
+		return nil
+	}
+	return fmt.Errorf("unknown HelmConfig numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared
+// during this mutation.
+func (m *HelmConfigMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicates if this field was
+// cleared in this mutation.
+func (m *HelmConfigMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value for the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *HelmConfigMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown HelmConfig nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation regarding the
+// given field name. It returns an error if the field is not
+// defined in the schema.
+func (m *HelmConfigMutation) ResetField(name string) error {
+	switch name {
+	case helmconfig.FieldChartVersion:
+		m.ResetChartVersion()
+		return nil
+	case helmconfig.FieldActive:
+		m.ResetActive()
+		return nil
+	case helmconfig.FieldEnableService:
+		m.ResetEnableService()
+		return nil
+	case helmconfig.FieldServiceType:
+		m.ResetServiceType()
+		return nil
+	case helmconfig.FieldNodePort:
+		m.ResetNodePort()
+		return nil
+	case helmconfig.FieldLimitMem:
+		m.ResetLimitMem()
+		return nil
+	case helmconfig.FieldLimitCPU:
+		m.ResetLimitCPU()
+		return nil
+	case helmconfig.FieldReqCPU:
+		m.ResetReqCPU()
+		return nil
+	case helmconfig.FieldReqMem:
+		m.ResetReqMem()
+		return nil
+	case helmconfig.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case helmconfig.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown HelmConfig field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this
+// mutation.
+func (m *HelmConfigMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all ids (to other nodes) that were added for
+// the given edge name.
+func (m *HelmConfigMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this
+// mutation.
+func (m *HelmConfigMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all ids (to other nodes) that were removed for
+// the given edge name.
+func (m *HelmConfigMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this
+// mutation.
+func (m *HelmConfigMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean indicates if this edge was
+// cleared in this mutation.
+func (m *HelmConfigMutation) EdgeCleared(name string) bool {
+	switch name {
+	}
+	return false
+}
+
+// ClearEdge clears the value for the given name. It returns an
+// error if the edge name is not defined in the schema.
+func (m *HelmConfigMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown HelmConfig unique edge %s", name)
+}
+
+// ResetEdge resets all changes in the mutation regarding the
+// given edge name. It returns an error if the edge is not
+// defined in the schema.
+func (m *HelmConfigMutation) ResetEdge(name string) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown HelmConfig edge %s", name)
+}
+
+// InstanceMutation represents an operation that mutate the Instances
+// nodes in the graph.
+type InstanceMutation struct {
+	config
+	op                 Op
+	typ                string
+	id                 *int
+	name               *string
+	clearedFields      map[string]struct{}
+	application        *int
+	clearedapplication bool
+	builds             map[int]struct{}
+	removedbuilds      map[int]struct{}
+	_config            *int
+	cleared_config     bool
+}
+
+var _ ent.Mutation = (*InstanceMutation)(nil)
+
+// newInstanceMutation creates new mutation for $n.Name.
+func newInstanceMutation(c config, op Op) *InstanceMutation {
+	return &InstanceMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeInstance,
+		clearedFields: make(map[string]struct{}),
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m InstanceMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m InstanceMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, fmt.Errorf("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the id value in the mutation. Note that, the id
+// is available only if it was provided to the builder.
+func (m *InstanceMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// SetName sets the name field.
+func (m *InstanceMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the name value in the mutation.
+func (m *InstanceMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetName reset all changes of the name field.
+func (m *InstanceMutation) ResetName() {
+	m.name = nil
+}
+
+// SetApplicationID sets the application edge to Application by id.
+func (m *InstanceMutation) SetApplicationID(id int) {
+	m.application = &id
+}
+
+// ClearApplication clears the application edge to Application.
+func (m *InstanceMutation) ClearApplication() {
+	m.clearedapplication = true
+}
+
+// ApplicationCleared returns if the edge application was cleared.
+func (m *InstanceMutation) ApplicationCleared() bool {
+	return m.clearedapplication
+}
+
+// ApplicationID returns the application id in the mutation.
+func (m *InstanceMutation) ApplicationID() (id int, exists bool) {
+	if m.application != nil {
+		return *m.application, true
+	}
+	return
+}
+
+// ApplicationIDs returns the application ids in the mutation.
+// Note that ids always returns len(ids) <= 1 for unique edges, and you should use
+// ApplicationID instead. It exists only for internal usage by the builders.
+func (m *InstanceMutation) ApplicationIDs() (ids []int) {
+	if id := m.application; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetApplication reset all changes of the application edge.
+func (m *InstanceMutation) ResetApplication() {
+	m.application = nil
+	m.clearedapplication = false
+}
+
+// AddBuildIDs adds the builds edge to Build by ids.
+func (m *InstanceMutation) AddBuildIDs(ids ...int) {
+	if m.builds == nil {
+		m.builds = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.builds[ids[i]] = struct{}{}
+	}
+}
+
+// RemoveBuildIDs removes the builds edge to Build by ids.
+func (m *InstanceMutation) RemoveBuildIDs(ids ...int) {
+	if m.removedbuilds == nil {
+		m.removedbuilds = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.removedbuilds[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedBuilds returns the removed ids of builds.
+func (m *InstanceMutation) RemovedBuildsIDs() (ids []int) {
+	for id := range m.removedbuilds {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// BuildsIDs returns the builds ids in the mutation.
+func (m *InstanceMutation) BuildsIDs() (ids []int) {
+	for id := range m.builds {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetBuilds reset all changes of the builds edge.
+func (m *InstanceMutation) ResetBuilds() {
+	m.builds = nil
+	m.removedbuilds = nil
+}
+
+// SetConfigID sets the config edge to HelmConfig by id.
+func (m *InstanceMutation) SetConfigID(id int) {
+	m._config = &id
+}
+
+// ClearConfig clears the config edge to HelmConfig.
+func (m *InstanceMutation) ClearConfig() {
+	m.cleared_config = true
+}
+
+// ConfigCleared returns if the edge config was cleared.
+func (m *InstanceMutation) ConfigCleared() bool {
+	return m.cleared_config
+}
+
+// ConfigID returns the config id in the mutation.
+func (m *InstanceMutation) ConfigID() (id int, exists bool) {
+	if m._config != nil {
+		return *m._config, true
+	}
+	return
+}
+
+// ConfigIDs returns the config ids in the mutation.
+// Note that ids always returns len(ids) <= 1 for unique edges, and you should use
+// ConfigID instead. It exists only for internal usage by the builders.
+func (m *InstanceMutation) ConfigIDs() (ids []int) {
+	if id := m._config; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetConfig reset all changes of the config edge.
+func (m *InstanceMutation) ResetConfig() {
+	m._config = nil
+	m.cleared_config = false
+}
+
+// Op returns the operation name.
+func (m *InstanceMutation) Op() Op {
+	return m.op
+}
+
+// Type returns the node type of this mutation (Instance).
+func (m *InstanceMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during
+// this mutation. Note that, in order to get all numeric
+// fields that were in/decremented, call AddedFields().
+func (m *InstanceMutation) Fields() []string {
+	fields := make([]string, 0, 1)
+	if m.name != nil {
+		fields = append(fields, instance.FieldName)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name.
+// The second boolean value indicates that this field was
+// not set, or was not define in the schema.
+func (m *InstanceMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case instance.FieldName:
+		return m.Name()
+	}
+	return nil, false
+}
+
+// SetField sets the value for the given name. It returns an
+// error if the field is not defined in the schema, or if the
+// type mismatch the field type.
+func (m *InstanceMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case instance.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Instance field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented
+// or decremented during this mutation.
+func (m *InstanceMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was in/decremented
+// from a field with the given name. The second value indicates
+// that this field was not set, or was not define in the schema.
+func (m *InstanceMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value for the given name. It returns an
+// error if the field is not defined in the schema, or if the
+// type mismatch the field type.
+func (m *InstanceMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Instance numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared
+// during this mutation.
+func (m *InstanceMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicates if this field was
+// cleared in this mutation.
+func (m *InstanceMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value for the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *InstanceMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown Instance nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation regarding the
+// given field name. It returns an error if the field is not
+// defined in the schema.
+func (m *InstanceMutation) ResetField(name string) error {
+	switch name {
+	case instance.FieldName:
+		m.ResetName()
+		return nil
+	}
+	return fmt.Errorf("unknown Instance field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this
+// mutation.
+func (m *InstanceMutation) AddedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.application != nil {
+		edges = append(edges, instance.EdgeApplication)
+	}
+	if m.builds != nil {
+		edges = append(edges, instance.EdgeBuilds)
+	}
+	if m._config != nil {
+		edges = append(edges, instance.EdgeConfig)
+	}
+	return edges
+}
+
+// AddedIDs returns all ids (to other nodes) that were added for
+// the given edge name.
+func (m *InstanceMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case instance.EdgeApplication:
+		if id := m.application; id != nil {
+			return []ent.Value{*id}
+		}
+	case instance.EdgeBuilds:
+		ids := make([]ent.Value, 0, len(m.builds))
+		for id := range m.builds {
+			ids = append(ids, id)
+		}
+		return ids
+	case instance.EdgeConfig:
+		if id := m._config; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this
+// mutation.
+func (m *InstanceMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.removedbuilds != nil {
+		edges = append(edges, instance.EdgeBuilds)
+	}
+	return edges
+}
+
+// RemovedIDs returns all ids (to other nodes) that were removed for
+// the given edge name.
+func (m *InstanceMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case instance.EdgeBuilds:
+		ids := make([]ent.Value, 0, len(m.removedbuilds))
+		for id := range m.removedbuilds {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this
+// mutation.
+func (m *InstanceMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.clearedapplication {
+		edges = append(edges, instance.EdgeApplication)
+	}
+	if m.cleared_config {
+		edges = append(edges, instance.EdgeConfig)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean indicates if this edge was
+// cleared in this mutation.
+func (m *InstanceMutation) EdgeCleared(name string) bool {
+	switch name {
+	case instance.EdgeApplication:
+		return m.clearedapplication
+	case instance.EdgeConfig:
+		return m.cleared_config
+	}
+	return false
+}
+
+// ClearEdge clears the value for the given name. It returns an
+// error if the edge name is not defined in the schema.
+func (m *InstanceMutation) ClearEdge(name string) error {
+	switch name {
+	case instance.EdgeApplication:
+		m.ClearApplication()
+		return nil
+	case instance.EdgeConfig:
+		m.ClearConfig()
+		return nil
+	}
+	return fmt.Errorf("unknown Instance unique edge %s", name)
+}
+
+// ResetEdge resets all changes in the mutation regarding the
+// given edge name. It returns an error if the edge is not
+// defined in the schema.
+func (m *InstanceMutation) ResetEdge(name string) error {
+	switch name {
+	case instance.EdgeApplication:
+		m.ResetApplication()
+		return nil
+	case instance.EdgeBuilds:
+		m.ResetBuilds()
+		return nil
+	case instance.EdgeConfig:
+		m.ResetConfig()
+		return nil
+	}
+	return fmt.Errorf("unknown Instance edge %s", name)
+}
+
+// K8sClusterMutation represents an operation that mutate the K8sClusters
+// nodes in the graph.
+type K8sClusterMutation struct {
+	config
+	op                Op
+	typ               string
+	id                *int
+	cluster           *string
+	helmApi           *string
+	accessToken       *string
+	createdAt         *time.Time
+	updatedAt         *time.Time
+	clearedFields     map[string]struct{}
+	namespaces        map[int]struct{}
+	removednamespaces map[int]struct{}
+}
+
+var _ ent.Mutation = (*K8sClusterMutation)(nil)
+
+// newK8sClusterMutation creates new mutation for $n.Name.
+func newK8sClusterMutation(c config, op Op) *K8sClusterMutation {
+	return &K8sClusterMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeK8sCluster,
+		clearedFields: make(map[string]struct{}),
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m K8sClusterMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m K8sClusterMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, fmt.Errorf("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the id value in the mutation. Note that, the id
+// is available only if it was provided to the builder.
+func (m *K8sClusterMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// SetCluster sets the cluster field.
+func (m *K8sClusterMutation) SetCluster(s string) {
+	m.cluster = &s
+}
+
+// Cluster returns the cluster value in the mutation.
+func (m *K8sClusterMutation) Cluster() (r string, exists bool) {
+	v := m.cluster
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetCluster reset all changes of the cluster field.
+func (m *K8sClusterMutation) ResetCluster() {
+	m.cluster = nil
+}
+
+// SetHelmApi sets the helmApi field.
+func (m *K8sClusterMutation) SetHelmApi(s string) {
+	m.helmApi = &s
+}
+
+// HelmApi returns the helmApi value in the mutation.
+func (m *K8sClusterMutation) HelmApi() (r string, exists bool) {
+	v := m.helmApi
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetHelmApi reset all changes of the helmApi field.
+func (m *K8sClusterMutation) ResetHelmApi() {
+	m.helmApi = nil
+}
+
+// SetAccessToken sets the accessToken field.
+func (m *K8sClusterMutation) SetAccessToken(s string) {
+	m.accessToken = &s
+}
+
+// AccessToken returns the accessToken value in the mutation.
+func (m *K8sClusterMutation) AccessToken() (r string, exists bool) {
+	v := m.accessToken
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearAccessToken clears the value of accessToken.
+func (m *K8sClusterMutation) ClearAccessToken() {
+	m.accessToken = nil
+	m.clearedFields[k8scluster.FieldAccessToken] = struct{}{}
+}
+
+// AccessTokenCleared returns if the field accessToken was cleared in this mutation.
+func (m *K8sClusterMutation) AccessTokenCleared() bool {
+	_, ok := m.clearedFields[k8scluster.FieldAccessToken]
+	return ok
+}
+
+// ResetAccessToken reset all changes of the accessToken field.
+func (m *K8sClusterMutation) ResetAccessToken() {
+	m.accessToken = nil
+	delete(m.clearedFields, k8scluster.FieldAccessToken)
+}
+
+// SetCreatedAt sets the createdAt field.
+func (m *K8sClusterMutation) SetCreatedAt(t time.Time) {
+	m.createdAt = &t
+}
+
+// CreatedAt returns the createdAt value in the mutation.
+func (m *K8sClusterMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.createdAt
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetCreatedAt reset all changes of the createdAt field.
+func (m *K8sClusterMutation) ResetCreatedAt() {
+	m.createdAt = nil
+}
+
+// SetUpdatedAt sets the updatedAt field.
+func (m *K8sClusterMutation) SetUpdatedAt(t time.Time) {
+	m.updatedAt = &t
+}
+
+// UpdatedAt returns the updatedAt value in the mutation.
+func (m *K8sClusterMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updatedAt
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetUpdatedAt reset all changes of the updatedAt field.
+func (m *K8sClusterMutation) ResetUpdatedAt() {
+	m.updatedAt = nil
+}
+
+// AddNamespaceIDs adds the namespaces edge to Namespace by ids.
+func (m *K8sClusterMutation) AddNamespaceIDs(ids ...int) {
+	if m.namespaces == nil {
+		m.namespaces = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.namespaces[ids[i]] = struct{}{}
+	}
+}
+
+// RemoveNamespaceIDs removes the namespaces edge to Namespace by ids.
+func (m *K8sClusterMutation) RemoveNamespaceIDs(ids ...int) {
+	if m.removednamespaces == nil {
+		m.removednamespaces = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.removednamespaces[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedNamespaces returns the removed ids of namespaces.
+func (m *K8sClusterMutation) RemovedNamespacesIDs() (ids []int) {
+	for id := range m.removednamespaces {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// NamespacesIDs returns the namespaces ids in the mutation.
+func (m *K8sClusterMutation) NamespacesIDs() (ids []int) {
+	for id := range m.namespaces {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetNamespaces reset all changes of the namespaces edge.
+func (m *K8sClusterMutation) ResetNamespaces() {
+	m.namespaces = nil
+	m.removednamespaces = nil
+}
+
+// Op returns the operation name.
+func (m *K8sClusterMutation) Op() Op {
+	return m.op
+}
+
+// Type returns the node type of this mutation (K8sCluster).
+func (m *K8sClusterMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during
+// this mutation. Note that, in order to get all numeric
+// fields that were in/decremented, call AddedFields().
+func (m *K8sClusterMutation) Fields() []string {
+	fields := make([]string, 0, 5)
+	if m.cluster != nil {
+		fields = append(fields, k8scluster.FieldCluster)
+	}
+	if m.helmApi != nil {
+		fields = append(fields, k8scluster.FieldHelmApi)
+	}
+	if m.accessToken != nil {
+		fields = append(fields, k8scluster.FieldAccessToken)
+	}
+	if m.createdAt != nil {
+		fields = append(fields, k8scluster.FieldCreatedAt)
+	}
+	if m.updatedAt != nil {
+		fields = append(fields, k8scluster.FieldUpdatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name.
+// The second boolean value indicates that this field was
+// not set, or was not define in the schema.
+func (m *K8sClusterMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case k8scluster.FieldCluster:
+		return m.Cluster()
+	case k8scluster.FieldHelmApi:
+		return m.HelmApi()
+	case k8scluster.FieldAccessToken:
+		return m.AccessToken()
+	case k8scluster.FieldCreatedAt:
+		return m.CreatedAt()
+	case k8scluster.FieldUpdatedAt:
+		return m.UpdatedAt()
+	}
+	return nil, false
+}
+
+// SetField sets the value for the given name. It returns an
+// error if the field is not defined in the schema, or if the
+// type mismatch the field type.
+func (m *K8sClusterMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case k8scluster.FieldCluster:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCluster(v)
+		return nil
+	case k8scluster.FieldHelmApi:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetHelmApi(v)
+		return nil
+	case k8scluster.FieldAccessToken:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAccessToken(v)
+		return nil
+	case k8scluster.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case k8scluster.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown K8sCluster field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented
+// or decremented during this mutation.
+func (m *K8sClusterMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was in/decremented
+// from a field with the given name. The second value indicates
+// that this field was not set, or was not define in the schema.
+func (m *K8sClusterMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value for the given name. It returns an
+// error if the field is not defined in the schema, or if the
+// type mismatch the field type.
+func (m *K8sClusterMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown K8sCluster numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared
+// during this mutation.
+func (m *K8sClusterMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(k8scluster.FieldAccessToken) {
+		fields = append(fields, k8scluster.FieldAccessToken)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicates if this field was
+// cleared in this mutation.
+func (m *K8sClusterMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value for the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *K8sClusterMutation) ClearField(name string) error {
+	switch name {
+	case k8scluster.FieldAccessToken:
+		m.ClearAccessToken()
+		return nil
+	}
+	return fmt.Errorf("unknown K8sCluster nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation regarding the
+// given field name. It returns an error if the field is not
+// defined in the schema.
+func (m *K8sClusterMutation) ResetField(name string) error {
+	switch name {
+	case k8scluster.FieldCluster:
+		m.ResetCluster()
+		return nil
+	case k8scluster.FieldHelmApi:
+		m.ResetHelmApi()
+		return nil
+	case k8scluster.FieldAccessToken:
+		m.ResetAccessToken()
+		return nil
+	case k8scluster.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case k8scluster.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown K8sCluster field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this
+// mutation.
+func (m *K8sClusterMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.namespaces != nil {
+		edges = append(edges, k8scluster.EdgeNamespaces)
+	}
+	return edges
+}
+
+// AddedIDs returns all ids (to other nodes) that were added for
+// the given edge name.
+func (m *K8sClusterMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case k8scluster.EdgeNamespaces:
+		ids := make([]ent.Value, 0, len(m.namespaces))
+		for id := range m.namespaces {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this
+// mutation.
+func (m *K8sClusterMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.removednamespaces != nil {
+		edges = append(edges, k8scluster.EdgeNamespaces)
+	}
+	return edges
+}
+
+// RemovedIDs returns all ids (to other nodes) that were removed for
+// the given edge name.
+func (m *K8sClusterMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case k8scluster.EdgeNamespaces:
+		ids := make([]ent.Value, 0, len(m.removednamespaces))
+		for id := range m.removednamespaces {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this
+// mutation.
+func (m *K8sClusterMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// EdgeCleared returns a boolean indicates if this edge was
+// cleared in this mutation.
+func (m *K8sClusterMutation) EdgeCleared(name string) bool {
+	switch name {
+	}
+	return false
+}
+
+// ClearEdge clears the value for the given name. It returns an
+// error if the edge name is not defined in the schema.
+func (m *K8sClusterMutation) ClearEdge(name string) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown K8sCluster unique edge %s", name)
+}
+
+// ResetEdge resets all changes in the mutation regarding the
+// given edge name. It returns an error if the edge is not
+// defined in the schema.
+func (m *K8sClusterMutation) ResetEdge(name string) error {
+	switch name {
+	case k8scluster.EdgeNamespaces:
+		m.ResetNamespaces()
+		return nil
+	}
+	return fmt.Errorf("unknown K8sCluster edge %s", name)
+}
 
 // MenuMutation represents an operation that mutate the Menus
 // nodes in the graph.
@@ -1061,6 +3579,433 @@ func (m *MenuMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown Menu edge %s", name)
 }
 
+// NamespaceMutation represents an operation that mutate the Namespaces
+// nodes in the graph.
+type NamespaceMutation struct {
+	config
+	op                  Op
+	typ                 string
+	id                  *int
+	name                *string
+	createdAt           *time.Time
+	updatedAt           *time.Time
+	clearedFields       map[string]struct{}
+	cluster             *int
+	clearedcluster      bool
+	applications        map[int]struct{}
+	removedapplications map[int]struct{}
+}
+
+var _ ent.Mutation = (*NamespaceMutation)(nil)
+
+// newNamespaceMutation creates new mutation for $n.Name.
+func newNamespaceMutation(c config, op Op) *NamespaceMutation {
+	return &NamespaceMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeNamespace,
+		clearedFields: make(map[string]struct{}),
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m NamespaceMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m NamespaceMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, fmt.Errorf("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the id value in the mutation. Note that, the id
+// is available only if it was provided to the builder.
+func (m *NamespaceMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// SetName sets the name field.
+func (m *NamespaceMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the name value in the mutation.
+func (m *NamespaceMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetName reset all changes of the name field.
+func (m *NamespaceMutation) ResetName() {
+	m.name = nil
+}
+
+// SetCreatedAt sets the createdAt field.
+func (m *NamespaceMutation) SetCreatedAt(t time.Time) {
+	m.createdAt = &t
+}
+
+// CreatedAt returns the createdAt value in the mutation.
+func (m *NamespaceMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.createdAt
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetCreatedAt reset all changes of the createdAt field.
+func (m *NamespaceMutation) ResetCreatedAt() {
+	m.createdAt = nil
+}
+
+// SetUpdatedAt sets the updatedAt field.
+func (m *NamespaceMutation) SetUpdatedAt(t time.Time) {
+	m.updatedAt = &t
+}
+
+// UpdatedAt returns the updatedAt value in the mutation.
+func (m *NamespaceMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updatedAt
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetUpdatedAt reset all changes of the updatedAt field.
+func (m *NamespaceMutation) ResetUpdatedAt() {
+	m.updatedAt = nil
+}
+
+// SetClusterID sets the cluster edge to K8sCluster by id.
+func (m *NamespaceMutation) SetClusterID(id int) {
+	m.cluster = &id
+}
+
+// ClearCluster clears the cluster edge to K8sCluster.
+func (m *NamespaceMutation) ClearCluster() {
+	m.clearedcluster = true
+}
+
+// ClusterCleared returns if the edge cluster was cleared.
+func (m *NamespaceMutation) ClusterCleared() bool {
+	return m.clearedcluster
+}
+
+// ClusterID returns the cluster id in the mutation.
+func (m *NamespaceMutation) ClusterID() (id int, exists bool) {
+	if m.cluster != nil {
+		return *m.cluster, true
+	}
+	return
+}
+
+// ClusterIDs returns the cluster ids in the mutation.
+// Note that ids always returns len(ids) <= 1 for unique edges, and you should use
+// ClusterID instead. It exists only for internal usage by the builders.
+func (m *NamespaceMutation) ClusterIDs() (ids []int) {
+	if id := m.cluster; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetCluster reset all changes of the cluster edge.
+func (m *NamespaceMutation) ResetCluster() {
+	m.cluster = nil
+	m.clearedcluster = false
+}
+
+// AddApplicationIDs adds the applications edge to Application by ids.
+func (m *NamespaceMutation) AddApplicationIDs(ids ...int) {
+	if m.applications == nil {
+		m.applications = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.applications[ids[i]] = struct{}{}
+	}
+}
+
+// RemoveApplicationIDs removes the applications edge to Application by ids.
+func (m *NamespaceMutation) RemoveApplicationIDs(ids ...int) {
+	if m.removedapplications == nil {
+		m.removedapplications = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.removedapplications[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedApplications returns the removed ids of applications.
+func (m *NamespaceMutation) RemovedApplicationsIDs() (ids []int) {
+	for id := range m.removedapplications {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ApplicationsIDs returns the applications ids in the mutation.
+func (m *NamespaceMutation) ApplicationsIDs() (ids []int) {
+	for id := range m.applications {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetApplications reset all changes of the applications edge.
+func (m *NamespaceMutation) ResetApplications() {
+	m.applications = nil
+	m.removedapplications = nil
+}
+
+// Op returns the operation name.
+func (m *NamespaceMutation) Op() Op {
+	return m.op
+}
+
+// Type returns the node type of this mutation (Namespace).
+func (m *NamespaceMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during
+// this mutation. Note that, in order to get all numeric
+// fields that were in/decremented, call AddedFields().
+func (m *NamespaceMutation) Fields() []string {
+	fields := make([]string, 0, 3)
+	if m.name != nil {
+		fields = append(fields, namespace.FieldName)
+	}
+	if m.createdAt != nil {
+		fields = append(fields, namespace.FieldCreatedAt)
+	}
+	if m.updatedAt != nil {
+		fields = append(fields, namespace.FieldUpdatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name.
+// The second boolean value indicates that this field was
+// not set, or was not define in the schema.
+func (m *NamespaceMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case namespace.FieldName:
+		return m.Name()
+	case namespace.FieldCreatedAt:
+		return m.CreatedAt()
+	case namespace.FieldUpdatedAt:
+		return m.UpdatedAt()
+	}
+	return nil, false
+}
+
+// SetField sets the value for the given name. It returns an
+// error if the field is not defined in the schema, or if the
+// type mismatch the field type.
+func (m *NamespaceMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case namespace.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case namespace.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case namespace.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Namespace field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented
+// or decremented during this mutation.
+func (m *NamespaceMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was in/decremented
+// from a field with the given name. The second value indicates
+// that this field was not set, or was not define in the schema.
+func (m *NamespaceMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value for the given name. It returns an
+// error if the field is not defined in the schema, or if the
+// type mismatch the field type.
+func (m *NamespaceMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Namespace numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared
+// during this mutation.
+func (m *NamespaceMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicates if this field was
+// cleared in this mutation.
+func (m *NamespaceMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value for the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *NamespaceMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown Namespace nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation regarding the
+// given field name. It returns an error if the field is not
+// defined in the schema.
+func (m *NamespaceMutation) ResetField(name string) error {
+	switch name {
+	case namespace.FieldName:
+		m.ResetName()
+		return nil
+	case namespace.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case namespace.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown Namespace field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this
+// mutation.
+func (m *NamespaceMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.cluster != nil {
+		edges = append(edges, namespace.EdgeCluster)
+	}
+	if m.applications != nil {
+		edges = append(edges, namespace.EdgeApplications)
+	}
+	return edges
+}
+
+// AddedIDs returns all ids (to other nodes) that were added for
+// the given edge name.
+func (m *NamespaceMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case namespace.EdgeCluster:
+		if id := m.cluster; id != nil {
+			return []ent.Value{*id}
+		}
+	case namespace.EdgeApplications:
+		ids := make([]ent.Value, 0, len(m.applications))
+		for id := range m.applications {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this
+// mutation.
+func (m *NamespaceMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.removedapplications != nil {
+		edges = append(edges, namespace.EdgeApplications)
+	}
+	return edges
+}
+
+// RemovedIDs returns all ids (to other nodes) that were removed for
+// the given edge name.
+func (m *NamespaceMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case namespace.EdgeApplications:
+		ids := make([]ent.Value, 0, len(m.removedapplications))
+		for id := range m.removedapplications {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this
+// mutation.
+func (m *NamespaceMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedcluster {
+		edges = append(edges, namespace.EdgeCluster)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean indicates if this edge was
+// cleared in this mutation.
+func (m *NamespaceMutation) EdgeCleared(name string) bool {
+	switch name {
+	case namespace.EdgeCluster:
+		return m.clearedcluster
+	}
+	return false
+}
+
+// ClearEdge clears the value for the given name. It returns an
+// error if the edge name is not defined in the schema.
+func (m *NamespaceMutation) ClearEdge(name string) error {
+	switch name {
+	case namespace.EdgeCluster:
+		m.ClearCluster()
+		return nil
+	}
+	return fmt.Errorf("unknown Namespace unique edge %s", name)
+}
+
+// ResetEdge resets all changes in the mutation regarding the
+// given edge name. It returns an error if the edge is not
+// defined in the schema.
+func (m *NamespaceMutation) ResetEdge(name string) error {
+	switch name {
+	case namespace.EdgeCluster:
+		m.ResetCluster()
+		return nil
+	case namespace.EdgeApplications:
+		m.ResetApplications()
+		return nil
+	}
+	return fmt.Errorf("unknown Namespace edge %s", name)
+}
+
 // PermissionMutation represents an operation that mutate the Permissions
 // nodes in the graph.
 type PermissionMutation struct {
@@ -1604,6 +4549,640 @@ func (m *PermissionMutation) ResetEdge(name string) error {
 	switch name {
 	}
 	return fmt.Errorf("unknown Permission edge %s", name)
+}
+
+// ProjectMutation represents an operation that mutate the Projects
+// nodes in the graph.
+type ProjectMutation struct {
+	config
+	op                  Op
+	typ                 string
+	id                  *int
+	projectName         *string
+	proType             *string
+	description         *string
+	gitlab              *string
+	port                *int
+	addport             *int
+	debugPort           *int
+	adddebugPort        *int
+	createdAt           *time.Time
+	updatedAt           *time.Time
+	clearedFields       map[string]struct{}
+	applications        map[int]struct{}
+	removedapplications map[int]struct{}
+}
+
+var _ ent.Mutation = (*ProjectMutation)(nil)
+
+// newProjectMutation creates new mutation for $n.Name.
+func newProjectMutation(c config, op Op) *ProjectMutation {
+	return &ProjectMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeProject,
+		clearedFields: make(map[string]struct{}),
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ProjectMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ProjectMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, fmt.Errorf("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the id value in the mutation. Note that, the id
+// is available only if it was provided to the builder.
+func (m *ProjectMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// SetProjectName sets the projectName field.
+func (m *ProjectMutation) SetProjectName(s string) {
+	m.projectName = &s
+}
+
+// ProjectName returns the projectName value in the mutation.
+func (m *ProjectMutation) ProjectName() (r string, exists bool) {
+	v := m.projectName
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetProjectName reset all changes of the projectName field.
+func (m *ProjectMutation) ResetProjectName() {
+	m.projectName = nil
+}
+
+// SetProType sets the proType field.
+func (m *ProjectMutation) SetProType(s string) {
+	m.proType = &s
+}
+
+// ProType returns the proType value in the mutation.
+func (m *ProjectMutation) ProType() (r string, exists bool) {
+	v := m.proType
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetProType reset all changes of the proType field.
+func (m *ProjectMutation) ResetProType() {
+	m.proType = nil
+}
+
+// SetDescription sets the description field.
+func (m *ProjectMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the description value in the mutation.
+func (m *ProjectMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearDescription clears the value of description.
+func (m *ProjectMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[project.FieldDescription] = struct{}{}
+}
+
+// DescriptionCleared returns if the field description was cleared in this mutation.
+func (m *ProjectMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[project.FieldDescription]
+	return ok
+}
+
+// ResetDescription reset all changes of the description field.
+func (m *ProjectMutation) ResetDescription() {
+	m.description = nil
+	delete(m.clearedFields, project.FieldDescription)
+}
+
+// SetGitlab sets the gitlab field.
+func (m *ProjectMutation) SetGitlab(s string) {
+	m.gitlab = &s
+}
+
+// Gitlab returns the gitlab value in the mutation.
+func (m *ProjectMutation) Gitlab() (r string, exists bool) {
+	v := m.gitlab
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetGitlab reset all changes of the gitlab field.
+func (m *ProjectMutation) ResetGitlab() {
+	m.gitlab = nil
+}
+
+// SetPort sets the port field.
+func (m *ProjectMutation) SetPort(i int) {
+	m.port = &i
+	m.addport = nil
+}
+
+// Port returns the port value in the mutation.
+func (m *ProjectMutation) Port() (r int, exists bool) {
+	v := m.port
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// AddPort adds i to port.
+func (m *ProjectMutation) AddPort(i int) {
+	if m.addport != nil {
+		*m.addport += i
+	} else {
+		m.addport = &i
+	}
+}
+
+// AddedPort returns the value that was added to the port field in this mutation.
+func (m *ProjectMutation) AddedPort() (r int, exists bool) {
+	v := m.addport
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetPort reset all changes of the port field.
+func (m *ProjectMutation) ResetPort() {
+	m.port = nil
+	m.addport = nil
+}
+
+// SetDebugPort sets the debugPort field.
+func (m *ProjectMutation) SetDebugPort(i int) {
+	m.debugPort = &i
+	m.adddebugPort = nil
+}
+
+// DebugPort returns the debugPort value in the mutation.
+func (m *ProjectMutation) DebugPort() (r int, exists bool) {
+	v := m.debugPort
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// AddDebugPort adds i to debugPort.
+func (m *ProjectMutation) AddDebugPort(i int) {
+	if m.adddebugPort != nil {
+		*m.adddebugPort += i
+	} else {
+		m.adddebugPort = &i
+	}
+}
+
+// AddedDebugPort returns the value that was added to the debugPort field in this mutation.
+func (m *ProjectMutation) AddedDebugPort() (r int, exists bool) {
+	v := m.adddebugPort
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetDebugPort reset all changes of the debugPort field.
+func (m *ProjectMutation) ResetDebugPort() {
+	m.debugPort = nil
+	m.adddebugPort = nil
+}
+
+// SetCreatedAt sets the createdAt field.
+func (m *ProjectMutation) SetCreatedAt(t time.Time) {
+	m.createdAt = &t
+}
+
+// CreatedAt returns the createdAt value in the mutation.
+func (m *ProjectMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.createdAt
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetCreatedAt reset all changes of the createdAt field.
+func (m *ProjectMutation) ResetCreatedAt() {
+	m.createdAt = nil
+}
+
+// SetUpdatedAt sets the updatedAt field.
+func (m *ProjectMutation) SetUpdatedAt(t time.Time) {
+	m.updatedAt = &t
+}
+
+// UpdatedAt returns the updatedAt value in the mutation.
+func (m *ProjectMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updatedAt
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetUpdatedAt reset all changes of the updatedAt field.
+func (m *ProjectMutation) ResetUpdatedAt() {
+	m.updatedAt = nil
+}
+
+// AddApplicationIDs adds the applications edge to Application by ids.
+func (m *ProjectMutation) AddApplicationIDs(ids ...int) {
+	if m.applications == nil {
+		m.applications = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.applications[ids[i]] = struct{}{}
+	}
+}
+
+// RemoveApplicationIDs removes the applications edge to Application by ids.
+func (m *ProjectMutation) RemoveApplicationIDs(ids ...int) {
+	if m.removedapplications == nil {
+		m.removedapplications = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.removedapplications[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedApplications returns the removed ids of applications.
+func (m *ProjectMutation) RemovedApplicationsIDs() (ids []int) {
+	for id := range m.removedapplications {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ApplicationsIDs returns the applications ids in the mutation.
+func (m *ProjectMutation) ApplicationsIDs() (ids []int) {
+	for id := range m.applications {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetApplications reset all changes of the applications edge.
+func (m *ProjectMutation) ResetApplications() {
+	m.applications = nil
+	m.removedapplications = nil
+}
+
+// Op returns the operation name.
+func (m *ProjectMutation) Op() Op {
+	return m.op
+}
+
+// Type returns the node type of this mutation (Project).
+func (m *ProjectMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during
+// this mutation. Note that, in order to get all numeric
+// fields that were in/decremented, call AddedFields().
+func (m *ProjectMutation) Fields() []string {
+	fields := make([]string, 0, 8)
+	if m.projectName != nil {
+		fields = append(fields, project.FieldProjectName)
+	}
+	if m.proType != nil {
+		fields = append(fields, project.FieldProType)
+	}
+	if m.description != nil {
+		fields = append(fields, project.FieldDescription)
+	}
+	if m.gitlab != nil {
+		fields = append(fields, project.FieldGitlab)
+	}
+	if m.port != nil {
+		fields = append(fields, project.FieldPort)
+	}
+	if m.debugPort != nil {
+		fields = append(fields, project.FieldDebugPort)
+	}
+	if m.createdAt != nil {
+		fields = append(fields, project.FieldCreatedAt)
+	}
+	if m.updatedAt != nil {
+		fields = append(fields, project.FieldUpdatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name.
+// The second boolean value indicates that this field was
+// not set, or was not define in the schema.
+func (m *ProjectMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case project.FieldProjectName:
+		return m.ProjectName()
+	case project.FieldProType:
+		return m.ProType()
+	case project.FieldDescription:
+		return m.Description()
+	case project.FieldGitlab:
+		return m.Gitlab()
+	case project.FieldPort:
+		return m.Port()
+	case project.FieldDebugPort:
+		return m.DebugPort()
+	case project.FieldCreatedAt:
+		return m.CreatedAt()
+	case project.FieldUpdatedAt:
+		return m.UpdatedAt()
+	}
+	return nil, false
+}
+
+// SetField sets the value for the given name. It returns an
+// error if the field is not defined in the schema, or if the
+// type mismatch the field type.
+func (m *ProjectMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case project.FieldProjectName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProjectName(v)
+		return nil
+	case project.FieldProType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProType(v)
+		return nil
+	case project.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
+		return nil
+	case project.FieldGitlab:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGitlab(v)
+		return nil
+	case project.FieldPort:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPort(v)
+		return nil
+	case project.FieldDebugPort:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDebugPort(v)
+		return nil
+	case project.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case project.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Project field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented
+// or decremented during this mutation.
+func (m *ProjectMutation) AddedFields() []string {
+	var fields []string
+	if m.addport != nil {
+		fields = append(fields, project.FieldPort)
+	}
+	if m.adddebugPort != nil {
+		fields = append(fields, project.FieldDebugPort)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was in/decremented
+// from a field with the given name. The second value indicates
+// that this field was not set, or was not define in the schema.
+func (m *ProjectMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case project.FieldPort:
+		return m.AddedPort()
+	case project.FieldDebugPort:
+		return m.AddedDebugPort()
+	}
+	return nil, false
+}
+
+// AddField adds the value for the given name. It returns an
+// error if the field is not defined in the schema, or if the
+// type mismatch the field type.
+func (m *ProjectMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case project.FieldPort:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddPort(v)
+		return nil
+	case project.FieldDebugPort:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddDebugPort(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Project numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared
+// during this mutation.
+func (m *ProjectMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(project.FieldDescription) {
+		fields = append(fields, project.FieldDescription)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicates if this field was
+// cleared in this mutation.
+func (m *ProjectMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value for the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ProjectMutation) ClearField(name string) error {
+	switch name {
+	case project.FieldDescription:
+		m.ClearDescription()
+		return nil
+	}
+	return fmt.Errorf("unknown Project nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation regarding the
+// given field name. It returns an error if the field is not
+// defined in the schema.
+func (m *ProjectMutation) ResetField(name string) error {
+	switch name {
+	case project.FieldProjectName:
+		m.ResetProjectName()
+		return nil
+	case project.FieldProType:
+		m.ResetProType()
+		return nil
+	case project.FieldDescription:
+		m.ResetDescription()
+		return nil
+	case project.FieldGitlab:
+		m.ResetGitlab()
+		return nil
+	case project.FieldPort:
+		m.ResetPort()
+		return nil
+	case project.FieldDebugPort:
+		m.ResetDebugPort()
+		return nil
+	case project.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case project.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown Project field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this
+// mutation.
+func (m *ProjectMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.applications != nil {
+		edges = append(edges, project.EdgeApplications)
+	}
+	return edges
+}
+
+// AddedIDs returns all ids (to other nodes) that were added for
+// the given edge name.
+func (m *ProjectMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case project.EdgeApplications:
+		ids := make([]ent.Value, 0, len(m.applications))
+		for id := range m.applications {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this
+// mutation.
+func (m *ProjectMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.removedapplications != nil {
+		edges = append(edges, project.EdgeApplications)
+	}
+	return edges
+}
+
+// RemovedIDs returns all ids (to other nodes) that were removed for
+// the given edge name.
+func (m *ProjectMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case project.EdgeApplications:
+		ids := make([]ent.Value, 0, len(m.removedapplications))
+		for id := range m.removedapplications {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this
+// mutation.
+func (m *ProjectMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// EdgeCleared returns a boolean indicates if this edge was
+// cleared in this mutation.
+func (m *ProjectMutation) EdgeCleared(name string) bool {
+	switch name {
+	}
+	return false
+}
+
+// ClearEdge clears the value for the given name. It returns an
+// error if the edge name is not defined in the schema.
+func (m *ProjectMutation) ClearEdge(name string) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Project unique edge %s", name)
+}
+
+// ResetEdge resets all changes in the mutation regarding the
+// given edge name. It returns an error if the edge is not
+// defined in the schema.
+func (m *ProjectMutation) ResetEdge(name string) error {
+	switch name {
+	case project.EdgeApplications:
+		m.ResetApplications()
+		return nil
+	}
+	return fmt.Errorf("unknown Project edge %s", name)
 }
 
 // RoleMutation represents an operation that mutate the Roles

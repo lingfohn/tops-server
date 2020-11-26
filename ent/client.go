@@ -9,8 +9,15 @@ import (
 
 	"github.com/lingfohn/lime/ent/migrate"
 
+	"github.com/lingfohn/lime/ent/application"
+	"github.com/lingfohn/lime/ent/build"
+	"github.com/lingfohn/lime/ent/helmconfig"
+	"github.com/lingfohn/lime/ent/instance"
+	"github.com/lingfohn/lime/ent/k8scluster"
 	"github.com/lingfohn/lime/ent/menu"
+	"github.com/lingfohn/lime/ent/namespace"
 	"github.com/lingfohn/lime/ent/permission"
+	"github.com/lingfohn/lime/ent/project"
 	"github.com/lingfohn/lime/ent/role"
 	"github.com/lingfohn/lime/ent/user"
 
@@ -24,10 +31,24 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// Application is the client for interacting with the Application builders.
+	Application *ApplicationClient
+	// Build is the client for interacting with the Build builders.
+	Build *BuildClient
+	// HelmConfig is the client for interacting with the HelmConfig builders.
+	HelmConfig *HelmConfigClient
+	// Instance is the client for interacting with the Instance builders.
+	Instance *InstanceClient
+	// K8sCluster is the client for interacting with the K8sCluster builders.
+	K8sCluster *K8sClusterClient
 	// Menu is the client for interacting with the Menu builders.
 	Menu *MenuClient
+	// Namespace is the client for interacting with the Namespace builders.
+	Namespace *NamespaceClient
 	// Permission is the client for interacting with the Permission builders.
 	Permission *PermissionClient
+	// Project is the client for interacting with the Project builders.
+	Project *ProjectClient
 	// Role is the client for interacting with the Role builders.
 	Role *RoleClient
 	// User is the client for interacting with the User builders.
@@ -45,8 +66,15 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.Application = NewApplicationClient(c.config)
+	c.Build = NewBuildClient(c.config)
+	c.HelmConfig = NewHelmConfigClient(c.config)
+	c.Instance = NewInstanceClient(c.config)
+	c.K8sCluster = NewK8sClusterClient(c.config)
 	c.Menu = NewMenuClient(c.config)
+	c.Namespace = NewNamespaceClient(c.config)
 	c.Permission = NewPermissionClient(c.config)
+	c.Project = NewProjectClient(c.config)
 	c.Role = NewRoleClient(c.config)
 	c.User = NewUserClient(c.config)
 }
@@ -78,11 +106,18 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	}
 	cfg := config{driver: tx, log: c.log, debug: c.debug, hooks: c.hooks}
 	return &Tx{
-		config:     cfg,
-		Menu:       NewMenuClient(cfg),
-		Permission: NewPermissionClient(cfg),
-		Role:       NewRoleClient(cfg),
-		User:       NewUserClient(cfg),
+		config:      cfg,
+		Application: NewApplicationClient(cfg),
+		Build:       NewBuildClient(cfg),
+		HelmConfig:  NewHelmConfigClient(cfg),
+		Instance:    NewInstanceClient(cfg),
+		K8sCluster:  NewK8sClusterClient(cfg),
+		Menu:        NewMenuClient(cfg),
+		Namespace:   NewNamespaceClient(cfg),
+		Permission:  NewPermissionClient(cfg),
+		Project:     NewProjectClient(cfg),
+		Role:        NewRoleClient(cfg),
+		User:        NewUserClient(cfg),
 	}, nil
 }
 
@@ -97,18 +132,25 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	}
 	cfg := config{driver: &txDriver{tx: tx, drv: c.driver}, log: c.log, debug: c.debug, hooks: c.hooks}
 	return &Tx{
-		config:     cfg,
-		Menu:       NewMenuClient(cfg),
-		Permission: NewPermissionClient(cfg),
-		Role:       NewRoleClient(cfg),
-		User:       NewUserClient(cfg),
+		config:      cfg,
+		Application: NewApplicationClient(cfg),
+		Build:       NewBuildClient(cfg),
+		HelmConfig:  NewHelmConfigClient(cfg),
+		Instance:    NewInstanceClient(cfg),
+		K8sCluster:  NewK8sClusterClient(cfg),
+		Menu:        NewMenuClient(cfg),
+		Namespace:   NewNamespaceClient(cfg),
+		Permission:  NewPermissionClient(cfg),
+		Project:     NewProjectClient(cfg),
+		Role:        NewRoleClient(cfg),
+		User:        NewUserClient(cfg),
 	}, nil
 }
 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		Menu.
+//		Application.
 //		Query().
 //		Count(ctx)
 //
@@ -130,10 +172,576 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
+	c.Application.Use(hooks...)
+	c.Build.Use(hooks...)
+	c.HelmConfig.Use(hooks...)
+	c.Instance.Use(hooks...)
+	c.K8sCluster.Use(hooks...)
 	c.Menu.Use(hooks...)
+	c.Namespace.Use(hooks...)
 	c.Permission.Use(hooks...)
+	c.Project.Use(hooks...)
 	c.Role.Use(hooks...)
 	c.User.Use(hooks...)
+}
+
+// ApplicationClient is a client for the Application schema.
+type ApplicationClient struct {
+	config
+}
+
+// NewApplicationClient returns a client for the Application from the given config.
+func NewApplicationClient(c config) *ApplicationClient {
+	return &ApplicationClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `application.Hooks(f(g(h())))`.
+func (c *ApplicationClient) Use(hooks ...Hook) {
+	c.hooks.Application = append(c.hooks.Application, hooks...)
+}
+
+// Create returns a create builder for Application.
+func (c *ApplicationClient) Create() *ApplicationCreate {
+	mutation := newApplicationMutation(c.config, OpCreate)
+	return &ApplicationCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Update returns an update builder for Application.
+func (c *ApplicationClient) Update() *ApplicationUpdate {
+	mutation := newApplicationMutation(c.config, OpUpdate)
+	return &ApplicationUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ApplicationClient) UpdateOne(a *Application) *ApplicationUpdateOne {
+	return c.UpdateOneID(a.ID)
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ApplicationClient) UpdateOneID(id int) *ApplicationUpdateOne {
+	mutation := newApplicationMutation(c.config, OpUpdateOne)
+	mutation.id = &id
+	return &ApplicationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Application.
+func (c *ApplicationClient) Delete() *ApplicationDelete {
+	mutation := newApplicationMutation(c.config, OpDelete)
+	return &ApplicationDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *ApplicationClient) DeleteOne(a *Application) *ApplicationDeleteOne {
+	return c.DeleteOneID(a.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *ApplicationClient) DeleteOneID(id int) *ApplicationDeleteOne {
+	builder := c.Delete().Where(application.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ApplicationDeleteOne{builder}
+}
+
+// Create returns a query builder for Application.
+func (c *ApplicationClient) Query() *ApplicationQuery {
+	return &ApplicationQuery{config: c.config}
+}
+
+// Get returns a Application entity by its id.
+func (c *ApplicationClient) Get(ctx context.Context, id int) (*Application, error) {
+	return c.Query().Where(application.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ApplicationClient) GetX(ctx context.Context, id int) *Application {
+	a, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return a
+}
+
+// QueryNamespace queries the namespace edge of a Application.
+func (c *ApplicationClient) QueryNamespace(a *Application) *NamespaceQuery {
+	query := &NamespaceQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := a.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(application.Table, application.FieldID, id),
+			sqlgraph.To(namespace.Table, namespace.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, application.NamespaceTable, application.NamespaceColumn),
+		)
+		fromV = sqlgraph.Neighbors(a.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryProject queries the project edge of a Application.
+func (c *ApplicationClient) QueryProject(a *Application) *ProjectQuery {
+	query := &ProjectQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := a.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(application.Table, application.FieldID, id),
+			sqlgraph.To(project.Table, project.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, application.ProjectTable, application.ProjectColumn),
+		)
+		fromV = sqlgraph.Neighbors(a.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryInstances queries the instances edge of a Application.
+func (c *ApplicationClient) QueryInstances(a *Application) *InstanceQuery {
+	query := &InstanceQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := a.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(application.Table, application.FieldID, id),
+			sqlgraph.To(instance.Table, instance.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, application.InstancesTable, application.InstancesColumn),
+		)
+		fromV = sqlgraph.Neighbors(a.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryConfig queries the config edge of a Application.
+func (c *ApplicationClient) QueryConfig(a *Application) *HelmConfigQuery {
+	query := &HelmConfigQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := a.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(application.Table, application.FieldID, id),
+			sqlgraph.To(helmconfig.Table, helmconfig.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, application.ConfigTable, application.ConfigColumn),
+		)
+		fromV = sqlgraph.Neighbors(a.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ApplicationClient) Hooks() []Hook {
+	return c.hooks.Application
+}
+
+// BuildClient is a client for the Build schema.
+type BuildClient struct {
+	config
+}
+
+// NewBuildClient returns a client for the Build from the given config.
+func NewBuildClient(c config) *BuildClient {
+	return &BuildClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `build.Hooks(f(g(h())))`.
+func (c *BuildClient) Use(hooks ...Hook) {
+	c.hooks.Build = append(c.hooks.Build, hooks...)
+}
+
+// Create returns a create builder for Build.
+func (c *BuildClient) Create() *BuildCreate {
+	mutation := newBuildMutation(c.config, OpCreate)
+	return &BuildCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Update returns an update builder for Build.
+func (c *BuildClient) Update() *BuildUpdate {
+	mutation := newBuildMutation(c.config, OpUpdate)
+	return &BuildUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *BuildClient) UpdateOne(b *Build) *BuildUpdateOne {
+	return c.UpdateOneID(b.ID)
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *BuildClient) UpdateOneID(id int) *BuildUpdateOne {
+	mutation := newBuildMutation(c.config, OpUpdateOne)
+	mutation.id = &id
+	return &BuildUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Build.
+func (c *BuildClient) Delete() *BuildDelete {
+	mutation := newBuildMutation(c.config, OpDelete)
+	return &BuildDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *BuildClient) DeleteOne(b *Build) *BuildDeleteOne {
+	return c.DeleteOneID(b.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *BuildClient) DeleteOneID(id int) *BuildDeleteOne {
+	builder := c.Delete().Where(build.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &BuildDeleteOne{builder}
+}
+
+// Create returns a query builder for Build.
+func (c *BuildClient) Query() *BuildQuery {
+	return &BuildQuery{config: c.config}
+}
+
+// Get returns a Build entity by its id.
+func (c *BuildClient) Get(ctx context.Context, id int) (*Build, error) {
+	return c.Query().Where(build.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *BuildClient) GetX(ctx context.Context, id int) *Build {
+	b, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+// QueryInstance queries the instance edge of a Build.
+func (c *BuildClient) QueryInstance(b *Build) *InstanceQuery {
+	query := &InstanceQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := b.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(build.Table, build.FieldID, id),
+			sqlgraph.To(instance.Table, instance.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, build.InstanceTable, build.InstanceColumn),
+		)
+		fromV = sqlgraph.Neighbors(b.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *BuildClient) Hooks() []Hook {
+	return c.hooks.Build
+}
+
+// HelmConfigClient is a client for the HelmConfig schema.
+type HelmConfigClient struct {
+	config
+}
+
+// NewHelmConfigClient returns a client for the HelmConfig from the given config.
+func NewHelmConfigClient(c config) *HelmConfigClient {
+	return &HelmConfigClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `helmconfig.Hooks(f(g(h())))`.
+func (c *HelmConfigClient) Use(hooks ...Hook) {
+	c.hooks.HelmConfig = append(c.hooks.HelmConfig, hooks...)
+}
+
+// Create returns a create builder for HelmConfig.
+func (c *HelmConfigClient) Create() *HelmConfigCreate {
+	mutation := newHelmConfigMutation(c.config, OpCreate)
+	return &HelmConfigCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Update returns an update builder for HelmConfig.
+func (c *HelmConfigClient) Update() *HelmConfigUpdate {
+	mutation := newHelmConfigMutation(c.config, OpUpdate)
+	return &HelmConfigUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *HelmConfigClient) UpdateOne(hc *HelmConfig) *HelmConfigUpdateOne {
+	return c.UpdateOneID(hc.ID)
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *HelmConfigClient) UpdateOneID(id int) *HelmConfigUpdateOne {
+	mutation := newHelmConfigMutation(c.config, OpUpdateOne)
+	mutation.id = &id
+	return &HelmConfigUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for HelmConfig.
+func (c *HelmConfigClient) Delete() *HelmConfigDelete {
+	mutation := newHelmConfigMutation(c.config, OpDelete)
+	return &HelmConfigDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *HelmConfigClient) DeleteOne(hc *HelmConfig) *HelmConfigDeleteOne {
+	return c.DeleteOneID(hc.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *HelmConfigClient) DeleteOneID(id int) *HelmConfigDeleteOne {
+	builder := c.Delete().Where(helmconfig.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &HelmConfigDeleteOne{builder}
+}
+
+// Create returns a query builder for HelmConfig.
+func (c *HelmConfigClient) Query() *HelmConfigQuery {
+	return &HelmConfigQuery{config: c.config}
+}
+
+// Get returns a HelmConfig entity by its id.
+func (c *HelmConfigClient) Get(ctx context.Context, id int) (*HelmConfig, error) {
+	return c.Query().Where(helmconfig.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *HelmConfigClient) GetX(ctx context.Context, id int) *HelmConfig {
+	hc, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return hc
+}
+
+// Hooks returns the client hooks.
+func (c *HelmConfigClient) Hooks() []Hook {
+	return c.hooks.HelmConfig
+}
+
+// InstanceClient is a client for the Instance schema.
+type InstanceClient struct {
+	config
+}
+
+// NewInstanceClient returns a client for the Instance from the given config.
+func NewInstanceClient(c config) *InstanceClient {
+	return &InstanceClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `instance.Hooks(f(g(h())))`.
+func (c *InstanceClient) Use(hooks ...Hook) {
+	c.hooks.Instance = append(c.hooks.Instance, hooks...)
+}
+
+// Create returns a create builder for Instance.
+func (c *InstanceClient) Create() *InstanceCreate {
+	mutation := newInstanceMutation(c.config, OpCreate)
+	return &InstanceCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Update returns an update builder for Instance.
+func (c *InstanceClient) Update() *InstanceUpdate {
+	mutation := newInstanceMutation(c.config, OpUpdate)
+	return &InstanceUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *InstanceClient) UpdateOne(i *Instance) *InstanceUpdateOne {
+	return c.UpdateOneID(i.ID)
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *InstanceClient) UpdateOneID(id int) *InstanceUpdateOne {
+	mutation := newInstanceMutation(c.config, OpUpdateOne)
+	mutation.id = &id
+	return &InstanceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Instance.
+func (c *InstanceClient) Delete() *InstanceDelete {
+	mutation := newInstanceMutation(c.config, OpDelete)
+	return &InstanceDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *InstanceClient) DeleteOne(i *Instance) *InstanceDeleteOne {
+	return c.DeleteOneID(i.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *InstanceClient) DeleteOneID(id int) *InstanceDeleteOne {
+	builder := c.Delete().Where(instance.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &InstanceDeleteOne{builder}
+}
+
+// Create returns a query builder for Instance.
+func (c *InstanceClient) Query() *InstanceQuery {
+	return &InstanceQuery{config: c.config}
+}
+
+// Get returns a Instance entity by its id.
+func (c *InstanceClient) Get(ctx context.Context, id int) (*Instance, error) {
+	return c.Query().Where(instance.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *InstanceClient) GetX(ctx context.Context, id int) *Instance {
+	i, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return i
+}
+
+// QueryApplication queries the application edge of a Instance.
+func (c *InstanceClient) QueryApplication(i *Instance) *ApplicationQuery {
+	query := &ApplicationQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := i.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(instance.Table, instance.FieldID, id),
+			sqlgraph.To(application.Table, application.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, instance.ApplicationTable, instance.ApplicationColumn),
+		)
+		fromV = sqlgraph.Neighbors(i.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryBuilds queries the builds edge of a Instance.
+func (c *InstanceClient) QueryBuilds(i *Instance) *BuildQuery {
+	query := &BuildQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := i.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(instance.Table, instance.FieldID, id),
+			sqlgraph.To(build.Table, build.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, instance.BuildsTable, instance.BuildsColumn),
+		)
+		fromV = sqlgraph.Neighbors(i.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryConfig queries the config edge of a Instance.
+func (c *InstanceClient) QueryConfig(i *Instance) *HelmConfigQuery {
+	query := &HelmConfigQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := i.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(instance.Table, instance.FieldID, id),
+			sqlgraph.To(helmconfig.Table, helmconfig.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, instance.ConfigTable, instance.ConfigColumn),
+		)
+		fromV = sqlgraph.Neighbors(i.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *InstanceClient) Hooks() []Hook {
+	return c.hooks.Instance
+}
+
+// K8sClusterClient is a client for the K8sCluster schema.
+type K8sClusterClient struct {
+	config
+}
+
+// NewK8sClusterClient returns a client for the K8sCluster from the given config.
+func NewK8sClusterClient(c config) *K8sClusterClient {
+	return &K8sClusterClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `k8scluster.Hooks(f(g(h())))`.
+func (c *K8sClusterClient) Use(hooks ...Hook) {
+	c.hooks.K8sCluster = append(c.hooks.K8sCluster, hooks...)
+}
+
+// Create returns a create builder for K8sCluster.
+func (c *K8sClusterClient) Create() *K8sClusterCreate {
+	mutation := newK8sClusterMutation(c.config, OpCreate)
+	return &K8sClusterCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Update returns an update builder for K8sCluster.
+func (c *K8sClusterClient) Update() *K8sClusterUpdate {
+	mutation := newK8sClusterMutation(c.config, OpUpdate)
+	return &K8sClusterUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *K8sClusterClient) UpdateOne(kc *K8sCluster) *K8sClusterUpdateOne {
+	return c.UpdateOneID(kc.ID)
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *K8sClusterClient) UpdateOneID(id int) *K8sClusterUpdateOne {
+	mutation := newK8sClusterMutation(c.config, OpUpdateOne)
+	mutation.id = &id
+	return &K8sClusterUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for K8sCluster.
+func (c *K8sClusterClient) Delete() *K8sClusterDelete {
+	mutation := newK8sClusterMutation(c.config, OpDelete)
+	return &K8sClusterDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *K8sClusterClient) DeleteOne(kc *K8sCluster) *K8sClusterDeleteOne {
+	return c.DeleteOneID(kc.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *K8sClusterClient) DeleteOneID(id int) *K8sClusterDeleteOne {
+	builder := c.Delete().Where(k8scluster.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &K8sClusterDeleteOne{builder}
+}
+
+// Create returns a query builder for K8sCluster.
+func (c *K8sClusterClient) Query() *K8sClusterQuery {
+	return &K8sClusterQuery{config: c.config}
+}
+
+// Get returns a K8sCluster entity by its id.
+func (c *K8sClusterClient) Get(ctx context.Context, id int) (*K8sCluster, error) {
+	return c.Query().Where(k8scluster.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *K8sClusterClient) GetX(ctx context.Context, id int) *K8sCluster {
+	kc, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return kc
+}
+
+// QueryNamespaces queries the namespaces edge of a K8sCluster.
+func (c *K8sClusterClient) QueryNamespaces(kc *K8sCluster) *NamespaceQuery {
+	query := &NamespaceQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := kc.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(k8scluster.Table, k8scluster.FieldID, id),
+			sqlgraph.To(namespace.Table, namespace.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, k8scluster.NamespacesTable, k8scluster.NamespacesColumn),
+		)
+		fromV = sqlgraph.Neighbors(kc.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *K8sClusterClient) Hooks() []Hook {
+	return c.hooks.K8sCluster
 }
 
 // MenuClient is a client for the Menu schema.
@@ -251,6 +859,121 @@ func (c *MenuClient) Hooks() []Hook {
 	return c.hooks.Menu
 }
 
+// NamespaceClient is a client for the Namespace schema.
+type NamespaceClient struct {
+	config
+}
+
+// NewNamespaceClient returns a client for the Namespace from the given config.
+func NewNamespaceClient(c config) *NamespaceClient {
+	return &NamespaceClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `namespace.Hooks(f(g(h())))`.
+func (c *NamespaceClient) Use(hooks ...Hook) {
+	c.hooks.Namespace = append(c.hooks.Namespace, hooks...)
+}
+
+// Create returns a create builder for Namespace.
+func (c *NamespaceClient) Create() *NamespaceCreate {
+	mutation := newNamespaceMutation(c.config, OpCreate)
+	return &NamespaceCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Update returns an update builder for Namespace.
+func (c *NamespaceClient) Update() *NamespaceUpdate {
+	mutation := newNamespaceMutation(c.config, OpUpdate)
+	return &NamespaceUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *NamespaceClient) UpdateOne(n *Namespace) *NamespaceUpdateOne {
+	return c.UpdateOneID(n.ID)
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *NamespaceClient) UpdateOneID(id int) *NamespaceUpdateOne {
+	mutation := newNamespaceMutation(c.config, OpUpdateOne)
+	mutation.id = &id
+	return &NamespaceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Namespace.
+func (c *NamespaceClient) Delete() *NamespaceDelete {
+	mutation := newNamespaceMutation(c.config, OpDelete)
+	return &NamespaceDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *NamespaceClient) DeleteOne(n *Namespace) *NamespaceDeleteOne {
+	return c.DeleteOneID(n.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *NamespaceClient) DeleteOneID(id int) *NamespaceDeleteOne {
+	builder := c.Delete().Where(namespace.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &NamespaceDeleteOne{builder}
+}
+
+// Create returns a query builder for Namespace.
+func (c *NamespaceClient) Query() *NamespaceQuery {
+	return &NamespaceQuery{config: c.config}
+}
+
+// Get returns a Namespace entity by its id.
+func (c *NamespaceClient) Get(ctx context.Context, id int) (*Namespace, error) {
+	return c.Query().Where(namespace.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *NamespaceClient) GetX(ctx context.Context, id int) *Namespace {
+	n, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return n
+}
+
+// QueryCluster queries the cluster edge of a Namespace.
+func (c *NamespaceClient) QueryCluster(n *Namespace) *K8sClusterQuery {
+	query := &K8sClusterQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := n.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(namespace.Table, namespace.FieldID, id),
+			sqlgraph.To(k8scluster.Table, k8scluster.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, namespace.ClusterTable, namespace.ClusterColumn),
+		)
+		fromV = sqlgraph.Neighbors(n.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryApplications queries the applications edge of a Namespace.
+func (c *NamespaceClient) QueryApplications(n *Namespace) *ApplicationQuery {
+	query := &ApplicationQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := n.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(namespace.Table, namespace.FieldID, id),
+			sqlgraph.To(application.Table, application.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, namespace.ApplicationsTable, namespace.ApplicationsColumn),
+		)
+		fromV = sqlgraph.Neighbors(n.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *NamespaceClient) Hooks() []Hook {
+	return c.hooks.Namespace
+}
+
 // PermissionClient is a client for the Permission schema.
 type PermissionClient struct {
 	config
@@ -332,6 +1055,105 @@ func (c *PermissionClient) GetX(ctx context.Context, id int) *Permission {
 // Hooks returns the client hooks.
 func (c *PermissionClient) Hooks() []Hook {
 	return c.hooks.Permission
+}
+
+// ProjectClient is a client for the Project schema.
+type ProjectClient struct {
+	config
+}
+
+// NewProjectClient returns a client for the Project from the given config.
+func NewProjectClient(c config) *ProjectClient {
+	return &ProjectClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `project.Hooks(f(g(h())))`.
+func (c *ProjectClient) Use(hooks ...Hook) {
+	c.hooks.Project = append(c.hooks.Project, hooks...)
+}
+
+// Create returns a create builder for Project.
+func (c *ProjectClient) Create() *ProjectCreate {
+	mutation := newProjectMutation(c.config, OpCreate)
+	return &ProjectCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Update returns an update builder for Project.
+func (c *ProjectClient) Update() *ProjectUpdate {
+	mutation := newProjectMutation(c.config, OpUpdate)
+	return &ProjectUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ProjectClient) UpdateOne(pr *Project) *ProjectUpdateOne {
+	return c.UpdateOneID(pr.ID)
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ProjectClient) UpdateOneID(id int) *ProjectUpdateOne {
+	mutation := newProjectMutation(c.config, OpUpdateOne)
+	mutation.id = &id
+	return &ProjectUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Project.
+func (c *ProjectClient) Delete() *ProjectDelete {
+	mutation := newProjectMutation(c.config, OpDelete)
+	return &ProjectDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *ProjectClient) DeleteOne(pr *Project) *ProjectDeleteOne {
+	return c.DeleteOneID(pr.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *ProjectClient) DeleteOneID(id int) *ProjectDeleteOne {
+	builder := c.Delete().Where(project.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ProjectDeleteOne{builder}
+}
+
+// Create returns a query builder for Project.
+func (c *ProjectClient) Query() *ProjectQuery {
+	return &ProjectQuery{config: c.config}
+}
+
+// Get returns a Project entity by its id.
+func (c *ProjectClient) Get(ctx context.Context, id int) (*Project, error) {
+	return c.Query().Where(project.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ProjectClient) GetX(ctx context.Context, id int) *Project {
+	pr, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return pr
+}
+
+// QueryApplications queries the applications edge of a Project.
+func (c *ProjectClient) QueryApplications(pr *Project) *ApplicationQuery {
+	query := &ApplicationQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := pr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(project.Table, project.FieldID, id),
+			sqlgraph.To(application.Table, application.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, project.ApplicationsTable, project.ApplicationsColumn),
+		)
+		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ProjectClient) Hooks() []Hook {
+	return c.hooks.Project
 }
 
 // RoleClient is a client for the Role schema.
