@@ -6,9 +6,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/permission"
 	"github.com/lingfohn/lime/ent/predicate"
 )
@@ -16,14 +16,13 @@ import (
 // PermissionDelete is the builder for deleting a Permission entity.
 type PermissionDelete struct {
 	config
-	hooks      []Hook
-	mutation   *PermissionMutation
-	predicates []predicate.Permission
+	hooks    []Hook
+	mutation *PermissionMutation
 }
 
 // Where adds a new predicate to the delete builder.
 func (pd *PermissionDelete) Where(ps ...predicate.Permission) *PermissionDelete {
-	pd.predicates = append(pd.predicates, ps...)
+	pd.mutation.predicates = append(pd.mutation.predicates, ps...)
 	return pd
 }
 
@@ -43,6 +42,7 @@ func (pd *PermissionDelete) Exec(ctx context.Context) (int, error) {
 			}
 			pd.mutation = mutation
 			affected, err = pd.sqlExec(ctx)
+			mutation.done = true
 			return affected, err
 		})
 		for i := len(pd.hooks) - 1; i >= 0; i-- {
@@ -74,7 +74,7 @@ func (pd *PermissionDelete) sqlExec(ctx context.Context) (int, error) {
 			},
 		},
 	}
-	if ps := pd.predicates; len(ps) > 0 {
+	if ps := pd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)

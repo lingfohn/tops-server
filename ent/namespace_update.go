@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/application"
 	"github.com/lingfohn/lime/ent/k8scluster"
 	"github.com/lingfohn/lime/ent/namespace"
@@ -19,20 +19,37 @@ import (
 // NamespaceUpdate is the builder for updating Namespace entities.
 type NamespaceUpdate struct {
 	config
-	hooks      []Hook
-	mutation   *NamespaceMutation
-	predicates []predicate.Namespace
+	hooks    []Hook
+	mutation *NamespaceMutation
 }
 
 // Where adds a new predicate for the builder.
 func (nu *NamespaceUpdate) Where(ps ...predicate.Namespace) *NamespaceUpdate {
-	nu.predicates = append(nu.predicates, ps...)
+	nu.mutation.predicates = append(nu.mutation.predicates, ps...)
 	return nu
 }
 
 // SetName sets the name field.
 func (nu *NamespaceUpdate) SetName(s string) *NamespaceUpdate {
 	nu.mutation.SetName(s)
+	return nu
+}
+
+// SetDockerRepo sets the dockerRepo field.
+func (nu *NamespaceUpdate) SetDockerRepo(s string) *NamespaceUpdate {
+	nu.mutation.SetDockerRepo(s)
+	return nu
+}
+
+// SetRepoNamespace sets the repoNamespace field.
+func (nu *NamespaceUpdate) SetRepoNamespace(s string) *NamespaceUpdate {
+	nu.mutation.SetRepoNamespace(s)
+	return nu
+}
+
+// SetActive sets the active field.
+func (nu *NamespaceUpdate) SetActive(s string) *NamespaceUpdate {
+	nu.mutation.SetActive(s)
 	return nu
 }
 
@@ -76,9 +93,20 @@ func (nu *NamespaceUpdate) AddApplications(a ...*Application) *NamespaceUpdate {
 	return nu.AddApplicationIDs(ids...)
 }
 
-// ClearCluster clears the cluster edge to K8sCluster.
+// Mutation returns the NamespaceMutation object of the builder.
+func (nu *NamespaceUpdate) Mutation() *NamespaceMutation {
+	return nu.mutation
+}
+
+// ClearCluster clears the "cluster" edge to type K8sCluster.
 func (nu *NamespaceUpdate) ClearCluster() *NamespaceUpdate {
 	nu.mutation.ClearCluster()
+	return nu
+}
+
+// ClearApplications clears all "applications" edges to type Application.
+func (nu *NamespaceUpdate) ClearApplications() *NamespaceUpdate {
+	nu.mutation.ClearApplications()
 	return nu
 }
 
@@ -97,17 +125,13 @@ func (nu *NamespaceUpdate) RemoveApplications(a ...*Application) *NamespaceUpdat
 	return nu.RemoveApplicationIDs(ids...)
 }
 
-// Save executes the query and returns the number of rows/vertices matched by this operation.
+// Save executes the query and returns the number of nodes affected by the update operation.
 func (nu *NamespaceUpdate) Save(ctx context.Context) (int, error) {
-	if _, ok := nu.mutation.UpdatedAt(); !ok {
-		v := namespace.UpdateDefaultUpdatedAt()
-		nu.mutation.SetUpdatedAt(v)
-	}
-
 	var (
 		err      error
 		affected int
 	)
+	nu.defaults()
 	if len(nu.hooks) == 0 {
 		affected, err = nu.sqlSave(ctx)
 	} else {
@@ -118,6 +142,7 @@ func (nu *NamespaceUpdate) Save(ctx context.Context) (int, error) {
 			}
 			nu.mutation = mutation
 			affected, err = nu.sqlSave(ctx)
+			mutation.done = true
 			return affected, err
 		})
 		for i := len(nu.hooks) - 1; i >= 0; i-- {
@@ -152,6 +177,14 @@ func (nu *NamespaceUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (nu *NamespaceUpdate) defaults() {
+	if _, ok := nu.mutation.UpdatedAt(); !ok {
+		v := namespace.UpdateDefaultUpdatedAt()
+		nu.mutation.SetUpdatedAt(v)
+	}
+}
+
 func (nu *NamespaceUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
@@ -163,7 +196,7 @@ func (nu *NamespaceUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			},
 		},
 	}
-	if ps := nu.predicates; len(ps) > 0 {
+	if ps := nu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -175,6 +208,27 @@ func (nu *NamespaceUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Type:   field.TypeString,
 			Value:  value,
 			Column: namespace.FieldName,
+		})
+	}
+	if value, ok := nu.mutation.DockerRepo(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: namespace.FieldDockerRepo,
+		})
+	}
+	if value, ok := nu.mutation.RepoNamespace(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: namespace.FieldRepoNamespace,
+		})
+	}
+	if value, ok := nu.mutation.Active(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: namespace.FieldActive,
 		})
 	}
 	if value, ok := nu.mutation.UpdatedAt(); ok {
@@ -219,7 +273,23 @@ func (nu *NamespaceUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := nu.mutation.RemovedApplicationsIDs(); len(nodes) > 0 {
+	if nu.mutation.ApplicationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   namespace.ApplicationsTable,
+			Columns: []string{namespace.ApplicationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: application.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := nu.mutation.RemovedApplicationsIDs(); len(nodes) > 0 && !nu.mutation.ApplicationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -281,6 +351,24 @@ func (nuo *NamespaceUpdateOne) SetName(s string) *NamespaceUpdateOne {
 	return nuo
 }
 
+// SetDockerRepo sets the dockerRepo field.
+func (nuo *NamespaceUpdateOne) SetDockerRepo(s string) *NamespaceUpdateOne {
+	nuo.mutation.SetDockerRepo(s)
+	return nuo
+}
+
+// SetRepoNamespace sets the repoNamespace field.
+func (nuo *NamespaceUpdateOne) SetRepoNamespace(s string) *NamespaceUpdateOne {
+	nuo.mutation.SetRepoNamespace(s)
+	return nuo
+}
+
+// SetActive sets the active field.
+func (nuo *NamespaceUpdateOne) SetActive(s string) *NamespaceUpdateOne {
+	nuo.mutation.SetActive(s)
+	return nuo
+}
+
 // SetUpdatedAt sets the updatedAt field.
 func (nuo *NamespaceUpdateOne) SetUpdatedAt(t time.Time) *NamespaceUpdateOne {
 	nuo.mutation.SetUpdatedAt(t)
@@ -321,9 +409,20 @@ func (nuo *NamespaceUpdateOne) AddApplications(a ...*Application) *NamespaceUpda
 	return nuo.AddApplicationIDs(ids...)
 }
 
-// ClearCluster clears the cluster edge to K8sCluster.
+// Mutation returns the NamespaceMutation object of the builder.
+func (nuo *NamespaceUpdateOne) Mutation() *NamespaceMutation {
+	return nuo.mutation
+}
+
+// ClearCluster clears the "cluster" edge to type K8sCluster.
 func (nuo *NamespaceUpdateOne) ClearCluster() *NamespaceUpdateOne {
 	nuo.mutation.ClearCluster()
+	return nuo
+}
+
+// ClearApplications clears all "applications" edges to type Application.
+func (nuo *NamespaceUpdateOne) ClearApplications() *NamespaceUpdateOne {
+	nuo.mutation.ClearApplications()
 	return nuo
 }
 
@@ -344,15 +443,11 @@ func (nuo *NamespaceUpdateOne) RemoveApplications(a ...*Application) *NamespaceU
 
 // Save executes the query and returns the updated entity.
 func (nuo *NamespaceUpdateOne) Save(ctx context.Context) (*Namespace, error) {
-	if _, ok := nuo.mutation.UpdatedAt(); !ok {
-		v := namespace.UpdateDefaultUpdatedAt()
-		nuo.mutation.SetUpdatedAt(v)
-	}
-
 	var (
 		err  error
 		node *Namespace
 	)
+	nuo.defaults()
 	if len(nuo.hooks) == 0 {
 		node, err = nuo.sqlSave(ctx)
 	} else {
@@ -363,6 +458,7 @@ func (nuo *NamespaceUpdateOne) Save(ctx context.Context) (*Namespace, error) {
 			}
 			nuo.mutation = mutation
 			node, err = nuo.sqlSave(ctx)
+			mutation.done = true
 			return node, err
 		})
 		for i := len(nuo.hooks) - 1; i >= 0; i-- {
@@ -377,11 +473,11 @@ func (nuo *NamespaceUpdateOne) Save(ctx context.Context) (*Namespace, error) {
 
 // SaveX is like Save, but panics if an error occurs.
 func (nuo *NamespaceUpdateOne) SaveX(ctx context.Context) *Namespace {
-	n, err := nuo.Save(ctx)
+	node, err := nuo.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return n
+	return node
 }
 
 // Exec executes the query on the entity.
@@ -397,7 +493,15 @@ func (nuo *NamespaceUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-func (nuo *NamespaceUpdateOne) sqlSave(ctx context.Context) (n *Namespace, err error) {
+// defaults sets the default values of the builder before save.
+func (nuo *NamespaceUpdateOne) defaults() {
+	if _, ok := nuo.mutation.UpdatedAt(); !ok {
+		v := namespace.UpdateDefaultUpdatedAt()
+		nuo.mutation.SetUpdatedAt(v)
+	}
+}
+
+func (nuo *NamespaceUpdateOne) sqlSave(ctx context.Context) (_node *Namespace, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
 			Table:   namespace.Table,
@@ -410,7 +514,7 @@ func (nuo *NamespaceUpdateOne) sqlSave(ctx context.Context) (n *Namespace, err e
 	}
 	id, ok := nuo.mutation.ID()
 	if !ok {
-		return nil, fmt.Errorf("missing Namespace.ID for update")
+		return nil, &ValidationError{Name: "ID", err: fmt.Errorf("missing Namespace.ID for update")}
 	}
 	_spec.Node.ID.Value = id
 	if value, ok := nuo.mutation.Name(); ok {
@@ -418,6 +522,27 @@ func (nuo *NamespaceUpdateOne) sqlSave(ctx context.Context) (n *Namespace, err e
 			Type:   field.TypeString,
 			Value:  value,
 			Column: namespace.FieldName,
+		})
+	}
+	if value, ok := nuo.mutation.DockerRepo(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: namespace.FieldDockerRepo,
+		})
+	}
+	if value, ok := nuo.mutation.RepoNamespace(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: namespace.FieldRepoNamespace,
+		})
+	}
+	if value, ok := nuo.mutation.Active(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: namespace.FieldActive,
 		})
 	}
 	if value, ok := nuo.mutation.UpdatedAt(); ok {
@@ -462,7 +587,23 @@ func (nuo *NamespaceUpdateOne) sqlSave(ctx context.Context) (n *Namespace, err e
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := nuo.mutation.RemovedApplicationsIDs(); len(nodes) > 0 {
+	if nuo.mutation.ApplicationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   namespace.ApplicationsTable,
+			Columns: []string{namespace.ApplicationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: application.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := nuo.mutation.RemovedApplicationsIDs(); len(nodes) > 0 && !nuo.mutation.ApplicationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -500,9 +641,9 @@ func (nuo *NamespaceUpdateOne) sqlSave(ctx context.Context) (n *Namespace, err e
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	n = &Namespace{config: nuo.config}
-	_spec.Assign = n.assignValues
-	_spec.ScanValues = n.scanValues()
+	_node = &Namespace{config: nuo.config}
+	_spec.Assign = _node.assignValues
+	_spec.ScanValues = _node.scanValues()
 	if err = sqlgraph.UpdateNode(ctx, nuo.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{namespace.Label}
@@ -511,5 +652,5 @@ func (nuo *NamespaceUpdateOne) sqlSave(ctx context.Context) (n *Namespace, err e
 		}
 		return nil, err
 	}
-	return n, nil
+	return _node, nil
 }

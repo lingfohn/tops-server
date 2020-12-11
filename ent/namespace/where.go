@@ -5,8 +5,8 @@ package namespace
 import (
 	"time"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
 	"github.com/lingfohn/lime/ent/predicate"
 )
 
@@ -100,6 +100,27 @@ func Name(v string) predicate.Namespace {
 	})
 }
 
+// DockerRepo applies equality check predicate on the "dockerRepo" field. It's identical to DockerRepoEQ.
+func DockerRepo(v string) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldDockerRepo), v))
+	})
+}
+
+// RepoNamespace applies equality check predicate on the "repoNamespace" field. It's identical to RepoNamespaceEQ.
+func RepoNamespace(v string) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldRepoNamespace), v))
+	})
+}
+
+// Active applies equality check predicate on the "active" field. It's identical to ActiveEQ.
+func Active(v string) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldActive), v))
+	})
+}
+
 // CreatedAt applies equality check predicate on the "createdAt" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.Namespace {
 	return predicate.Namespace(func(s *sql.Selector) {
@@ -137,7 +158,7 @@ func NameIn(vs ...string) predicate.Namespace {
 	return predicate.Namespace(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -154,7 +175,7 @@ func NameNotIn(vs ...string) predicate.Namespace {
 	return predicate.Namespace(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -225,6 +246,339 @@ func NameContainsFold(v string) predicate.Namespace {
 	})
 }
 
+// DockerRepoEQ applies the EQ predicate on the "dockerRepo" field.
+func DockerRepoEQ(v string) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldDockerRepo), v))
+	})
+}
+
+// DockerRepoNEQ applies the NEQ predicate on the "dockerRepo" field.
+func DockerRepoNEQ(v string) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldDockerRepo), v))
+	})
+}
+
+// DockerRepoIn applies the In predicate on the "dockerRepo" field.
+func DockerRepoIn(vs ...string) predicate.Namespace {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Namespace(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldDockerRepo), v...))
+	})
+}
+
+// DockerRepoNotIn applies the NotIn predicate on the "dockerRepo" field.
+func DockerRepoNotIn(vs ...string) predicate.Namespace {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Namespace(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldDockerRepo), v...))
+	})
+}
+
+// DockerRepoGT applies the GT predicate on the "dockerRepo" field.
+func DockerRepoGT(v string) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldDockerRepo), v))
+	})
+}
+
+// DockerRepoGTE applies the GTE predicate on the "dockerRepo" field.
+func DockerRepoGTE(v string) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldDockerRepo), v))
+	})
+}
+
+// DockerRepoLT applies the LT predicate on the "dockerRepo" field.
+func DockerRepoLT(v string) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldDockerRepo), v))
+	})
+}
+
+// DockerRepoLTE applies the LTE predicate on the "dockerRepo" field.
+func DockerRepoLTE(v string) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldDockerRepo), v))
+	})
+}
+
+// DockerRepoContains applies the Contains predicate on the "dockerRepo" field.
+func DockerRepoContains(v string) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		s.Where(sql.Contains(s.C(FieldDockerRepo), v))
+	})
+}
+
+// DockerRepoHasPrefix applies the HasPrefix predicate on the "dockerRepo" field.
+func DockerRepoHasPrefix(v string) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		s.Where(sql.HasPrefix(s.C(FieldDockerRepo), v))
+	})
+}
+
+// DockerRepoHasSuffix applies the HasSuffix predicate on the "dockerRepo" field.
+func DockerRepoHasSuffix(v string) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		s.Where(sql.HasSuffix(s.C(FieldDockerRepo), v))
+	})
+}
+
+// DockerRepoEqualFold applies the EqualFold predicate on the "dockerRepo" field.
+func DockerRepoEqualFold(v string) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		s.Where(sql.EqualFold(s.C(FieldDockerRepo), v))
+	})
+}
+
+// DockerRepoContainsFold applies the ContainsFold predicate on the "dockerRepo" field.
+func DockerRepoContainsFold(v string) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		s.Where(sql.ContainsFold(s.C(FieldDockerRepo), v))
+	})
+}
+
+// RepoNamespaceEQ applies the EQ predicate on the "repoNamespace" field.
+func RepoNamespaceEQ(v string) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldRepoNamespace), v))
+	})
+}
+
+// RepoNamespaceNEQ applies the NEQ predicate on the "repoNamespace" field.
+func RepoNamespaceNEQ(v string) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldRepoNamespace), v))
+	})
+}
+
+// RepoNamespaceIn applies the In predicate on the "repoNamespace" field.
+func RepoNamespaceIn(vs ...string) predicate.Namespace {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Namespace(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldRepoNamespace), v...))
+	})
+}
+
+// RepoNamespaceNotIn applies the NotIn predicate on the "repoNamespace" field.
+func RepoNamespaceNotIn(vs ...string) predicate.Namespace {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Namespace(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldRepoNamespace), v...))
+	})
+}
+
+// RepoNamespaceGT applies the GT predicate on the "repoNamespace" field.
+func RepoNamespaceGT(v string) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldRepoNamespace), v))
+	})
+}
+
+// RepoNamespaceGTE applies the GTE predicate on the "repoNamespace" field.
+func RepoNamespaceGTE(v string) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldRepoNamespace), v))
+	})
+}
+
+// RepoNamespaceLT applies the LT predicate on the "repoNamespace" field.
+func RepoNamespaceLT(v string) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldRepoNamespace), v))
+	})
+}
+
+// RepoNamespaceLTE applies the LTE predicate on the "repoNamespace" field.
+func RepoNamespaceLTE(v string) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldRepoNamespace), v))
+	})
+}
+
+// RepoNamespaceContains applies the Contains predicate on the "repoNamespace" field.
+func RepoNamespaceContains(v string) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		s.Where(sql.Contains(s.C(FieldRepoNamespace), v))
+	})
+}
+
+// RepoNamespaceHasPrefix applies the HasPrefix predicate on the "repoNamespace" field.
+func RepoNamespaceHasPrefix(v string) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		s.Where(sql.HasPrefix(s.C(FieldRepoNamespace), v))
+	})
+}
+
+// RepoNamespaceHasSuffix applies the HasSuffix predicate on the "repoNamespace" field.
+func RepoNamespaceHasSuffix(v string) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		s.Where(sql.HasSuffix(s.C(FieldRepoNamespace), v))
+	})
+}
+
+// RepoNamespaceEqualFold applies the EqualFold predicate on the "repoNamespace" field.
+func RepoNamespaceEqualFold(v string) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		s.Where(sql.EqualFold(s.C(FieldRepoNamespace), v))
+	})
+}
+
+// RepoNamespaceContainsFold applies the ContainsFold predicate on the "repoNamespace" field.
+func RepoNamespaceContainsFold(v string) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		s.Where(sql.ContainsFold(s.C(FieldRepoNamespace), v))
+	})
+}
+
+// ActiveEQ applies the EQ predicate on the "active" field.
+func ActiveEQ(v string) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldActive), v))
+	})
+}
+
+// ActiveNEQ applies the NEQ predicate on the "active" field.
+func ActiveNEQ(v string) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldActive), v))
+	})
+}
+
+// ActiveIn applies the In predicate on the "active" field.
+func ActiveIn(vs ...string) predicate.Namespace {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Namespace(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldActive), v...))
+	})
+}
+
+// ActiveNotIn applies the NotIn predicate on the "active" field.
+func ActiveNotIn(vs ...string) predicate.Namespace {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Namespace(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldActive), v...))
+	})
+}
+
+// ActiveGT applies the GT predicate on the "active" field.
+func ActiveGT(v string) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldActive), v))
+	})
+}
+
+// ActiveGTE applies the GTE predicate on the "active" field.
+func ActiveGTE(v string) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldActive), v))
+	})
+}
+
+// ActiveLT applies the LT predicate on the "active" field.
+func ActiveLT(v string) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldActive), v))
+	})
+}
+
+// ActiveLTE applies the LTE predicate on the "active" field.
+func ActiveLTE(v string) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldActive), v))
+	})
+}
+
+// ActiveContains applies the Contains predicate on the "active" field.
+func ActiveContains(v string) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		s.Where(sql.Contains(s.C(FieldActive), v))
+	})
+}
+
+// ActiveHasPrefix applies the HasPrefix predicate on the "active" field.
+func ActiveHasPrefix(v string) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		s.Where(sql.HasPrefix(s.C(FieldActive), v))
+	})
+}
+
+// ActiveHasSuffix applies the HasSuffix predicate on the "active" field.
+func ActiveHasSuffix(v string) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		s.Where(sql.HasSuffix(s.C(FieldActive), v))
+	})
+}
+
+// ActiveEqualFold applies the EqualFold predicate on the "active" field.
+func ActiveEqualFold(v string) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		s.Where(sql.EqualFold(s.C(FieldActive), v))
+	})
+}
+
+// ActiveContainsFold applies the ContainsFold predicate on the "active" field.
+func ActiveContainsFold(v string) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		s.Where(sql.ContainsFold(s.C(FieldActive), v))
+	})
+}
+
 // CreatedAtEQ applies the EQ predicate on the "createdAt" field.
 func CreatedAtEQ(v time.Time) predicate.Namespace {
 	return predicate.Namespace(func(s *sql.Selector) {
@@ -248,7 +602,7 @@ func CreatedAtIn(vs ...time.Time) predicate.Namespace {
 	return predicate.Namespace(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -265,7 +619,7 @@ func CreatedAtNotIn(vs ...time.Time) predicate.Namespace {
 	return predicate.Namespace(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -324,7 +678,7 @@ func UpdatedAtIn(vs ...time.Time) predicate.Namespace {
 	return predicate.Namespace(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -341,7 +695,7 @@ func UpdatedAtNotIn(vs ...time.Time) predicate.Namespace {
 	return predicate.Namespace(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}

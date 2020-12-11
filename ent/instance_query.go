@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/application"
 	"github.com/lingfohn/lime/ent/build"
 	"github.com/lingfohn/lime/ent/helmconfig"
@@ -24,7 +24,7 @@ type InstanceQuery struct {
 	config
 	limit      *int
 	offset     *int
-	order      []Order
+	order      []OrderFunc
 	unique     []string
 	predicates []predicate.Instance
 	// eager-loading edges.
@@ -56,7 +56,7 @@ func (iq *InstanceQuery) Offset(offset int) *InstanceQuery {
 }
 
 // Order adds an order step to the query.
-func (iq *InstanceQuery) Order(o ...Order) *InstanceQuery {
+func (iq *InstanceQuery) Order(o ...OrderFunc) *InstanceQuery {
 	iq.order = append(iq.order, o...)
 	return iq
 }
@@ -68,8 +68,12 @@ func (iq *InstanceQuery) QueryApplication() *ApplicationQuery {
 		if err := iq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
+		selector := iq.sqlQuery()
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(instance.Table, instance.FieldID, iq.sqlQuery()),
+			sqlgraph.From(instance.Table, instance.FieldID, selector),
 			sqlgraph.To(application.Table, application.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, instance.ApplicationTable, instance.ApplicationColumn),
 		)
@@ -86,8 +90,12 @@ func (iq *InstanceQuery) QueryBuilds() *BuildQuery {
 		if err := iq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
+		selector := iq.sqlQuery()
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(instance.Table, instance.FieldID, iq.sqlQuery()),
+			sqlgraph.From(instance.Table, instance.FieldID, selector),
 			sqlgraph.To(build.Table, build.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, instance.BuildsTable, instance.BuildsColumn),
 		)
@@ -104,8 +112,12 @@ func (iq *InstanceQuery) QueryConfig() *HelmConfigQuery {
 		if err := iq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
+		selector := iq.sqlQuery()
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(instance.Table, instance.FieldID, iq.sqlQuery()),
+			sqlgraph.From(instance.Table, instance.FieldID, selector),
 			sqlgraph.To(helmconfig.Table, helmconfig.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, instance.ConfigTable, instance.ConfigColumn),
 		)
@@ -117,23 +129,23 @@ func (iq *InstanceQuery) QueryConfig() *HelmConfigQuery {
 
 // First returns the first Instance entity in the query. Returns *NotFoundError when no instance was found.
 func (iq *InstanceQuery) First(ctx context.Context) (*Instance, error) {
-	is, err := iq.Limit(1).All(ctx)
+	nodes, err := iq.Limit(1).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if len(is) == 0 {
+	if len(nodes) == 0 {
 		return nil, &NotFoundError{instance.Label}
 	}
-	return is[0], nil
+	return nodes[0], nil
 }
 
 // FirstX is like First, but panics if an error occurs.
 func (iq *InstanceQuery) FirstX(ctx context.Context) *Instance {
-	i, err := iq.First(ctx)
+	node, err := iq.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
-	return i
+	return node
 }
 
 // FirstID returns the first Instance id in the query. Returns *NotFoundError when no id was found.
@@ -149,8 +161,8 @@ func (iq *InstanceQuery) FirstID(ctx context.Context) (id int, err error) {
 	return ids[0], nil
 }
 
-// FirstXID is like FirstID, but panics if an error occurs.
-func (iq *InstanceQuery) FirstXID(ctx context.Context) int {
+// FirstIDX is like FirstID, but panics if an error occurs.
+func (iq *InstanceQuery) FirstIDX(ctx context.Context) int {
 	id, err := iq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -160,13 +172,13 @@ func (iq *InstanceQuery) FirstXID(ctx context.Context) int {
 
 // Only returns the only Instance entity in the query, returns an error if not exactly one entity was returned.
 func (iq *InstanceQuery) Only(ctx context.Context) (*Instance, error) {
-	is, err := iq.Limit(2).All(ctx)
+	nodes, err := iq.Limit(2).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	switch len(is) {
+	switch len(nodes) {
 	case 1:
-		return is[0], nil
+		return nodes[0], nil
 	case 0:
 		return nil, &NotFoundError{instance.Label}
 	default:
@@ -176,11 +188,11 @@ func (iq *InstanceQuery) Only(ctx context.Context) (*Instance, error) {
 
 // OnlyX is like Only, but panics if an error occurs.
 func (iq *InstanceQuery) OnlyX(ctx context.Context) *Instance {
-	i, err := iq.Only(ctx)
+	node, err := iq.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return i
+	return node
 }
 
 // OnlyID returns the only Instance id in the query, returns an error if not exactly one id was returned.
@@ -200,8 +212,8 @@ func (iq *InstanceQuery) OnlyID(ctx context.Context) (id int, err error) {
 	return
 }
 
-// OnlyXID is like OnlyID, but panics if an error occurs.
-func (iq *InstanceQuery) OnlyXID(ctx context.Context) int {
+// OnlyIDX is like OnlyID, but panics if an error occurs.
+func (iq *InstanceQuery) OnlyIDX(ctx context.Context) int {
 	id, err := iq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -219,11 +231,11 @@ func (iq *InstanceQuery) All(ctx context.Context) ([]*Instance, error) {
 
 // AllX is like All, but panics if an error occurs.
 func (iq *InstanceQuery) AllX(ctx context.Context) []*Instance {
-	is, err := iq.All(ctx)
+	nodes, err := iq.All(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return is
+	return nodes
 }
 
 // IDs executes the query and returns a list of Instance ids.
@@ -281,13 +293,19 @@ func (iq *InstanceQuery) ExistX(ctx context.Context) bool {
 // Clone returns a duplicate of the query builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
 func (iq *InstanceQuery) Clone() *InstanceQuery {
+	if iq == nil {
+		return nil
+	}
 	return &InstanceQuery{
-		config:     iq.config,
-		limit:      iq.limit,
-		offset:     iq.offset,
-		order:      append([]Order{}, iq.order...),
-		unique:     append([]string{}, iq.unique...),
-		predicates: append([]predicate.Instance{}, iq.predicates...),
+		config:          iq.config,
+		limit:           iq.limit,
+		offset:          iq.offset,
+		order:           append([]OrderFunc{}, iq.order...),
+		unique:          append([]string{}, iq.unique...),
+		predicates:      append([]predicate.Instance{}, iq.predicates...),
+		withApplication: iq.withApplication.Clone(),
+		withBuilds:      iq.withBuilds.Clone(),
+		withConfig:      iq.withConfig.Clone(),
 		// clone intermediate query.
 		sql:  iq.sql.Clone(),
 		path: iq.path,
@@ -461,6 +479,7 @@ func (iq *InstanceQuery) sqlAll(ctx context.Context) ([]*Instance, error) {
 		for i := range nodes {
 			fks = append(fks, nodes[i].ID)
 			nodeids[nodes[i].ID] = nodes[i]
+			nodes[i].Edges.Builds = []*Build{}
 		}
 		query.withFKs = true
 		query.Where(predicate.Build(func(s *sql.Selector) {
@@ -553,7 +572,7 @@ func (iq *InstanceQuery) querySpec() *sqlgraph.QuerySpec {
 	if ps := iq.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
-				ps[i](selector)
+				ps[i](selector, instance.ValidColumn)
 			}
 		}
 	}
@@ -572,7 +591,7 @@ func (iq *InstanceQuery) sqlQuery() *sql.Selector {
 		p(selector)
 	}
 	for _, p := range iq.order {
-		p(selector)
+		p(selector, instance.ValidColumn)
 	}
 	if offset := iq.offset; offset != nil {
 		// limit is mandatory for offset clause. We start
@@ -589,14 +608,14 @@ func (iq *InstanceQuery) sqlQuery() *sql.Selector {
 type InstanceGroupBy struct {
 	config
 	fields []string
-	fns    []Aggregate
+	fns    []AggregateFunc
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (igb *InstanceGroupBy) Aggregate(fns ...Aggregate) *InstanceGroupBy {
+func (igb *InstanceGroupBy) Aggregate(fns ...AggregateFunc) *InstanceGroupBy {
 	igb.fns = append(igb.fns, fns...)
 	return igb
 }
@@ -639,6 +658,32 @@ func (igb *InstanceGroupBy) StringsX(ctx context.Context) []string {
 	return v
 }
 
+// String returns a single string from group-by. It is only allowed when querying group-by with one field.
+func (igb *InstanceGroupBy) String(ctx context.Context) (_ string, err error) {
+	var v []string
+	if v, err = igb.Strings(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{instance.Label}
+	default:
+		err = fmt.Errorf("ent: InstanceGroupBy.Strings returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// StringX is like String, but panics if an error occurs.
+func (igb *InstanceGroupBy) StringX(ctx context.Context) string {
+	v, err := igb.String(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // Ints returns list of ints from group-by. It is only allowed when querying group-by with one field.
 func (igb *InstanceGroupBy) Ints(ctx context.Context) ([]int, error) {
 	if len(igb.fields) > 1 {
@@ -654,6 +699,32 @@ func (igb *InstanceGroupBy) Ints(ctx context.Context) ([]int, error) {
 // IntsX is like Ints, but panics if an error occurs.
 func (igb *InstanceGroupBy) IntsX(ctx context.Context) []int {
 	v, err := igb.Ints(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// Int returns a single int from group-by. It is only allowed when querying group-by with one field.
+func (igb *InstanceGroupBy) Int(ctx context.Context) (_ int, err error) {
+	var v []int
+	if v, err = igb.Ints(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{instance.Label}
+	default:
+		err = fmt.Errorf("ent: InstanceGroupBy.Ints returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// IntX is like Int, but panics if an error occurs.
+func (igb *InstanceGroupBy) IntX(ctx context.Context) int {
+	v, err := igb.Int(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -681,6 +752,32 @@ func (igb *InstanceGroupBy) Float64sX(ctx context.Context) []float64 {
 	return v
 }
 
+// Float64 returns a single float64 from group-by. It is only allowed when querying group-by with one field.
+func (igb *InstanceGroupBy) Float64(ctx context.Context) (_ float64, err error) {
+	var v []float64
+	if v, err = igb.Float64s(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{instance.Label}
+	default:
+		err = fmt.Errorf("ent: InstanceGroupBy.Float64s returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// Float64X is like Float64, but panics if an error occurs.
+func (igb *InstanceGroupBy) Float64X(ctx context.Context) float64 {
+	v, err := igb.Float64(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // Bools returns list of bools from group-by. It is only allowed when querying group-by with one field.
 func (igb *InstanceGroupBy) Bools(ctx context.Context) ([]bool, error) {
 	if len(igb.fields) > 1 {
@@ -702,9 +799,44 @@ func (igb *InstanceGroupBy) BoolsX(ctx context.Context) []bool {
 	return v
 }
 
+// Bool returns a single bool from group-by. It is only allowed when querying group-by with one field.
+func (igb *InstanceGroupBy) Bool(ctx context.Context) (_ bool, err error) {
+	var v []bool
+	if v, err = igb.Bools(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{instance.Label}
+	default:
+		err = fmt.Errorf("ent: InstanceGroupBy.Bools returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// BoolX is like Bool, but panics if an error occurs.
+func (igb *InstanceGroupBy) BoolX(ctx context.Context) bool {
+	v, err := igb.Bool(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 func (igb *InstanceGroupBy) sqlScan(ctx context.Context, v interface{}) error {
+	for _, f := range igb.fields {
+		if !instance.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
+		}
+	}
+	selector := igb.sqlQuery()
+	if err := selector.Err(); err != nil {
+		return err
+	}
 	rows := &sql.Rows{}
-	query, args := igb.sqlQuery().Query()
+	query, args := selector.Query()
 	if err := igb.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
@@ -717,7 +849,7 @@ func (igb *InstanceGroupBy) sqlQuery() *sql.Selector {
 	columns := make([]string, 0, len(igb.fields)+len(igb.fns))
 	columns = append(columns, igb.fields...)
 	for _, fn := range igb.fns {
-		columns = append(columns, fn(selector))
+		columns = append(columns, fn(selector, instance.ValidColumn))
 	}
 	return selector.Select(columns...).GroupBy(igb.fields...)
 }
@@ -769,6 +901,32 @@ func (is *InstanceSelect) StringsX(ctx context.Context) []string {
 	return v
 }
 
+// String returns a single string from selector. It is only allowed when selecting one field.
+func (is *InstanceSelect) String(ctx context.Context) (_ string, err error) {
+	var v []string
+	if v, err = is.Strings(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{instance.Label}
+	default:
+		err = fmt.Errorf("ent: InstanceSelect.Strings returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// StringX is like String, but panics if an error occurs.
+func (is *InstanceSelect) StringX(ctx context.Context) string {
+	v, err := is.String(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // Ints returns list of ints from selector. It is only allowed when selecting one field.
 func (is *InstanceSelect) Ints(ctx context.Context) ([]int, error) {
 	if len(is.fields) > 1 {
@@ -784,6 +942,32 @@ func (is *InstanceSelect) Ints(ctx context.Context) ([]int, error) {
 // IntsX is like Ints, but panics if an error occurs.
 func (is *InstanceSelect) IntsX(ctx context.Context) []int {
 	v, err := is.Ints(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// Int returns a single int from selector. It is only allowed when selecting one field.
+func (is *InstanceSelect) Int(ctx context.Context) (_ int, err error) {
+	var v []int
+	if v, err = is.Ints(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{instance.Label}
+	default:
+		err = fmt.Errorf("ent: InstanceSelect.Ints returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// IntX is like Int, but panics if an error occurs.
+func (is *InstanceSelect) IntX(ctx context.Context) int {
+	v, err := is.Int(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -811,6 +995,32 @@ func (is *InstanceSelect) Float64sX(ctx context.Context) []float64 {
 	return v
 }
 
+// Float64 returns a single float64 from selector. It is only allowed when selecting one field.
+func (is *InstanceSelect) Float64(ctx context.Context) (_ float64, err error) {
+	var v []float64
+	if v, err = is.Float64s(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{instance.Label}
+	default:
+		err = fmt.Errorf("ent: InstanceSelect.Float64s returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// Float64X is like Float64, but panics if an error occurs.
+func (is *InstanceSelect) Float64X(ctx context.Context) float64 {
+	v, err := is.Float64(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // Bools returns list of bools from selector. It is only allowed when selecting one field.
 func (is *InstanceSelect) Bools(ctx context.Context) ([]bool, error) {
 	if len(is.fields) > 1 {
@@ -832,7 +1042,38 @@ func (is *InstanceSelect) BoolsX(ctx context.Context) []bool {
 	return v
 }
 
+// Bool returns a single bool from selector. It is only allowed when selecting one field.
+func (is *InstanceSelect) Bool(ctx context.Context) (_ bool, err error) {
+	var v []bool
+	if v, err = is.Bools(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{instance.Label}
+	default:
+		err = fmt.Errorf("ent: InstanceSelect.Bools returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// BoolX is like Bool, but panics if an error occurs.
+func (is *InstanceSelect) BoolX(ctx context.Context) bool {
+	v, err := is.Bool(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 func (is *InstanceSelect) sqlScan(ctx context.Context, v interface{}) error {
+	for _, f := range is.fields {
+		if !instance.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for selection", f)}
+		}
+	}
 	rows := &sql.Rows{}
 	query, args := is.sqlQuery().Query()
 	if err := is.driver.Query(ctx, query, args, rows); err != nil {

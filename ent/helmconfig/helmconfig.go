@@ -10,18 +10,29 @@ const (
 	// Label holds the string label denoting the helmconfig type in the database.
 	Label = "helm_config"
 	// FieldID holds the string denoting the id field in the database.
-	FieldID            = "id"            // FieldChartVersion holds the string denoting the chartversion vertex property in the database.
-	FieldChartVersion  = "chartVersion"  // FieldActive holds the string denoting the active vertex property in the database.
-	FieldActive        = "active"        // FieldEnableService holds the string denoting the enableservice vertex property in the database.
-	FieldEnableService = "enableServcie" // FieldServiceType holds the string denoting the servicetype vertex property in the database.
-	FieldServiceType   = "serviceType"   // FieldNodePort holds the string denoting the nodeport vertex property in the database.
-	FieldNodePort      = "nodePort"      // FieldLimitMem holds the string denoting the limitmem vertex property in the database.
-	FieldLimitMem      = "limitMem"      // FieldLimitCPU holds the string denoting the limitcpu vertex property in the database.
-	FieldLimitCPU      = "limitCPU"      // FieldReqCPU holds the string denoting the reqcpu vertex property in the database.
-	FieldReqCPU        = "reqCPU"        // FieldReqMem holds the string denoting the reqmem vertex property in the database.
-	FieldReqMem        = "reqMem"        // FieldCreatedAt holds the string denoting the createdat vertex property in the database.
-	FieldCreatedAt     = "createdAt"     // FieldUpdatedAt holds the string denoting the updatedat vertex property in the database.
-	FieldUpdatedAt     = "updatedAt"
+	FieldID = "id"
+	// FieldChartVersion holds the string denoting the chartversion field in the database.
+	FieldChartVersion = "chartVersion"
+	// FieldActive holds the string denoting the active field in the database.
+	FieldActive = "active"
+	// FieldEnableService holds the string denoting the enableservice field in the database.
+	FieldEnableService = "enableServcie"
+	// FieldServiceType holds the string denoting the servicetype field in the database.
+	FieldServiceType = "serviceType"
+	// FieldNodePort holds the string denoting the nodeport field in the database.
+	FieldNodePort = "nodePort"
+	// FieldLimitMem holds the string denoting the limitmem field in the database.
+	FieldLimitMem = "limitMem"
+	// FieldLimitCPU holds the string denoting the limitcpu field in the database.
+	FieldLimitCPU = "limitCPU"
+	// FieldReqCPU holds the string denoting the reqcpu field in the database.
+	FieldReqCPU = "reqCPU"
+	// FieldReqMem holds the string denoting the reqmem field in the database.
+	FieldReqMem = "reqMem"
+	// FieldCreatedAt holds the string denoting the createdat field in the database.
+	FieldCreatedAt = "createdAt"
+	// FieldUpdatedAt holds the string denoting the updatedat field in the database.
+	FieldUpdatedAt = "updatedAt"
 
 	// Table holds the table name of the helmconfig in the database.
 	Table = "helm_configs"
@@ -41,6 +52,16 @@ var Columns = []string{
 	FieldReqMem,
 	FieldCreatedAt,
 	FieldUpdatedAt,
+}
+
+// ValidColumn reports if the column name is valid (part of the table columns).
+func ValidColumn(column string) bool {
+	for i := range Columns {
+		if column == Columns[i] {
+			return true
+		}
+	}
+	return false
 }
 
 var (

@@ -6,9 +6,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/menu"
 	"github.com/lingfohn/lime/ent/predicate"
 )
@@ -16,14 +16,13 @@ import (
 // MenuDelete is the builder for deleting a Menu entity.
 type MenuDelete struct {
 	config
-	hooks      []Hook
-	mutation   *MenuMutation
-	predicates []predicate.Menu
+	hooks    []Hook
+	mutation *MenuMutation
 }
 
 // Where adds a new predicate to the delete builder.
 func (md *MenuDelete) Where(ps ...predicate.Menu) *MenuDelete {
-	md.predicates = append(md.predicates, ps...)
+	md.mutation.predicates = append(md.mutation.predicates, ps...)
 	return md
 }
 
@@ -43,6 +42,7 @@ func (md *MenuDelete) Exec(ctx context.Context) (int, error) {
 			}
 			md.mutation = mutation
 			affected, err = md.sqlExec(ctx)
+			mutation.done = true
 			return affected, err
 		})
 		for i := len(md.hooks) - 1; i >= 0; i-- {
@@ -74,7 +74,7 @@ func (md *MenuDelete) sqlExec(ctx context.Context) (int, error) {
 			},
 		},
 	}
-	if ps := md.predicates; len(ps) > 0 {
+	if ps := md.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)

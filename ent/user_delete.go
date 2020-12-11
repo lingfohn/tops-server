@@ -6,9 +6,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/predicate"
 	"github.com/lingfohn/lime/ent/user"
 )
@@ -16,14 +16,13 @@ import (
 // UserDelete is the builder for deleting a User entity.
 type UserDelete struct {
 	config
-	hooks      []Hook
-	mutation   *UserMutation
-	predicates []predicate.User
+	hooks    []Hook
+	mutation *UserMutation
 }
 
 // Where adds a new predicate to the delete builder.
 func (ud *UserDelete) Where(ps ...predicate.User) *UserDelete {
-	ud.predicates = append(ud.predicates, ps...)
+	ud.mutation.predicates = append(ud.mutation.predicates, ps...)
 	return ud
 }
 
@@ -43,6 +42,7 @@ func (ud *UserDelete) Exec(ctx context.Context) (int, error) {
 			}
 			ud.mutation = mutation
 			affected, err = ud.sqlExec(ctx)
+			mutation.done = true
 			return affected, err
 		})
 		for i := len(ud.hooks) - 1; i >= 0; i-- {
@@ -74,7 +74,7 @@ func (ud *UserDelete) sqlExec(ctx context.Context) (int, error) {
 			},
 		},
 	}
-	if ps := ud.predicates; len(ps) > 0 {
+	if ps := ud.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)

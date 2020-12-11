@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/build"
 	"github.com/lingfohn/lime/ent/instance"
 	"github.com/lingfohn/lime/ent/predicate"
@@ -21,7 +21,7 @@ type BuildQuery struct {
 	config
 	limit      *int
 	offset     *int
-	order      []Order
+	order      []OrderFunc
 	unique     []string
 	predicates []predicate.Build
 	// eager-loading edges.
@@ -51,7 +51,7 @@ func (bq *BuildQuery) Offset(offset int) *BuildQuery {
 }
 
 // Order adds an order step to the query.
-func (bq *BuildQuery) Order(o ...Order) *BuildQuery {
+func (bq *BuildQuery) Order(o ...OrderFunc) *BuildQuery {
 	bq.order = append(bq.order, o...)
 	return bq
 }
@@ -63,8 +63,12 @@ func (bq *BuildQuery) QueryInstance() *InstanceQuery {
 		if err := bq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
+		selector := bq.sqlQuery()
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(build.Table, build.FieldID, bq.sqlQuery()),
+			sqlgraph.From(build.Table, build.FieldID, selector),
 			sqlgraph.To(instance.Table, instance.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, build.InstanceTable, build.InstanceColumn),
 		)
@@ -76,23 +80,23 @@ func (bq *BuildQuery) QueryInstance() *InstanceQuery {
 
 // First returns the first Build entity in the query. Returns *NotFoundError when no build was found.
 func (bq *BuildQuery) First(ctx context.Context) (*Build, error) {
-	bs, err := bq.Limit(1).All(ctx)
+	nodes, err := bq.Limit(1).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if len(bs) == 0 {
+	if len(nodes) == 0 {
 		return nil, &NotFoundError{build.Label}
 	}
-	return bs[0], nil
+	return nodes[0], nil
 }
 
 // FirstX is like First, but panics if an error occurs.
 func (bq *BuildQuery) FirstX(ctx context.Context) *Build {
-	b, err := bq.First(ctx)
+	node, err := bq.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
-	return b
+	return node
 }
 
 // FirstID returns the first Build id in the query. Returns *NotFoundError when no id was found.
@@ -108,8 +112,8 @@ func (bq *BuildQuery) FirstID(ctx context.Context) (id int, err error) {
 	return ids[0], nil
 }
 
-// FirstXID is like FirstID, but panics if an error occurs.
-func (bq *BuildQuery) FirstXID(ctx context.Context) int {
+// FirstIDX is like FirstID, but panics if an error occurs.
+func (bq *BuildQuery) FirstIDX(ctx context.Context) int {
 	id, err := bq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -119,13 +123,13 @@ func (bq *BuildQuery) FirstXID(ctx context.Context) int {
 
 // Only returns the only Build entity in the query, returns an error if not exactly one entity was returned.
 func (bq *BuildQuery) Only(ctx context.Context) (*Build, error) {
-	bs, err := bq.Limit(2).All(ctx)
+	nodes, err := bq.Limit(2).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	switch len(bs) {
+	switch len(nodes) {
 	case 1:
-		return bs[0], nil
+		return nodes[0], nil
 	case 0:
 		return nil, &NotFoundError{build.Label}
 	default:
@@ -135,11 +139,11 @@ func (bq *BuildQuery) Only(ctx context.Context) (*Build, error) {
 
 // OnlyX is like Only, but panics if an error occurs.
 func (bq *BuildQuery) OnlyX(ctx context.Context) *Build {
-	b, err := bq.Only(ctx)
+	node, err := bq.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return b
+	return node
 }
 
 // OnlyID returns the only Build id in the query, returns an error if not exactly one id was returned.
@@ -159,8 +163,8 @@ func (bq *BuildQuery) OnlyID(ctx context.Context) (id int, err error) {
 	return
 }
 
-// OnlyXID is like OnlyID, but panics if an error occurs.
-func (bq *BuildQuery) OnlyXID(ctx context.Context) int {
+// OnlyIDX is like OnlyID, but panics if an error occurs.
+func (bq *BuildQuery) OnlyIDX(ctx context.Context) int {
 	id, err := bq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -178,11 +182,11 @@ func (bq *BuildQuery) All(ctx context.Context) ([]*Build, error) {
 
 // AllX is like All, but panics if an error occurs.
 func (bq *BuildQuery) AllX(ctx context.Context) []*Build {
-	bs, err := bq.All(ctx)
+	nodes, err := bq.All(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return bs
+	return nodes
 }
 
 // IDs executes the query and returns a list of Build ids.
@@ -240,13 +244,17 @@ func (bq *BuildQuery) ExistX(ctx context.Context) bool {
 // Clone returns a duplicate of the query builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
 func (bq *BuildQuery) Clone() *BuildQuery {
+	if bq == nil {
+		return nil
+	}
 	return &BuildQuery{
-		config:     bq.config,
-		limit:      bq.limit,
-		offset:     bq.offset,
-		order:      append([]Order{}, bq.order...),
-		unique:     append([]string{}, bq.unique...),
-		predicates: append([]predicate.Build{}, bq.predicates...),
+		config:       bq.config,
+		limit:        bq.limit,
+		offset:       bq.offset,
+		order:        append([]OrderFunc{}, bq.order...),
+		unique:       append([]string{}, bq.unique...),
+		predicates:   append([]predicate.Build{}, bq.predicates...),
+		withInstance: bq.withInstance.Clone(),
 		// clone intermediate query.
 		sql:  bq.sql.Clone(),
 		path: bq.path,
@@ -270,12 +278,12 @@ func (bq *BuildQuery) WithInstance(opts ...func(*InstanceQuery)) *BuildQuery {
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		Tag string `json:"tag"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Build.Query().
-//		GroupBy(build.FieldName).
+//		GroupBy(build.FieldTag).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 //
@@ -296,11 +304,11 @@ func (bq *BuildQuery) GroupBy(field string, fields ...string) *BuildGroupBy {
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		Tag string `json:"tag"`
 //	}
 //
 //	client.Build.Query().
-//		Select(build.FieldName).
+//		Select(build.FieldTag).
 //		Scan(ctx, &v)
 //
 func (bq *BuildQuery) Select(field string, fields ...string) *BuildSelect {
@@ -435,7 +443,7 @@ func (bq *BuildQuery) querySpec() *sqlgraph.QuerySpec {
 	if ps := bq.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
-				ps[i](selector)
+				ps[i](selector, build.ValidColumn)
 			}
 		}
 	}
@@ -454,7 +462,7 @@ func (bq *BuildQuery) sqlQuery() *sql.Selector {
 		p(selector)
 	}
 	for _, p := range bq.order {
-		p(selector)
+		p(selector, build.ValidColumn)
 	}
 	if offset := bq.offset; offset != nil {
 		// limit is mandatory for offset clause. We start
@@ -471,14 +479,14 @@ func (bq *BuildQuery) sqlQuery() *sql.Selector {
 type BuildGroupBy struct {
 	config
 	fields []string
-	fns    []Aggregate
+	fns    []AggregateFunc
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (bgb *BuildGroupBy) Aggregate(fns ...Aggregate) *BuildGroupBy {
+func (bgb *BuildGroupBy) Aggregate(fns ...AggregateFunc) *BuildGroupBy {
 	bgb.fns = append(bgb.fns, fns...)
 	return bgb
 }
@@ -521,6 +529,32 @@ func (bgb *BuildGroupBy) StringsX(ctx context.Context) []string {
 	return v
 }
 
+// String returns a single string from group-by. It is only allowed when querying group-by with one field.
+func (bgb *BuildGroupBy) String(ctx context.Context) (_ string, err error) {
+	var v []string
+	if v, err = bgb.Strings(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{build.Label}
+	default:
+		err = fmt.Errorf("ent: BuildGroupBy.Strings returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// StringX is like String, but panics if an error occurs.
+func (bgb *BuildGroupBy) StringX(ctx context.Context) string {
+	v, err := bgb.String(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // Ints returns list of ints from group-by. It is only allowed when querying group-by with one field.
 func (bgb *BuildGroupBy) Ints(ctx context.Context) ([]int, error) {
 	if len(bgb.fields) > 1 {
@@ -536,6 +570,32 @@ func (bgb *BuildGroupBy) Ints(ctx context.Context) ([]int, error) {
 // IntsX is like Ints, but panics if an error occurs.
 func (bgb *BuildGroupBy) IntsX(ctx context.Context) []int {
 	v, err := bgb.Ints(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// Int returns a single int from group-by. It is only allowed when querying group-by with one field.
+func (bgb *BuildGroupBy) Int(ctx context.Context) (_ int, err error) {
+	var v []int
+	if v, err = bgb.Ints(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{build.Label}
+	default:
+		err = fmt.Errorf("ent: BuildGroupBy.Ints returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// IntX is like Int, but panics if an error occurs.
+func (bgb *BuildGroupBy) IntX(ctx context.Context) int {
+	v, err := bgb.Int(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -563,6 +623,32 @@ func (bgb *BuildGroupBy) Float64sX(ctx context.Context) []float64 {
 	return v
 }
 
+// Float64 returns a single float64 from group-by. It is only allowed when querying group-by with one field.
+func (bgb *BuildGroupBy) Float64(ctx context.Context) (_ float64, err error) {
+	var v []float64
+	if v, err = bgb.Float64s(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{build.Label}
+	default:
+		err = fmt.Errorf("ent: BuildGroupBy.Float64s returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// Float64X is like Float64, but panics if an error occurs.
+func (bgb *BuildGroupBy) Float64X(ctx context.Context) float64 {
+	v, err := bgb.Float64(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // Bools returns list of bools from group-by. It is only allowed when querying group-by with one field.
 func (bgb *BuildGroupBy) Bools(ctx context.Context) ([]bool, error) {
 	if len(bgb.fields) > 1 {
@@ -584,9 +670,44 @@ func (bgb *BuildGroupBy) BoolsX(ctx context.Context) []bool {
 	return v
 }
 
+// Bool returns a single bool from group-by. It is only allowed when querying group-by with one field.
+func (bgb *BuildGroupBy) Bool(ctx context.Context) (_ bool, err error) {
+	var v []bool
+	if v, err = bgb.Bools(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{build.Label}
+	default:
+		err = fmt.Errorf("ent: BuildGroupBy.Bools returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// BoolX is like Bool, but panics if an error occurs.
+func (bgb *BuildGroupBy) BoolX(ctx context.Context) bool {
+	v, err := bgb.Bool(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 func (bgb *BuildGroupBy) sqlScan(ctx context.Context, v interface{}) error {
+	for _, f := range bgb.fields {
+		if !build.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
+		}
+	}
+	selector := bgb.sqlQuery()
+	if err := selector.Err(); err != nil {
+		return err
+	}
 	rows := &sql.Rows{}
-	query, args := bgb.sqlQuery().Query()
+	query, args := selector.Query()
 	if err := bgb.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
@@ -599,7 +720,7 @@ func (bgb *BuildGroupBy) sqlQuery() *sql.Selector {
 	columns := make([]string, 0, len(bgb.fields)+len(bgb.fns))
 	columns = append(columns, bgb.fields...)
 	for _, fn := range bgb.fns {
-		columns = append(columns, fn(selector))
+		columns = append(columns, fn(selector, build.ValidColumn))
 	}
 	return selector.Select(columns...).GroupBy(bgb.fields...)
 }
@@ -651,6 +772,32 @@ func (bs *BuildSelect) StringsX(ctx context.Context) []string {
 	return v
 }
 
+// String returns a single string from selector. It is only allowed when selecting one field.
+func (bs *BuildSelect) String(ctx context.Context) (_ string, err error) {
+	var v []string
+	if v, err = bs.Strings(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{build.Label}
+	default:
+		err = fmt.Errorf("ent: BuildSelect.Strings returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// StringX is like String, but panics if an error occurs.
+func (bs *BuildSelect) StringX(ctx context.Context) string {
+	v, err := bs.String(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // Ints returns list of ints from selector. It is only allowed when selecting one field.
 func (bs *BuildSelect) Ints(ctx context.Context) ([]int, error) {
 	if len(bs.fields) > 1 {
@@ -666,6 +813,32 @@ func (bs *BuildSelect) Ints(ctx context.Context) ([]int, error) {
 // IntsX is like Ints, but panics if an error occurs.
 func (bs *BuildSelect) IntsX(ctx context.Context) []int {
 	v, err := bs.Ints(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// Int returns a single int from selector. It is only allowed when selecting one field.
+func (bs *BuildSelect) Int(ctx context.Context) (_ int, err error) {
+	var v []int
+	if v, err = bs.Ints(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{build.Label}
+	default:
+		err = fmt.Errorf("ent: BuildSelect.Ints returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// IntX is like Int, but panics if an error occurs.
+func (bs *BuildSelect) IntX(ctx context.Context) int {
+	v, err := bs.Int(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -693,6 +866,32 @@ func (bs *BuildSelect) Float64sX(ctx context.Context) []float64 {
 	return v
 }
 
+// Float64 returns a single float64 from selector. It is only allowed when selecting one field.
+func (bs *BuildSelect) Float64(ctx context.Context) (_ float64, err error) {
+	var v []float64
+	if v, err = bs.Float64s(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{build.Label}
+	default:
+		err = fmt.Errorf("ent: BuildSelect.Float64s returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// Float64X is like Float64, but panics if an error occurs.
+func (bs *BuildSelect) Float64X(ctx context.Context) float64 {
+	v, err := bs.Float64(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // Bools returns list of bools from selector. It is only allowed when selecting one field.
 func (bs *BuildSelect) Bools(ctx context.Context) ([]bool, error) {
 	if len(bs.fields) > 1 {
@@ -714,7 +913,38 @@ func (bs *BuildSelect) BoolsX(ctx context.Context) []bool {
 	return v
 }
 
+// Bool returns a single bool from selector. It is only allowed when selecting one field.
+func (bs *BuildSelect) Bool(ctx context.Context) (_ bool, err error) {
+	var v []bool
+	if v, err = bs.Bools(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{build.Label}
+	default:
+		err = fmt.Errorf("ent: BuildSelect.Bools returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// BoolX is like Bool, but panics if an error occurs.
+func (bs *BuildSelect) BoolX(ctx context.Context) bool {
+	v, err := bs.Bool(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 func (bs *BuildSelect) sqlScan(ctx context.Context, v interface{}) error {
+	for _, f := range bs.fields {
+		if !build.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for selection", f)}
+		}
+	}
 	rows := &sql.Rows{}
 	query, args := bs.sqlQuery().Query()
 	if err := bs.driver.Query(ctx, query, args, rows); err != nil {

@@ -1,9 +1,10 @@
 package schema
 
 import (
-	"github.com/facebookincubator/ent"
-	"github.com/facebookincubator/ent/schema/edge"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent"
+	"github.com/facebook/ent/schema/edge"
+	"github.com/facebook/ent/schema/field"
+	"time"
 )
 
 // Instance holds the schema definition for the Instance entity.
@@ -15,6 +16,17 @@ type Instance struct {
 func (Instance) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("name"),
+		field.Int("applicationId").
+			StructTag(`json:"applicationId"`).
+			StorageKey("applicationId"),
+		field.Time("createdAt").
+			Default(time.Now).
+			StorageKey("createdAt").
+			Immutable(),
+		field.Time("updatedAt").
+			StorageKey("updatedAt").
+			Default(time.Now).
+			UpdateDefault(time.Now),
 	}
 }
 
@@ -22,9 +34,13 @@ func (Instance) Fields() []ent.Field {
 func (Instance) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("application",Application.Type).
+			StructTag(`json:"application,omitempty"`).
 			Ref("instances").
 			Unique(),
-		edge.To("builds",Build.Type),
-		edge.To("config",HelmConfig.Type).Unique(),
+		edge.To("builds",Build.Type).
+			StructTag(`json:"builds,omitempty"`),
+		edge.To("config",HelmConfig.Type).
+			StructTag(`json:"config,omitempty"`).
+			Unique(),
 	}
 }

@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/permission"
 	"github.com/lingfohn/lime/ent/predicate"
 )
@@ -20,7 +20,7 @@ type PermissionQuery struct {
 	config
 	limit      *int
 	offset     *int
-	order      []Order
+	order      []OrderFunc
 	unique     []string
 	predicates []predicate.Permission
 	// intermediate query (i.e. traversal path).
@@ -47,30 +47,30 @@ func (pq *PermissionQuery) Offset(offset int) *PermissionQuery {
 }
 
 // Order adds an order step to the query.
-func (pq *PermissionQuery) Order(o ...Order) *PermissionQuery {
+func (pq *PermissionQuery) Order(o ...OrderFunc) *PermissionQuery {
 	pq.order = append(pq.order, o...)
 	return pq
 }
 
 // First returns the first Permission entity in the query. Returns *NotFoundError when no permission was found.
 func (pq *PermissionQuery) First(ctx context.Context) (*Permission, error) {
-	pes, err := pq.Limit(1).All(ctx)
+	nodes, err := pq.Limit(1).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if len(pes) == 0 {
+	if len(nodes) == 0 {
 		return nil, &NotFoundError{permission.Label}
 	}
-	return pes[0], nil
+	return nodes[0], nil
 }
 
 // FirstX is like First, but panics if an error occurs.
 func (pq *PermissionQuery) FirstX(ctx context.Context) *Permission {
-	pe, err := pq.First(ctx)
+	node, err := pq.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
-	return pe
+	return node
 }
 
 // FirstID returns the first Permission id in the query. Returns *NotFoundError when no id was found.
@@ -86,8 +86,8 @@ func (pq *PermissionQuery) FirstID(ctx context.Context) (id int, err error) {
 	return ids[0], nil
 }
 
-// FirstXID is like FirstID, but panics if an error occurs.
-func (pq *PermissionQuery) FirstXID(ctx context.Context) int {
+// FirstIDX is like FirstID, but panics if an error occurs.
+func (pq *PermissionQuery) FirstIDX(ctx context.Context) int {
 	id, err := pq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -97,13 +97,13 @@ func (pq *PermissionQuery) FirstXID(ctx context.Context) int {
 
 // Only returns the only Permission entity in the query, returns an error if not exactly one entity was returned.
 func (pq *PermissionQuery) Only(ctx context.Context) (*Permission, error) {
-	pes, err := pq.Limit(2).All(ctx)
+	nodes, err := pq.Limit(2).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	switch len(pes) {
+	switch len(nodes) {
 	case 1:
-		return pes[0], nil
+		return nodes[0], nil
 	case 0:
 		return nil, &NotFoundError{permission.Label}
 	default:
@@ -113,11 +113,11 @@ func (pq *PermissionQuery) Only(ctx context.Context) (*Permission, error) {
 
 // OnlyX is like Only, but panics if an error occurs.
 func (pq *PermissionQuery) OnlyX(ctx context.Context) *Permission {
-	pe, err := pq.Only(ctx)
+	node, err := pq.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return pe
+	return node
 }
 
 // OnlyID returns the only Permission id in the query, returns an error if not exactly one id was returned.
@@ -137,8 +137,8 @@ func (pq *PermissionQuery) OnlyID(ctx context.Context) (id int, err error) {
 	return
 }
 
-// OnlyXID is like OnlyID, but panics if an error occurs.
-func (pq *PermissionQuery) OnlyXID(ctx context.Context) int {
+// OnlyIDX is like OnlyID, but panics if an error occurs.
+func (pq *PermissionQuery) OnlyIDX(ctx context.Context) int {
 	id, err := pq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -156,11 +156,11 @@ func (pq *PermissionQuery) All(ctx context.Context) ([]*Permission, error) {
 
 // AllX is like All, but panics if an error occurs.
 func (pq *PermissionQuery) AllX(ctx context.Context) []*Permission {
-	pes, err := pq.All(ctx)
+	nodes, err := pq.All(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return pes
+	return nodes
 }
 
 // IDs executes the query and returns a list of Permission ids.
@@ -218,11 +218,14 @@ func (pq *PermissionQuery) ExistX(ctx context.Context) bool {
 // Clone returns a duplicate of the query builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
 func (pq *PermissionQuery) Clone() *PermissionQuery {
+	if pq == nil {
+		return nil
+	}
 	return &PermissionQuery{
 		config:     pq.config,
 		limit:      pq.limit,
 		offset:     pq.offset,
-		order:      append([]Order{}, pq.order...),
+		order:      append([]OrderFunc{}, pq.order...),
 		unique:     append([]string{}, pq.unique...),
 		predicates: append([]predicate.Permission{}, pq.predicates...),
 		// clone intermediate query.
@@ -362,7 +365,7 @@ func (pq *PermissionQuery) querySpec() *sqlgraph.QuerySpec {
 	if ps := pq.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
-				ps[i](selector)
+				ps[i](selector, permission.ValidColumn)
 			}
 		}
 	}
@@ -381,7 +384,7 @@ func (pq *PermissionQuery) sqlQuery() *sql.Selector {
 		p(selector)
 	}
 	for _, p := range pq.order {
-		p(selector)
+		p(selector, permission.ValidColumn)
 	}
 	if offset := pq.offset; offset != nil {
 		// limit is mandatory for offset clause. We start
@@ -398,14 +401,14 @@ func (pq *PermissionQuery) sqlQuery() *sql.Selector {
 type PermissionGroupBy struct {
 	config
 	fields []string
-	fns    []Aggregate
+	fns    []AggregateFunc
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (pgb *PermissionGroupBy) Aggregate(fns ...Aggregate) *PermissionGroupBy {
+func (pgb *PermissionGroupBy) Aggregate(fns ...AggregateFunc) *PermissionGroupBy {
 	pgb.fns = append(pgb.fns, fns...)
 	return pgb
 }
@@ -448,6 +451,32 @@ func (pgb *PermissionGroupBy) StringsX(ctx context.Context) []string {
 	return v
 }
 
+// String returns a single string from group-by. It is only allowed when querying group-by with one field.
+func (pgb *PermissionGroupBy) String(ctx context.Context) (_ string, err error) {
+	var v []string
+	if v, err = pgb.Strings(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{permission.Label}
+	default:
+		err = fmt.Errorf("ent: PermissionGroupBy.Strings returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// StringX is like String, but panics if an error occurs.
+func (pgb *PermissionGroupBy) StringX(ctx context.Context) string {
+	v, err := pgb.String(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // Ints returns list of ints from group-by. It is only allowed when querying group-by with one field.
 func (pgb *PermissionGroupBy) Ints(ctx context.Context) ([]int, error) {
 	if len(pgb.fields) > 1 {
@@ -463,6 +492,32 @@ func (pgb *PermissionGroupBy) Ints(ctx context.Context) ([]int, error) {
 // IntsX is like Ints, but panics if an error occurs.
 func (pgb *PermissionGroupBy) IntsX(ctx context.Context) []int {
 	v, err := pgb.Ints(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// Int returns a single int from group-by. It is only allowed when querying group-by with one field.
+func (pgb *PermissionGroupBy) Int(ctx context.Context) (_ int, err error) {
+	var v []int
+	if v, err = pgb.Ints(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{permission.Label}
+	default:
+		err = fmt.Errorf("ent: PermissionGroupBy.Ints returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// IntX is like Int, but panics if an error occurs.
+func (pgb *PermissionGroupBy) IntX(ctx context.Context) int {
+	v, err := pgb.Int(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -490,6 +545,32 @@ func (pgb *PermissionGroupBy) Float64sX(ctx context.Context) []float64 {
 	return v
 }
 
+// Float64 returns a single float64 from group-by. It is only allowed when querying group-by with one field.
+func (pgb *PermissionGroupBy) Float64(ctx context.Context) (_ float64, err error) {
+	var v []float64
+	if v, err = pgb.Float64s(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{permission.Label}
+	default:
+		err = fmt.Errorf("ent: PermissionGroupBy.Float64s returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// Float64X is like Float64, but panics if an error occurs.
+func (pgb *PermissionGroupBy) Float64X(ctx context.Context) float64 {
+	v, err := pgb.Float64(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // Bools returns list of bools from group-by. It is only allowed when querying group-by with one field.
 func (pgb *PermissionGroupBy) Bools(ctx context.Context) ([]bool, error) {
 	if len(pgb.fields) > 1 {
@@ -511,9 +592,44 @@ func (pgb *PermissionGroupBy) BoolsX(ctx context.Context) []bool {
 	return v
 }
 
+// Bool returns a single bool from group-by. It is only allowed when querying group-by with one field.
+func (pgb *PermissionGroupBy) Bool(ctx context.Context) (_ bool, err error) {
+	var v []bool
+	if v, err = pgb.Bools(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{permission.Label}
+	default:
+		err = fmt.Errorf("ent: PermissionGroupBy.Bools returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// BoolX is like Bool, but panics if an error occurs.
+func (pgb *PermissionGroupBy) BoolX(ctx context.Context) bool {
+	v, err := pgb.Bool(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 func (pgb *PermissionGroupBy) sqlScan(ctx context.Context, v interface{}) error {
+	for _, f := range pgb.fields {
+		if !permission.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
+		}
+	}
+	selector := pgb.sqlQuery()
+	if err := selector.Err(); err != nil {
+		return err
+	}
 	rows := &sql.Rows{}
-	query, args := pgb.sqlQuery().Query()
+	query, args := selector.Query()
 	if err := pgb.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
@@ -526,7 +642,7 @@ func (pgb *PermissionGroupBy) sqlQuery() *sql.Selector {
 	columns := make([]string, 0, len(pgb.fields)+len(pgb.fns))
 	columns = append(columns, pgb.fields...)
 	for _, fn := range pgb.fns {
-		columns = append(columns, fn(selector))
+		columns = append(columns, fn(selector, permission.ValidColumn))
 	}
 	return selector.Select(columns...).GroupBy(pgb.fields...)
 }
@@ -578,6 +694,32 @@ func (ps *PermissionSelect) StringsX(ctx context.Context) []string {
 	return v
 }
 
+// String returns a single string from selector. It is only allowed when selecting one field.
+func (ps *PermissionSelect) String(ctx context.Context) (_ string, err error) {
+	var v []string
+	if v, err = ps.Strings(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{permission.Label}
+	default:
+		err = fmt.Errorf("ent: PermissionSelect.Strings returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// StringX is like String, but panics if an error occurs.
+func (ps *PermissionSelect) StringX(ctx context.Context) string {
+	v, err := ps.String(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // Ints returns list of ints from selector. It is only allowed when selecting one field.
 func (ps *PermissionSelect) Ints(ctx context.Context) ([]int, error) {
 	if len(ps.fields) > 1 {
@@ -593,6 +735,32 @@ func (ps *PermissionSelect) Ints(ctx context.Context) ([]int, error) {
 // IntsX is like Ints, but panics if an error occurs.
 func (ps *PermissionSelect) IntsX(ctx context.Context) []int {
 	v, err := ps.Ints(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// Int returns a single int from selector. It is only allowed when selecting one field.
+func (ps *PermissionSelect) Int(ctx context.Context) (_ int, err error) {
+	var v []int
+	if v, err = ps.Ints(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{permission.Label}
+	default:
+		err = fmt.Errorf("ent: PermissionSelect.Ints returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// IntX is like Int, but panics if an error occurs.
+func (ps *PermissionSelect) IntX(ctx context.Context) int {
+	v, err := ps.Int(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -620,6 +788,32 @@ func (ps *PermissionSelect) Float64sX(ctx context.Context) []float64 {
 	return v
 }
 
+// Float64 returns a single float64 from selector. It is only allowed when selecting one field.
+func (ps *PermissionSelect) Float64(ctx context.Context) (_ float64, err error) {
+	var v []float64
+	if v, err = ps.Float64s(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{permission.Label}
+	default:
+		err = fmt.Errorf("ent: PermissionSelect.Float64s returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// Float64X is like Float64, but panics if an error occurs.
+func (ps *PermissionSelect) Float64X(ctx context.Context) float64 {
+	v, err := ps.Float64(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // Bools returns list of bools from selector. It is only allowed when selecting one field.
 func (ps *PermissionSelect) Bools(ctx context.Context) ([]bool, error) {
 	if len(ps.fields) > 1 {
@@ -641,7 +835,38 @@ func (ps *PermissionSelect) BoolsX(ctx context.Context) []bool {
 	return v
 }
 
+// Bool returns a single bool from selector. It is only allowed when selecting one field.
+func (ps *PermissionSelect) Bool(ctx context.Context) (_ bool, err error) {
+	var v []bool
+	if v, err = ps.Bools(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{permission.Label}
+	default:
+		err = fmt.Errorf("ent: PermissionSelect.Bools returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// BoolX is like Bool, but panics if an error occurs.
+func (ps *PermissionSelect) BoolX(ctx context.Context) bool {
+	v, err := ps.Bool(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 func (ps *PermissionSelect) sqlScan(ctx context.Context, v interface{}) error {
+	for _, f := range ps.fields {
+		if !permission.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for selection", f)}
+		}
+	}
 	rows := &sql.Rows{}
 	query, args := ps.sqlQuery().Query()
 	if err := ps.driver.Query(ctx, query, args, rows); err != nil {

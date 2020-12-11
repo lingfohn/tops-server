@@ -2,12 +2,23 @@
 
 package instance
 
+import (
+	"time"
+)
+
 const (
 	// Label holds the string label denoting the instance type in the database.
 	Label = "instance"
 	// FieldID holds the string denoting the id field in the database.
-	FieldID   = "id" // FieldName holds the string denoting the name vertex property in the database.
+	FieldID = "id"
+	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
+	// FieldApplicationId holds the string denoting the applicationid field in the database.
+	FieldApplicationId = "applicationId"
+	// FieldCreatedAt holds the string denoting the createdat field in the database.
+	FieldCreatedAt = "createdAt"
+	// FieldUpdatedAt holds the string denoting the updatedat field in the database.
+	FieldUpdatedAt = "updatedAt"
 
 	// EdgeApplication holds the string denoting the application edge name in mutations.
 	EdgeApplication = "application"
@@ -45,6 +56,9 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldName,
+	FieldApplicationId,
+	FieldCreatedAt,
+	FieldUpdatedAt,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the Instance type.
@@ -52,3 +66,27 @@ var ForeignKeys = []string{
 	"application_instances",
 	"instance_config",
 }
+
+// ValidColumn reports if the column name is valid (part of the table columns).
+func ValidColumn(column string) bool {
+	for i := range Columns {
+		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
+			return true
+		}
+	}
+	return false
+}
+
+var (
+	// DefaultCreatedAt holds the default value on creation for the createdAt field.
+	DefaultCreatedAt func() time.Time
+	// DefaultUpdatedAt holds the default value on creation for the updatedAt field.
+	DefaultUpdatedAt func() time.Time
+	// UpdateDefaultUpdatedAt holds the default value on update for the updatedAt field.
+	UpdateDefaultUpdatedAt func() time.Time
+)

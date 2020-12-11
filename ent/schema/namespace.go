@@ -1,9 +1,9 @@
 package schema
 
 import (
-	"github.com/facebookincubator/ent"
-	"github.com/facebookincubator/ent/schema/edge"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent"
+	"github.com/facebook/ent/schema/edge"
+	"github.com/facebook/ent/schema/field"
 	"time"
 )
 
@@ -15,7 +15,18 @@ type Namespace struct {
 // Fields of the Namespace.
 func (Namespace) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("name"),
+		field.String("name").
+			StructTag(`json:"name"`).
+			StorageKey("name"),
+		field.String("dockerRepo").
+			StructTag(`json:"dockerRepo"`).
+			StorageKey("dockerRepo"),
+		field.String("repoNamespace").
+			StructTag(`json:"repoNamespace"`).
+			StorageKey("repoNamespace"),
+		field.String("active").
+			StructTag(`json:"active"`).
+			StorageKey("active"),
 		field.Time("createdAt").
 			Default(time.Now).
 			StorageKey("createdAt").

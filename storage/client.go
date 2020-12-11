@@ -2,12 +2,11 @@ package storage
 
 import (
 	"context"
-	"log"
-	"sync"
-
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/lingfohn/lime/ent"
 	"github.com/spf13/viper"
+	"log"
+	"sync"
 )
 
 var client *ent.Client

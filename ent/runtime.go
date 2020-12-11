@@ -6,7 +6,9 @@ import (
 	"time"
 
 	"github.com/lingfohn/lime/ent/application"
+	"github.com/lingfohn/lime/ent/build"
 	"github.com/lingfohn/lime/ent/helmconfig"
+	"github.com/lingfohn/lime/ent/instance"
 	"github.com/lingfohn/lime/ent/k8scluster"
 	"github.com/lingfohn/lime/ent/menu"
 	"github.com/lingfohn/lime/ent/namespace"
@@ -17,8 +19,8 @@ import (
 	"github.com/lingfohn/lime/ent/user"
 )
 
-// The init function reads all schema descriptors with runtime
-// code (default values, validators or hooks) and stitches it
+// The init function reads all schema descriptors with runtime code
+// (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
 	applicationFields := schema.Application{}.Fields()
@@ -37,6 +39,22 @@ func init() {
 	application.DefaultUpdatedAt = applicationDescUpdatedAt.Default.(func() time.Time)
 	// application.UpdateDefaultUpdatedAt holds the default value on update for the updatedAt field.
 	application.UpdateDefaultUpdatedAt = applicationDescUpdatedAt.UpdateDefault.(func() time.Time)
+	buildFields := schema.Build{}.Fields()
+	_ = buildFields
+	// buildDescStatus is the schema descriptor for status field.
+	buildDescStatus := buildFields[2].Descriptor()
+	// build.DefaultStatus holds the default value on creation for the status field.
+	build.DefaultStatus = buildDescStatus.Default.(int)
+	// buildDescCreatedAt is the schema descriptor for createdAt field.
+	buildDescCreatedAt := buildFields[11].Descriptor()
+	// build.DefaultCreatedAt holds the default value on creation for the createdAt field.
+	build.DefaultCreatedAt = buildDescCreatedAt.Default.(func() time.Time)
+	// buildDescUpdatedAt is the schema descriptor for updatedAt field.
+	buildDescUpdatedAt := buildFields[12].Descriptor()
+	// build.DefaultUpdatedAt holds the default value on creation for the updatedAt field.
+	build.DefaultUpdatedAt = buildDescUpdatedAt.Default.(func() time.Time)
+	// build.UpdateDefaultUpdatedAt holds the default value on update for the updatedAt field.
+	build.UpdateDefaultUpdatedAt = buildDescUpdatedAt.UpdateDefault.(func() time.Time)
 	helmconfigFields := schema.HelmConfig{}.Fields()
 	_ = helmconfigFields
 	// helmconfigDescEnableService is the schema descriptor for enableService field.
@@ -57,6 +75,18 @@ func init() {
 	helmconfig.DefaultUpdatedAt = helmconfigDescUpdatedAt.Default.(func() time.Time)
 	// helmconfig.UpdateDefaultUpdatedAt holds the default value on update for the updatedAt field.
 	helmconfig.UpdateDefaultUpdatedAt = helmconfigDescUpdatedAt.UpdateDefault.(func() time.Time)
+	instanceFields := schema.Instance{}.Fields()
+	_ = instanceFields
+	// instanceDescCreatedAt is the schema descriptor for createdAt field.
+	instanceDescCreatedAt := instanceFields[2].Descriptor()
+	// instance.DefaultCreatedAt holds the default value on creation for the createdAt field.
+	instance.DefaultCreatedAt = instanceDescCreatedAt.Default.(func() time.Time)
+	// instanceDescUpdatedAt is the schema descriptor for updatedAt field.
+	instanceDescUpdatedAt := instanceFields[3].Descriptor()
+	// instance.DefaultUpdatedAt holds the default value on creation for the updatedAt field.
+	instance.DefaultUpdatedAt = instanceDescUpdatedAt.Default.(func() time.Time)
+	// instance.UpdateDefaultUpdatedAt holds the default value on update for the updatedAt field.
+	instance.UpdateDefaultUpdatedAt = instanceDescUpdatedAt.UpdateDefault.(func() time.Time)
 	k8sclusterFields := schema.K8sCluster{}.Fields()
 	_ = k8sclusterFields
 	// k8sclusterDescCreatedAt is the schema descriptor for createdAt field.
@@ -88,11 +118,11 @@ func init() {
 	namespaceFields := schema.Namespace{}.Fields()
 	_ = namespaceFields
 	// namespaceDescCreatedAt is the schema descriptor for createdAt field.
-	namespaceDescCreatedAt := namespaceFields[1].Descriptor()
+	namespaceDescCreatedAt := namespaceFields[4].Descriptor()
 	// namespace.DefaultCreatedAt holds the default value on creation for the createdAt field.
 	namespace.DefaultCreatedAt = namespaceDescCreatedAt.Default.(func() time.Time)
 	// namespaceDescUpdatedAt is the schema descriptor for updatedAt field.
-	namespaceDescUpdatedAt := namespaceFields[2].Descriptor()
+	namespaceDescUpdatedAt := namespaceFields[5].Descriptor()
 	// namespace.DefaultUpdatedAt holds the default value on creation for the updatedAt field.
 	namespace.DefaultUpdatedAt = namespaceDescUpdatedAt.Default.(func() time.Time)
 	// namespace.UpdateDefaultUpdatedAt holds the default value on update for the updatedAt field.

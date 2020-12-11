@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/k8scluster"
 	"github.com/lingfohn/lime/ent/namespace"
 	"github.com/lingfohn/lime/ent/predicate"
@@ -22,7 +22,7 @@ type K8sClusterQuery struct {
 	config
 	limit      *int
 	offset     *int
-	order      []Order
+	order      []OrderFunc
 	unique     []string
 	predicates []predicate.K8sCluster
 	// eager-loading edges.
@@ -51,7 +51,7 @@ func (kcq *K8sClusterQuery) Offset(offset int) *K8sClusterQuery {
 }
 
 // Order adds an order step to the query.
-func (kcq *K8sClusterQuery) Order(o ...Order) *K8sClusterQuery {
+func (kcq *K8sClusterQuery) Order(o ...OrderFunc) *K8sClusterQuery {
 	kcq.order = append(kcq.order, o...)
 	return kcq
 }
@@ -63,8 +63,12 @@ func (kcq *K8sClusterQuery) QueryNamespaces() *NamespaceQuery {
 		if err := kcq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
+		selector := kcq.sqlQuery()
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(k8scluster.Table, k8scluster.FieldID, kcq.sqlQuery()),
+			sqlgraph.From(k8scluster.Table, k8scluster.FieldID, selector),
 			sqlgraph.To(namespace.Table, namespace.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, k8scluster.NamespacesTable, k8scluster.NamespacesColumn),
 		)
@@ -76,23 +80,23 @@ func (kcq *K8sClusterQuery) QueryNamespaces() *NamespaceQuery {
 
 // First returns the first K8sCluster entity in the query. Returns *NotFoundError when no k8scluster was found.
 func (kcq *K8sClusterQuery) First(ctx context.Context) (*K8sCluster, error) {
-	kcs, err := kcq.Limit(1).All(ctx)
+	nodes, err := kcq.Limit(1).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if len(kcs) == 0 {
+	if len(nodes) == 0 {
 		return nil, &NotFoundError{k8scluster.Label}
 	}
-	return kcs[0], nil
+	return nodes[0], nil
 }
 
 // FirstX is like First, but panics if an error occurs.
 func (kcq *K8sClusterQuery) FirstX(ctx context.Context) *K8sCluster {
-	kc, err := kcq.First(ctx)
+	node, err := kcq.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
-	return kc
+	return node
 }
 
 // FirstID returns the first K8sCluster id in the query. Returns *NotFoundError when no id was found.
@@ -108,8 +112,8 @@ func (kcq *K8sClusterQuery) FirstID(ctx context.Context) (id int, err error) {
 	return ids[0], nil
 }
 
-// FirstXID is like FirstID, but panics if an error occurs.
-func (kcq *K8sClusterQuery) FirstXID(ctx context.Context) int {
+// FirstIDX is like FirstID, but panics if an error occurs.
+func (kcq *K8sClusterQuery) FirstIDX(ctx context.Context) int {
 	id, err := kcq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -119,13 +123,13 @@ func (kcq *K8sClusterQuery) FirstXID(ctx context.Context) int {
 
 // Only returns the only K8sCluster entity in the query, returns an error if not exactly one entity was returned.
 func (kcq *K8sClusterQuery) Only(ctx context.Context) (*K8sCluster, error) {
-	kcs, err := kcq.Limit(2).All(ctx)
+	nodes, err := kcq.Limit(2).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	switch len(kcs) {
+	switch len(nodes) {
 	case 1:
-		return kcs[0], nil
+		return nodes[0], nil
 	case 0:
 		return nil, &NotFoundError{k8scluster.Label}
 	default:
@@ -135,11 +139,11 @@ func (kcq *K8sClusterQuery) Only(ctx context.Context) (*K8sCluster, error) {
 
 // OnlyX is like Only, but panics if an error occurs.
 func (kcq *K8sClusterQuery) OnlyX(ctx context.Context) *K8sCluster {
-	kc, err := kcq.Only(ctx)
+	node, err := kcq.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return kc
+	return node
 }
 
 // OnlyID returns the only K8sCluster id in the query, returns an error if not exactly one id was returned.
@@ -159,8 +163,8 @@ func (kcq *K8sClusterQuery) OnlyID(ctx context.Context) (id int, err error) {
 	return
 }
 
-// OnlyXID is like OnlyID, but panics if an error occurs.
-func (kcq *K8sClusterQuery) OnlyXID(ctx context.Context) int {
+// OnlyIDX is like OnlyID, but panics if an error occurs.
+func (kcq *K8sClusterQuery) OnlyIDX(ctx context.Context) int {
 	id, err := kcq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -178,11 +182,11 @@ func (kcq *K8sClusterQuery) All(ctx context.Context) ([]*K8sCluster, error) {
 
 // AllX is like All, but panics if an error occurs.
 func (kcq *K8sClusterQuery) AllX(ctx context.Context) []*K8sCluster {
-	kcs, err := kcq.All(ctx)
+	nodes, err := kcq.All(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return kcs
+	return nodes
 }
 
 // IDs executes the query and returns a list of K8sCluster ids.
@@ -240,13 +244,17 @@ func (kcq *K8sClusterQuery) ExistX(ctx context.Context) bool {
 // Clone returns a duplicate of the query builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
 func (kcq *K8sClusterQuery) Clone() *K8sClusterQuery {
+	if kcq == nil {
+		return nil
+	}
 	return &K8sClusterQuery{
-		config:     kcq.config,
-		limit:      kcq.limit,
-		offset:     kcq.offset,
-		order:      append([]Order{}, kcq.order...),
-		unique:     append([]string{}, kcq.unique...),
-		predicates: append([]predicate.K8sCluster{}, kcq.predicates...),
+		config:         kcq.config,
+		limit:          kcq.limit,
+		offset:         kcq.offset,
+		order:          append([]OrderFunc{}, kcq.order...),
+		unique:         append([]string{}, kcq.unique...),
+		predicates:     append([]predicate.K8sCluster{}, kcq.predicates...),
+		withNamespaces: kcq.withNamespaces.Clone(),
 		// clone intermediate query.
 		sql:  kcq.sql.Clone(),
 		path: kcq.path,
@@ -361,6 +369,7 @@ func (kcq *K8sClusterQuery) sqlAll(ctx context.Context) ([]*K8sCluster, error) {
 		for i := range nodes {
 			fks = append(fks, nodes[i].ID)
 			nodeids[nodes[i].ID] = nodes[i]
+			nodes[i].Edges.Namespaces = []*Namespace{}
 		}
 		query.withFKs = true
 		query.Where(predicate.Namespace(func(s *sql.Selector) {
@@ -428,7 +437,7 @@ func (kcq *K8sClusterQuery) querySpec() *sqlgraph.QuerySpec {
 	if ps := kcq.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
-				ps[i](selector)
+				ps[i](selector, k8scluster.ValidColumn)
 			}
 		}
 	}
@@ -447,7 +456,7 @@ func (kcq *K8sClusterQuery) sqlQuery() *sql.Selector {
 		p(selector)
 	}
 	for _, p := range kcq.order {
-		p(selector)
+		p(selector, k8scluster.ValidColumn)
 	}
 	if offset := kcq.offset; offset != nil {
 		// limit is mandatory for offset clause. We start
@@ -464,14 +473,14 @@ func (kcq *K8sClusterQuery) sqlQuery() *sql.Selector {
 type K8sClusterGroupBy struct {
 	config
 	fields []string
-	fns    []Aggregate
+	fns    []AggregateFunc
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (kcgb *K8sClusterGroupBy) Aggregate(fns ...Aggregate) *K8sClusterGroupBy {
+func (kcgb *K8sClusterGroupBy) Aggregate(fns ...AggregateFunc) *K8sClusterGroupBy {
 	kcgb.fns = append(kcgb.fns, fns...)
 	return kcgb
 }
@@ -514,6 +523,32 @@ func (kcgb *K8sClusterGroupBy) StringsX(ctx context.Context) []string {
 	return v
 }
 
+// String returns a single string from group-by. It is only allowed when querying group-by with one field.
+func (kcgb *K8sClusterGroupBy) String(ctx context.Context) (_ string, err error) {
+	var v []string
+	if v, err = kcgb.Strings(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{k8scluster.Label}
+	default:
+		err = fmt.Errorf("ent: K8sClusterGroupBy.Strings returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// StringX is like String, but panics if an error occurs.
+func (kcgb *K8sClusterGroupBy) StringX(ctx context.Context) string {
+	v, err := kcgb.String(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // Ints returns list of ints from group-by. It is only allowed when querying group-by with one field.
 func (kcgb *K8sClusterGroupBy) Ints(ctx context.Context) ([]int, error) {
 	if len(kcgb.fields) > 1 {
@@ -529,6 +564,32 @@ func (kcgb *K8sClusterGroupBy) Ints(ctx context.Context) ([]int, error) {
 // IntsX is like Ints, but panics if an error occurs.
 func (kcgb *K8sClusterGroupBy) IntsX(ctx context.Context) []int {
 	v, err := kcgb.Ints(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// Int returns a single int from group-by. It is only allowed when querying group-by with one field.
+func (kcgb *K8sClusterGroupBy) Int(ctx context.Context) (_ int, err error) {
+	var v []int
+	if v, err = kcgb.Ints(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{k8scluster.Label}
+	default:
+		err = fmt.Errorf("ent: K8sClusterGroupBy.Ints returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// IntX is like Int, but panics if an error occurs.
+func (kcgb *K8sClusterGroupBy) IntX(ctx context.Context) int {
+	v, err := kcgb.Int(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -556,6 +617,32 @@ func (kcgb *K8sClusterGroupBy) Float64sX(ctx context.Context) []float64 {
 	return v
 }
 
+// Float64 returns a single float64 from group-by. It is only allowed when querying group-by with one field.
+func (kcgb *K8sClusterGroupBy) Float64(ctx context.Context) (_ float64, err error) {
+	var v []float64
+	if v, err = kcgb.Float64s(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{k8scluster.Label}
+	default:
+		err = fmt.Errorf("ent: K8sClusterGroupBy.Float64s returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// Float64X is like Float64, but panics if an error occurs.
+func (kcgb *K8sClusterGroupBy) Float64X(ctx context.Context) float64 {
+	v, err := kcgb.Float64(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // Bools returns list of bools from group-by. It is only allowed when querying group-by with one field.
 func (kcgb *K8sClusterGroupBy) Bools(ctx context.Context) ([]bool, error) {
 	if len(kcgb.fields) > 1 {
@@ -577,9 +664,44 @@ func (kcgb *K8sClusterGroupBy) BoolsX(ctx context.Context) []bool {
 	return v
 }
 
+// Bool returns a single bool from group-by. It is only allowed when querying group-by with one field.
+func (kcgb *K8sClusterGroupBy) Bool(ctx context.Context) (_ bool, err error) {
+	var v []bool
+	if v, err = kcgb.Bools(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{k8scluster.Label}
+	default:
+		err = fmt.Errorf("ent: K8sClusterGroupBy.Bools returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// BoolX is like Bool, but panics if an error occurs.
+func (kcgb *K8sClusterGroupBy) BoolX(ctx context.Context) bool {
+	v, err := kcgb.Bool(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 func (kcgb *K8sClusterGroupBy) sqlScan(ctx context.Context, v interface{}) error {
+	for _, f := range kcgb.fields {
+		if !k8scluster.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
+		}
+	}
+	selector := kcgb.sqlQuery()
+	if err := selector.Err(); err != nil {
+		return err
+	}
 	rows := &sql.Rows{}
-	query, args := kcgb.sqlQuery().Query()
+	query, args := selector.Query()
 	if err := kcgb.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
@@ -592,7 +714,7 @@ func (kcgb *K8sClusterGroupBy) sqlQuery() *sql.Selector {
 	columns := make([]string, 0, len(kcgb.fields)+len(kcgb.fns))
 	columns = append(columns, kcgb.fields...)
 	for _, fn := range kcgb.fns {
-		columns = append(columns, fn(selector))
+		columns = append(columns, fn(selector, k8scluster.ValidColumn))
 	}
 	return selector.Select(columns...).GroupBy(kcgb.fields...)
 }
@@ -644,6 +766,32 @@ func (kcs *K8sClusterSelect) StringsX(ctx context.Context) []string {
 	return v
 }
 
+// String returns a single string from selector. It is only allowed when selecting one field.
+func (kcs *K8sClusterSelect) String(ctx context.Context) (_ string, err error) {
+	var v []string
+	if v, err = kcs.Strings(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{k8scluster.Label}
+	default:
+		err = fmt.Errorf("ent: K8sClusterSelect.Strings returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// StringX is like String, but panics if an error occurs.
+func (kcs *K8sClusterSelect) StringX(ctx context.Context) string {
+	v, err := kcs.String(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // Ints returns list of ints from selector. It is only allowed when selecting one field.
 func (kcs *K8sClusterSelect) Ints(ctx context.Context) ([]int, error) {
 	if len(kcs.fields) > 1 {
@@ -659,6 +807,32 @@ func (kcs *K8sClusterSelect) Ints(ctx context.Context) ([]int, error) {
 // IntsX is like Ints, but panics if an error occurs.
 func (kcs *K8sClusterSelect) IntsX(ctx context.Context) []int {
 	v, err := kcs.Ints(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// Int returns a single int from selector. It is only allowed when selecting one field.
+func (kcs *K8sClusterSelect) Int(ctx context.Context) (_ int, err error) {
+	var v []int
+	if v, err = kcs.Ints(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{k8scluster.Label}
+	default:
+		err = fmt.Errorf("ent: K8sClusterSelect.Ints returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// IntX is like Int, but panics if an error occurs.
+func (kcs *K8sClusterSelect) IntX(ctx context.Context) int {
+	v, err := kcs.Int(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -686,6 +860,32 @@ func (kcs *K8sClusterSelect) Float64sX(ctx context.Context) []float64 {
 	return v
 }
 
+// Float64 returns a single float64 from selector. It is only allowed when selecting one field.
+func (kcs *K8sClusterSelect) Float64(ctx context.Context) (_ float64, err error) {
+	var v []float64
+	if v, err = kcs.Float64s(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{k8scluster.Label}
+	default:
+		err = fmt.Errorf("ent: K8sClusterSelect.Float64s returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// Float64X is like Float64, but panics if an error occurs.
+func (kcs *K8sClusterSelect) Float64X(ctx context.Context) float64 {
+	v, err := kcs.Float64(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // Bools returns list of bools from selector. It is only allowed when selecting one field.
 func (kcs *K8sClusterSelect) Bools(ctx context.Context) ([]bool, error) {
 	if len(kcs.fields) > 1 {
@@ -707,7 +907,38 @@ func (kcs *K8sClusterSelect) BoolsX(ctx context.Context) []bool {
 	return v
 }
 
+// Bool returns a single bool from selector. It is only allowed when selecting one field.
+func (kcs *K8sClusterSelect) Bool(ctx context.Context) (_ bool, err error) {
+	var v []bool
+	if v, err = kcs.Bools(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{k8scluster.Label}
+	default:
+		err = fmt.Errorf("ent: K8sClusterSelect.Bools returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// BoolX is like Bool, but panics if an error occurs.
+func (kcs *K8sClusterSelect) BoolX(ctx context.Context) bool {
+	v, err := kcs.Bool(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 func (kcs *K8sClusterSelect) sqlScan(ctx context.Context, v interface{}) error {
+	for _, f := range kcs.fields {
+		if !k8scluster.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for selection", f)}
+		}
+	}
 	rows := &sql.Rows{}
 	query, args := kcs.sqlQuery().Query()
 	if err := kcs.driver.Query(ctx, query, args, rows); err != nil {

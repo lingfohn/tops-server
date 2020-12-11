@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/predicate"
 	"github.com/lingfohn/lime/ent/user"
 )
@@ -17,14 +17,13 @@ import (
 // UserUpdate is the builder for updating User entities.
 type UserUpdate struct {
 	config
-	hooks      []Hook
-	mutation   *UserMutation
-	predicates []predicate.User
+	hooks    []Hook
+	mutation *UserMutation
 }
 
 // Where adds a new predicate for the builder.
 func (uu *UserUpdate) Where(ps ...predicate.User) *UserUpdate {
-	uu.predicates = append(uu.predicates, ps...)
+	uu.mutation.predicates = append(uu.mutation.predicates, ps...)
 	return uu
 }
 
@@ -221,16 +220,18 @@ func (uu *UserUpdate) SetUpdatedAt(t time.Time) *UserUpdate {
 	return uu
 }
 
-// Save executes the query and returns the number of rows/vertices matched by this operation.
+// Mutation returns the UserMutation object of the builder.
+func (uu *UserUpdate) Mutation() *UserMutation {
+	return uu.mutation
+}
+
+// Save executes the query and returns the number of nodes affected by the update operation.
 func (uu *UserUpdate) Save(ctx context.Context) (int, error) {
-	if _, ok := uu.mutation.UpdatedAt(); !ok {
-		v := user.UpdateDefaultUpdatedAt()
-		uu.mutation.SetUpdatedAt(v)
-	}
 	var (
 		err      error
 		affected int
 	)
+	uu.defaults()
 	if len(uu.hooks) == 0 {
 		affected, err = uu.sqlSave(ctx)
 	} else {
@@ -241,6 +242,7 @@ func (uu *UserUpdate) Save(ctx context.Context) (int, error) {
 			}
 			uu.mutation = mutation
 			affected, err = uu.sqlSave(ctx)
+			mutation.done = true
 			return affected, err
 		})
 		for i := len(uu.hooks) - 1; i >= 0; i-- {
@@ -275,6 +277,14 @@ func (uu *UserUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (uu *UserUpdate) defaults() {
+	if _, ok := uu.mutation.UpdatedAt(); !ok {
+		v := user.UpdateDefaultUpdatedAt()
+		uu.mutation.SetUpdatedAt(v)
+	}
+}
+
 func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
@@ -286,7 +296,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			},
 		},
 	}
-	if ps := uu.predicates; len(ps) > 0 {
+	if ps := uu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -637,16 +647,18 @@ func (uuo *UserUpdateOne) SetUpdatedAt(t time.Time) *UserUpdateOne {
 	return uuo
 }
 
+// Mutation returns the UserMutation object of the builder.
+func (uuo *UserUpdateOne) Mutation() *UserMutation {
+	return uuo.mutation
+}
+
 // Save executes the query and returns the updated entity.
 func (uuo *UserUpdateOne) Save(ctx context.Context) (*User, error) {
-	if _, ok := uuo.mutation.UpdatedAt(); !ok {
-		v := user.UpdateDefaultUpdatedAt()
-		uuo.mutation.SetUpdatedAt(v)
-	}
 	var (
 		err  error
 		node *User
 	)
+	uuo.defaults()
 	if len(uuo.hooks) == 0 {
 		node, err = uuo.sqlSave(ctx)
 	} else {
@@ -657,6 +669,7 @@ func (uuo *UserUpdateOne) Save(ctx context.Context) (*User, error) {
 			}
 			uuo.mutation = mutation
 			node, err = uuo.sqlSave(ctx)
+			mutation.done = true
 			return node, err
 		})
 		for i := len(uuo.hooks) - 1; i >= 0; i-- {
@@ -671,11 +684,11 @@ func (uuo *UserUpdateOne) Save(ctx context.Context) (*User, error) {
 
 // SaveX is like Save, but panics if an error occurs.
 func (uuo *UserUpdateOne) SaveX(ctx context.Context) *User {
-	u, err := uuo.Save(ctx)
+	node, err := uuo.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return u
+	return node
 }
 
 // Exec executes the query on the entity.
@@ -691,7 +704,15 @@ func (uuo *UserUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (u *User, err error) {
+// defaults sets the default values of the builder before save.
+func (uuo *UserUpdateOne) defaults() {
+	if _, ok := uuo.mutation.UpdatedAt(); !ok {
+		v := user.UpdateDefaultUpdatedAt()
+		uuo.mutation.SetUpdatedAt(v)
+	}
+}
+
+func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
 			Table:   user.Table,
@@ -704,7 +725,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (u *User, err error) {
 	}
 	id, ok := uuo.mutation.ID()
 	if !ok {
-		return nil, fmt.Errorf("missing User.ID for update")
+		return nil, &ValidationError{Name: "ID", err: fmt.Errorf("missing User.ID for update")}
 	}
 	_spec.Node.ID.Value = id
 	if value, ok := uuo.mutation.Username(); ok {
@@ -840,9 +861,9 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (u *User, err error) {
 			Column: user.FieldUpdatedAt,
 		})
 	}
-	u = &User{config: uuo.config}
-	_spec.Assign = u.assignValues
-	_spec.ScanValues = u.scanValues()
+	_node = &User{config: uuo.config}
+	_spec.Assign = _node.assignValues
+	_spec.ScanValues = _node.scanValues()
 	if err = sqlgraph.UpdateNode(ctx, uuo.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -851,5 +872,5 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (u *User, err error) {
 		}
 		return nil, err
 	}
-	return u, nil
+	return _node, nil
 }

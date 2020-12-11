@@ -5,10 +5,11 @@ package ent
 import (
 	"context"
 	"fmt"
+	"time"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/application"
 	"github.com/lingfohn/lime/ent/build"
 	"github.com/lingfohn/lime/ent/helmconfig"
@@ -19,20 +20,38 @@ import (
 // InstanceUpdate is the builder for updating Instance entities.
 type InstanceUpdate struct {
 	config
-	hooks      []Hook
-	mutation   *InstanceMutation
-	predicates []predicate.Instance
+	hooks    []Hook
+	mutation *InstanceMutation
 }
 
 // Where adds a new predicate for the builder.
 func (iu *InstanceUpdate) Where(ps ...predicate.Instance) *InstanceUpdate {
-	iu.predicates = append(iu.predicates, ps...)
+	iu.mutation.predicates = append(iu.mutation.predicates, ps...)
 	return iu
 }
 
 // SetName sets the name field.
 func (iu *InstanceUpdate) SetName(s string) *InstanceUpdate {
 	iu.mutation.SetName(s)
+	return iu
+}
+
+// SetApplicationId sets the applicationId field.
+func (iu *InstanceUpdate) SetApplicationId(i int) *InstanceUpdate {
+	iu.mutation.ResetApplicationId()
+	iu.mutation.SetApplicationId(i)
+	return iu
+}
+
+// AddApplicationId adds i to applicationId.
+func (iu *InstanceUpdate) AddApplicationId(i int) *InstanceUpdate {
+	iu.mutation.AddApplicationId(i)
+	return iu
+}
+
+// SetUpdatedAt sets the updatedAt field.
+func (iu *InstanceUpdate) SetUpdatedAt(t time.Time) *InstanceUpdate {
+	iu.mutation.SetUpdatedAt(t)
 	return iu
 }
 
@@ -89,9 +108,20 @@ func (iu *InstanceUpdate) SetConfig(h *HelmConfig) *InstanceUpdate {
 	return iu.SetConfigID(h.ID)
 }
 
-// ClearApplication clears the application edge to Application.
+// Mutation returns the InstanceMutation object of the builder.
+func (iu *InstanceUpdate) Mutation() *InstanceMutation {
+	return iu.mutation
+}
+
+// ClearApplication clears the "application" edge to type Application.
 func (iu *InstanceUpdate) ClearApplication() *InstanceUpdate {
 	iu.mutation.ClearApplication()
+	return iu
+}
+
+// ClearBuilds clears all "builds" edges to type Build.
+func (iu *InstanceUpdate) ClearBuilds() *InstanceUpdate {
+	iu.mutation.ClearBuilds()
 	return iu
 }
 
@@ -110,19 +140,19 @@ func (iu *InstanceUpdate) RemoveBuilds(b ...*Build) *InstanceUpdate {
 	return iu.RemoveBuildIDs(ids...)
 }
 
-// ClearConfig clears the config edge to HelmConfig.
+// ClearConfig clears the "config" edge to type HelmConfig.
 func (iu *InstanceUpdate) ClearConfig() *InstanceUpdate {
 	iu.mutation.ClearConfig()
 	return iu
 }
 
-// Save executes the query and returns the number of rows/vertices matched by this operation.
+// Save executes the query and returns the number of nodes affected by the update operation.
 func (iu *InstanceUpdate) Save(ctx context.Context) (int, error) {
-
 	var (
 		err      error
 		affected int
 	)
+	iu.defaults()
 	if len(iu.hooks) == 0 {
 		affected, err = iu.sqlSave(ctx)
 	} else {
@@ -133,6 +163,7 @@ func (iu *InstanceUpdate) Save(ctx context.Context) (int, error) {
 			}
 			iu.mutation = mutation
 			affected, err = iu.sqlSave(ctx)
+			mutation.done = true
 			return affected, err
 		})
 		for i := len(iu.hooks) - 1; i >= 0; i-- {
@@ -167,6 +198,14 @@ func (iu *InstanceUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (iu *InstanceUpdate) defaults() {
+	if _, ok := iu.mutation.UpdatedAt(); !ok {
+		v := instance.UpdateDefaultUpdatedAt()
+		iu.mutation.SetUpdatedAt(v)
+	}
+}
+
 func (iu *InstanceUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
@@ -178,7 +217,7 @@ func (iu *InstanceUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			},
 		},
 	}
-	if ps := iu.predicates; len(ps) > 0 {
+	if ps := iu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -190,6 +229,27 @@ func (iu *InstanceUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Type:   field.TypeString,
 			Value:  value,
 			Column: instance.FieldName,
+		})
+	}
+	if value, ok := iu.mutation.ApplicationId(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt,
+			Value:  value,
+			Column: instance.FieldApplicationId,
+		})
+	}
+	if value, ok := iu.mutation.AddedApplicationId(); ok {
+		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt,
+			Value:  value,
+			Column: instance.FieldApplicationId,
+		})
+	}
+	if value, ok := iu.mutation.UpdatedAt(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: instance.FieldUpdatedAt,
 		})
 	}
 	if iu.mutation.ApplicationCleared() {
@@ -227,7 +287,23 @@ func (iu *InstanceUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := iu.mutation.RemovedBuildsIDs(); len(nodes) > 0 {
+	if iu.mutation.BuildsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   instance.BuildsTable,
+			Columns: []string{instance.BuildsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: build.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := iu.mutation.RemovedBuildsIDs(); len(nodes) > 0 && !iu.mutation.BuildsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -324,6 +400,25 @@ func (iuo *InstanceUpdateOne) SetName(s string) *InstanceUpdateOne {
 	return iuo
 }
 
+// SetApplicationId sets the applicationId field.
+func (iuo *InstanceUpdateOne) SetApplicationId(i int) *InstanceUpdateOne {
+	iuo.mutation.ResetApplicationId()
+	iuo.mutation.SetApplicationId(i)
+	return iuo
+}
+
+// AddApplicationId adds i to applicationId.
+func (iuo *InstanceUpdateOne) AddApplicationId(i int) *InstanceUpdateOne {
+	iuo.mutation.AddApplicationId(i)
+	return iuo
+}
+
+// SetUpdatedAt sets the updatedAt field.
+func (iuo *InstanceUpdateOne) SetUpdatedAt(t time.Time) *InstanceUpdateOne {
+	iuo.mutation.SetUpdatedAt(t)
+	return iuo
+}
+
 // SetApplicationID sets the application edge to Application by id.
 func (iuo *InstanceUpdateOne) SetApplicationID(id int) *InstanceUpdateOne {
 	iuo.mutation.SetApplicationID(id)
@@ -377,9 +472,20 @@ func (iuo *InstanceUpdateOne) SetConfig(h *HelmConfig) *InstanceUpdateOne {
 	return iuo.SetConfigID(h.ID)
 }
 
-// ClearApplication clears the application edge to Application.
+// Mutation returns the InstanceMutation object of the builder.
+func (iuo *InstanceUpdateOne) Mutation() *InstanceMutation {
+	return iuo.mutation
+}
+
+// ClearApplication clears the "application" edge to type Application.
 func (iuo *InstanceUpdateOne) ClearApplication() *InstanceUpdateOne {
 	iuo.mutation.ClearApplication()
+	return iuo
+}
+
+// ClearBuilds clears all "builds" edges to type Build.
+func (iuo *InstanceUpdateOne) ClearBuilds() *InstanceUpdateOne {
+	iuo.mutation.ClearBuilds()
 	return iuo
 }
 
@@ -398,7 +504,7 @@ func (iuo *InstanceUpdateOne) RemoveBuilds(b ...*Build) *InstanceUpdateOne {
 	return iuo.RemoveBuildIDs(ids...)
 }
 
-// ClearConfig clears the config edge to HelmConfig.
+// ClearConfig clears the "config" edge to type HelmConfig.
 func (iuo *InstanceUpdateOne) ClearConfig() *InstanceUpdateOne {
 	iuo.mutation.ClearConfig()
 	return iuo
@@ -406,11 +512,11 @@ func (iuo *InstanceUpdateOne) ClearConfig() *InstanceUpdateOne {
 
 // Save executes the query and returns the updated entity.
 func (iuo *InstanceUpdateOne) Save(ctx context.Context) (*Instance, error) {
-
 	var (
 		err  error
 		node *Instance
 	)
+	iuo.defaults()
 	if len(iuo.hooks) == 0 {
 		node, err = iuo.sqlSave(ctx)
 	} else {
@@ -421,6 +527,7 @@ func (iuo *InstanceUpdateOne) Save(ctx context.Context) (*Instance, error) {
 			}
 			iuo.mutation = mutation
 			node, err = iuo.sqlSave(ctx)
+			mutation.done = true
 			return node, err
 		})
 		for i := len(iuo.hooks) - 1; i >= 0; i-- {
@@ -435,11 +542,11 @@ func (iuo *InstanceUpdateOne) Save(ctx context.Context) (*Instance, error) {
 
 // SaveX is like Save, but panics if an error occurs.
 func (iuo *InstanceUpdateOne) SaveX(ctx context.Context) *Instance {
-	i, err := iuo.Save(ctx)
+	node, err := iuo.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return i
+	return node
 }
 
 // Exec executes the query on the entity.
@@ -455,7 +562,15 @@ func (iuo *InstanceUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-func (iuo *InstanceUpdateOne) sqlSave(ctx context.Context) (i *Instance, err error) {
+// defaults sets the default values of the builder before save.
+func (iuo *InstanceUpdateOne) defaults() {
+	if _, ok := iuo.mutation.UpdatedAt(); !ok {
+		v := instance.UpdateDefaultUpdatedAt()
+		iuo.mutation.SetUpdatedAt(v)
+	}
+}
+
+func (iuo *InstanceUpdateOne) sqlSave(ctx context.Context) (_node *Instance, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
 			Table:   instance.Table,
@@ -468,7 +583,7 @@ func (iuo *InstanceUpdateOne) sqlSave(ctx context.Context) (i *Instance, err err
 	}
 	id, ok := iuo.mutation.ID()
 	if !ok {
-		return nil, fmt.Errorf("missing Instance.ID for update")
+		return nil, &ValidationError{Name: "ID", err: fmt.Errorf("missing Instance.ID for update")}
 	}
 	_spec.Node.ID.Value = id
 	if value, ok := iuo.mutation.Name(); ok {
@@ -476,6 +591,27 @@ func (iuo *InstanceUpdateOne) sqlSave(ctx context.Context) (i *Instance, err err
 			Type:   field.TypeString,
 			Value:  value,
 			Column: instance.FieldName,
+		})
+	}
+	if value, ok := iuo.mutation.ApplicationId(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt,
+			Value:  value,
+			Column: instance.FieldApplicationId,
+		})
+	}
+	if value, ok := iuo.mutation.AddedApplicationId(); ok {
+		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt,
+			Value:  value,
+			Column: instance.FieldApplicationId,
+		})
+	}
+	if value, ok := iuo.mutation.UpdatedAt(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: instance.FieldUpdatedAt,
 		})
 	}
 	if iuo.mutation.ApplicationCleared() {
@@ -513,7 +649,23 @@ func (iuo *InstanceUpdateOne) sqlSave(ctx context.Context) (i *Instance, err err
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := iuo.mutation.RemovedBuildsIDs(); len(nodes) > 0 {
+	if iuo.mutation.BuildsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   instance.BuildsTable,
+			Columns: []string{instance.BuildsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: build.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := iuo.mutation.RemovedBuildsIDs(); len(nodes) > 0 && !iuo.mutation.BuildsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -586,9 +738,9 @@ func (iuo *InstanceUpdateOne) sqlSave(ctx context.Context) (i *Instance, err err
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	i = &Instance{config: iuo.config}
-	_spec.Assign = i.assignValues
-	_spec.ScanValues = i.scanValues()
+	_node = &Instance{config: iuo.config}
+	_spec.Assign = _node.assignValues
+	_spec.ScanValues = _node.scanValues()
 	if err = sqlgraph.UpdateNode(ctx, iuo.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{instance.Label}
@@ -597,5 +749,5 @@ func (iuo *InstanceUpdateOne) sqlSave(ctx context.Context) (i *Instance, err err
 		}
 		return nil, err
 	}
-	return i, nil
+	return _node, nil
 }

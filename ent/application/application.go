@@ -10,13 +10,19 @@ const (
 	// Label holds the string label denoting the application type in the database.
 	Label = "application"
 	// FieldID holds the string denoting the id field in the database.
-	FieldID          = "id"          // FieldName holds the string denoting the name vertex property in the database.
-	FieldName        = "name"        // FieldMulti holds the string denoting the multi vertex property in the database.
-	FieldMulti       = "multi"       // FieldProjectId holds the string denoting the projectid vertex property in the database.
-	FieldProjectId   = "projectId"   // FieldNamespaceId holds the string denoting the namespaceid vertex property in the database.
-	FieldNamespaceId = "namespaceId" // FieldCreatedAt holds the string denoting the createdat vertex property in the database.
-	FieldCreatedAt   = "createdAt"   // FieldUpdatedAt holds the string denoting the updatedat vertex property in the database.
-	FieldUpdatedAt   = "updatedAt"
+	FieldID = "id"
+	// FieldName holds the string denoting the name field in the database.
+	FieldName = "name"
+	// FieldMulti holds the string denoting the multi field in the database.
+	FieldMulti = "multi"
+	// FieldProjectId holds the string denoting the projectid field in the database.
+	FieldProjectId = "projectId"
+	// FieldNamespaceId holds the string denoting the namespaceid field in the database.
+	FieldNamespaceId = "namespaceId"
+	// FieldCreatedAt holds the string denoting the createdat field in the database.
+	FieldCreatedAt = "createdAt"
+	// FieldUpdatedAt holds the string denoting the updatedat field in the database.
+	FieldUpdatedAt = "updatedAt"
 
 	// EdgeNamespace holds the string denoting the namespace edge name in mutations.
 	EdgeNamespace = "namespace"
@@ -75,6 +81,21 @@ var ForeignKeys = []string{
 	"application_config",
 	"namespace_applications",
 	"project_applications",
+}
+
+// ValidColumn reports if the column name is valid (part of the table columns).
+func ValidColumn(column string) bool {
+	for i := range Columns {
+		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
+			return true
+		}
+	}
+	return false
 }
 
 var (

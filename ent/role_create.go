@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/role"
 )
 
@@ -82,28 +82,22 @@ func (rc *RoleCreate) SetNillableUpdatedAt(t *time.Time) *RoleCreate {
 	return rc
 }
 
+// Mutation returns the RoleMutation object of the builder.
+func (rc *RoleCreate) Mutation() *RoleMutation {
+	return rc.mutation
+}
+
 // Save creates the Role in the database.
 func (rc *RoleCreate) Save(ctx context.Context) (*Role, error) {
-	if _, ok := rc.mutation.Name(); !ok {
-		return nil, errors.New("ent: missing required field \"name\"")
-	}
-	if _, ok := rc.mutation.Status(); !ok {
-		v := role.DefaultStatus
-		rc.mutation.SetStatus(v)
-	}
-	if _, ok := rc.mutation.CreatedAt(); !ok {
-		v := role.DefaultCreatedAt()
-		rc.mutation.SetCreatedAt(v)
-	}
-	if _, ok := rc.mutation.UpdatedAt(); !ok {
-		v := role.DefaultUpdatedAt()
-		rc.mutation.SetUpdatedAt(v)
-	}
 	var (
 		err  error
 		node *Role
 	)
+	rc.defaults()
 	if len(rc.hooks) == 0 {
+		if err = rc.check(); err != nil {
+			return nil, err
+		}
 		node, err = rc.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
@@ -111,8 +105,12 @@ func (rc *RoleCreate) Save(ctx context.Context) (*Role, error) {
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
 			}
+			if err = rc.check(); err != nil {
+				return nil, err
+			}
 			rc.mutation = mutation
 			node, err = rc.sqlSave(ctx)
+			mutation.done = true
 			return node, err
 		})
 		for i := len(rc.hooks) - 1; i >= 0; i-- {
@@ -134,9 +132,55 @@ func (rc *RoleCreate) SaveX(ctx context.Context) *Role {
 	return v
 }
 
+// defaults sets the default values of the builder before save.
+func (rc *RoleCreate) defaults() {
+	if _, ok := rc.mutation.Status(); !ok {
+		v := role.DefaultStatus
+		rc.mutation.SetStatus(v)
+	}
+	if _, ok := rc.mutation.CreatedAt(); !ok {
+		v := role.DefaultCreatedAt()
+		rc.mutation.SetCreatedAt(v)
+	}
+	if _, ok := rc.mutation.UpdatedAt(); !ok {
+		v := role.DefaultUpdatedAt()
+		rc.mutation.SetUpdatedAt(v)
+	}
+}
+
+// check runs all checks and user-defined validators on the builder.
+func (rc *RoleCreate) check() error {
+	if _, ok := rc.mutation.Name(); !ok {
+		return &ValidationError{Name: "name", err: errors.New("ent: missing required field \"name\"")}
+	}
+	if _, ok := rc.mutation.Status(); !ok {
+		return &ValidationError{Name: "status", err: errors.New("ent: missing required field \"status\"")}
+	}
+	if _, ok := rc.mutation.CreatedAt(); !ok {
+		return &ValidationError{Name: "createdAt", err: errors.New("ent: missing required field \"createdAt\"")}
+	}
+	if _, ok := rc.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updatedAt", err: errors.New("ent: missing required field \"updatedAt\"")}
+	}
+	return nil
+}
+
 func (rc *RoleCreate) sqlSave(ctx context.Context) (*Role, error) {
+	_node, _spec := rc.createSpec()
+	if err := sqlgraph.CreateNode(ctx, rc.driver, _spec); err != nil {
+		if cerr, ok := isSQLConstraintError(err); ok {
+			err = cerr
+		}
+		return nil, err
+	}
+	id := _spec.ID.Value.(int64)
+	_node.ID = int(id)
+	return _node, nil
+}
+
+func (rc *RoleCreate) createSpec() (*Role, *sqlgraph.CreateSpec) {
 	var (
-		r     = &Role{config: rc.config}
+		_node = &Role{config: rc.config}
 		_spec = &sqlgraph.CreateSpec{
 			Table: role.Table,
 			ID: &sqlgraph.FieldSpec{
@@ -151,7 +195,7 @@ func (rc *RoleCreate) sqlSave(ctx context.Context) (*Role, error) {
 			Value:  value,
 			Column: role.FieldName,
 		})
-		r.Name = value
+		_node.Name = value
 	}
 	if value, ok := rc.mutation.Description(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -159,7 +203,7 @@ func (rc *RoleCreate) sqlSave(ctx context.Context) (*Role, error) {
 			Value:  value,
 			Column: role.FieldDescription,
 		})
-		r.Description = value
+		_node.Description = value
 	}
 	if value, ok := rc.mutation.Status(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -167,7 +211,7 @@ func (rc *RoleCreate) sqlSave(ctx context.Context) (*Role, error) {
 			Value:  value,
 			Column: role.FieldStatus,
 		})
-		r.Status = value
+		_node.Status = value
 	}
 	if value, ok := rc.mutation.CreatedAt(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -175,7 +219,7 @@ func (rc *RoleCreate) sqlSave(ctx context.Context) (*Role, error) {
 			Value:  value,
 			Column: role.FieldCreatedAt,
 		})
-		r.CreatedAt = value
+		_node.CreatedAt = value
 	}
 	if value, ok := rc.mutation.UpdatedAt(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -183,15 +227,74 @@ func (rc *RoleCreate) sqlSave(ctx context.Context) (*Role, error) {
 			Value:  value,
 			Column: role.FieldUpdatedAt,
 		})
-		r.UpdatedAt = value
+		_node.UpdatedAt = value
 	}
-	if err := sqlgraph.CreateNode(ctx, rc.driver, _spec); err != nil {
-		if cerr, ok := isSQLConstraintError(err); ok {
-			err = cerr
+	return _node, _spec
+}
+
+// RoleCreateBulk is the builder for creating a bulk of Role entities.
+type RoleCreateBulk struct {
+	config
+	builders []*RoleCreate
+}
+
+// Save creates the Role entities in the database.
+func (rcb *RoleCreateBulk) Save(ctx context.Context) ([]*Role, error) {
+	specs := make([]*sqlgraph.CreateSpec, len(rcb.builders))
+	nodes := make([]*Role, len(rcb.builders))
+	mutators := make([]Mutator, len(rcb.builders))
+	for i := range rcb.builders {
+		func(i int, root context.Context) {
+			builder := rcb.builders[i]
+			builder.defaults()
+			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
+				mutation, ok := m.(*RoleMutation)
+				if !ok {
+					return nil, fmt.Errorf("unexpected mutation type %T", m)
+				}
+				if err := builder.check(); err != nil {
+					return nil, err
+				}
+				builder.mutation = mutation
+				nodes[i], specs[i] = builder.createSpec()
+				var err error
+				if i < len(mutators)-1 {
+					_, err = mutators[i+1].Mutate(root, rcb.builders[i+1].mutation)
+				} else {
+					// Invoke the actual operation on the latest mutation in the chain.
+					if err = sqlgraph.BatchCreate(ctx, rcb.driver, &sqlgraph.BatchCreateSpec{Nodes: specs}); err != nil {
+						if cerr, ok := isSQLConstraintError(err); ok {
+							err = cerr
+						}
+					}
+				}
+				mutation.done = true
+				if err != nil {
+					return nil, err
+				}
+				id := specs[i].ID.Value.(int64)
+				nodes[i].ID = int(id)
+				return nodes[i], nil
+			})
+			for i := len(builder.hooks) - 1; i >= 0; i-- {
+				mut = builder.hooks[i](mut)
+			}
+			mutators[i] = mut
+		}(i, ctx)
+	}
+	if len(mutators) > 0 {
+		if _, err := mutators[0].Mutate(ctx, rcb.builders[0].mutation); err != nil {
+			return nil, err
 		}
-		return nil, err
 	}
-	id := _spec.ID.Value.(int64)
-	r.ID = int(id)
-	return r, nil
+	return nodes, nil
+}
+
+// SaveX calls Save and panics if Save returns an error.
+func (rcb *RoleCreateBulk) SaveX(ctx context.Context) []*Role {
+	v, err := rcb.Save(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
 }

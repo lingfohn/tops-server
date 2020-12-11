@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/helmconfig"
 	"github.com/lingfohn/lime/ent/predicate"
 )
@@ -20,7 +20,7 @@ type HelmConfigQuery struct {
 	config
 	limit      *int
 	offset     *int
-	order      []Order
+	order      []OrderFunc
 	unique     []string
 	predicates []predicate.HelmConfig
 	// intermediate query (i.e. traversal path).
@@ -47,30 +47,30 @@ func (hcq *HelmConfigQuery) Offset(offset int) *HelmConfigQuery {
 }
 
 // Order adds an order step to the query.
-func (hcq *HelmConfigQuery) Order(o ...Order) *HelmConfigQuery {
+func (hcq *HelmConfigQuery) Order(o ...OrderFunc) *HelmConfigQuery {
 	hcq.order = append(hcq.order, o...)
 	return hcq
 }
 
 // First returns the first HelmConfig entity in the query. Returns *NotFoundError when no helmconfig was found.
 func (hcq *HelmConfigQuery) First(ctx context.Context) (*HelmConfig, error) {
-	hcs, err := hcq.Limit(1).All(ctx)
+	nodes, err := hcq.Limit(1).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if len(hcs) == 0 {
+	if len(nodes) == 0 {
 		return nil, &NotFoundError{helmconfig.Label}
 	}
-	return hcs[0], nil
+	return nodes[0], nil
 }
 
 // FirstX is like First, but panics if an error occurs.
 func (hcq *HelmConfigQuery) FirstX(ctx context.Context) *HelmConfig {
-	hc, err := hcq.First(ctx)
+	node, err := hcq.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
-	return hc
+	return node
 }
 
 // FirstID returns the first HelmConfig id in the query. Returns *NotFoundError when no id was found.
@@ -86,8 +86,8 @@ func (hcq *HelmConfigQuery) FirstID(ctx context.Context) (id int, err error) {
 	return ids[0], nil
 }
 
-// FirstXID is like FirstID, but panics if an error occurs.
-func (hcq *HelmConfigQuery) FirstXID(ctx context.Context) int {
+// FirstIDX is like FirstID, but panics if an error occurs.
+func (hcq *HelmConfigQuery) FirstIDX(ctx context.Context) int {
 	id, err := hcq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -97,13 +97,13 @@ func (hcq *HelmConfigQuery) FirstXID(ctx context.Context) int {
 
 // Only returns the only HelmConfig entity in the query, returns an error if not exactly one entity was returned.
 func (hcq *HelmConfigQuery) Only(ctx context.Context) (*HelmConfig, error) {
-	hcs, err := hcq.Limit(2).All(ctx)
+	nodes, err := hcq.Limit(2).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	switch len(hcs) {
+	switch len(nodes) {
 	case 1:
-		return hcs[0], nil
+		return nodes[0], nil
 	case 0:
 		return nil, &NotFoundError{helmconfig.Label}
 	default:
@@ -113,11 +113,11 @@ func (hcq *HelmConfigQuery) Only(ctx context.Context) (*HelmConfig, error) {
 
 // OnlyX is like Only, but panics if an error occurs.
 func (hcq *HelmConfigQuery) OnlyX(ctx context.Context) *HelmConfig {
-	hc, err := hcq.Only(ctx)
+	node, err := hcq.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return hc
+	return node
 }
 
 // OnlyID returns the only HelmConfig id in the query, returns an error if not exactly one id was returned.
@@ -137,8 +137,8 @@ func (hcq *HelmConfigQuery) OnlyID(ctx context.Context) (id int, err error) {
 	return
 }
 
-// OnlyXID is like OnlyID, but panics if an error occurs.
-func (hcq *HelmConfigQuery) OnlyXID(ctx context.Context) int {
+// OnlyIDX is like OnlyID, but panics if an error occurs.
+func (hcq *HelmConfigQuery) OnlyIDX(ctx context.Context) int {
 	id, err := hcq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -156,11 +156,11 @@ func (hcq *HelmConfigQuery) All(ctx context.Context) ([]*HelmConfig, error) {
 
 // AllX is like All, but panics if an error occurs.
 func (hcq *HelmConfigQuery) AllX(ctx context.Context) []*HelmConfig {
-	hcs, err := hcq.All(ctx)
+	nodes, err := hcq.All(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return hcs
+	return nodes
 }
 
 // IDs executes the query and returns a list of HelmConfig ids.
@@ -218,11 +218,14 @@ func (hcq *HelmConfigQuery) ExistX(ctx context.Context) bool {
 // Clone returns a duplicate of the query builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
 func (hcq *HelmConfigQuery) Clone() *HelmConfigQuery {
+	if hcq == nil {
+		return nil
+	}
 	return &HelmConfigQuery{
 		config:     hcq.config,
 		limit:      hcq.limit,
 		offset:     hcq.offset,
-		order:      append([]Order{}, hcq.order...),
+		order:      append([]OrderFunc{}, hcq.order...),
 		unique:     append([]string{}, hcq.unique...),
 		predicates: append([]predicate.HelmConfig{}, hcq.predicates...),
 		// clone intermediate query.
@@ -362,7 +365,7 @@ func (hcq *HelmConfigQuery) querySpec() *sqlgraph.QuerySpec {
 	if ps := hcq.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
-				ps[i](selector)
+				ps[i](selector, helmconfig.ValidColumn)
 			}
 		}
 	}
@@ -381,7 +384,7 @@ func (hcq *HelmConfigQuery) sqlQuery() *sql.Selector {
 		p(selector)
 	}
 	for _, p := range hcq.order {
-		p(selector)
+		p(selector, helmconfig.ValidColumn)
 	}
 	if offset := hcq.offset; offset != nil {
 		// limit is mandatory for offset clause. We start
@@ -398,14 +401,14 @@ func (hcq *HelmConfigQuery) sqlQuery() *sql.Selector {
 type HelmConfigGroupBy struct {
 	config
 	fields []string
-	fns    []Aggregate
+	fns    []AggregateFunc
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (hcgb *HelmConfigGroupBy) Aggregate(fns ...Aggregate) *HelmConfigGroupBy {
+func (hcgb *HelmConfigGroupBy) Aggregate(fns ...AggregateFunc) *HelmConfigGroupBy {
 	hcgb.fns = append(hcgb.fns, fns...)
 	return hcgb
 }
@@ -448,6 +451,32 @@ func (hcgb *HelmConfigGroupBy) StringsX(ctx context.Context) []string {
 	return v
 }
 
+// String returns a single string from group-by. It is only allowed when querying group-by with one field.
+func (hcgb *HelmConfigGroupBy) String(ctx context.Context) (_ string, err error) {
+	var v []string
+	if v, err = hcgb.Strings(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{helmconfig.Label}
+	default:
+		err = fmt.Errorf("ent: HelmConfigGroupBy.Strings returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// StringX is like String, but panics if an error occurs.
+func (hcgb *HelmConfigGroupBy) StringX(ctx context.Context) string {
+	v, err := hcgb.String(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // Ints returns list of ints from group-by. It is only allowed when querying group-by with one field.
 func (hcgb *HelmConfigGroupBy) Ints(ctx context.Context) ([]int, error) {
 	if len(hcgb.fields) > 1 {
@@ -463,6 +492,32 @@ func (hcgb *HelmConfigGroupBy) Ints(ctx context.Context) ([]int, error) {
 // IntsX is like Ints, but panics if an error occurs.
 func (hcgb *HelmConfigGroupBy) IntsX(ctx context.Context) []int {
 	v, err := hcgb.Ints(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// Int returns a single int from group-by. It is only allowed when querying group-by with one field.
+func (hcgb *HelmConfigGroupBy) Int(ctx context.Context) (_ int, err error) {
+	var v []int
+	if v, err = hcgb.Ints(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{helmconfig.Label}
+	default:
+		err = fmt.Errorf("ent: HelmConfigGroupBy.Ints returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// IntX is like Int, but panics if an error occurs.
+func (hcgb *HelmConfigGroupBy) IntX(ctx context.Context) int {
+	v, err := hcgb.Int(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -490,6 +545,32 @@ func (hcgb *HelmConfigGroupBy) Float64sX(ctx context.Context) []float64 {
 	return v
 }
 
+// Float64 returns a single float64 from group-by. It is only allowed when querying group-by with one field.
+func (hcgb *HelmConfigGroupBy) Float64(ctx context.Context) (_ float64, err error) {
+	var v []float64
+	if v, err = hcgb.Float64s(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{helmconfig.Label}
+	default:
+		err = fmt.Errorf("ent: HelmConfigGroupBy.Float64s returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// Float64X is like Float64, but panics if an error occurs.
+func (hcgb *HelmConfigGroupBy) Float64X(ctx context.Context) float64 {
+	v, err := hcgb.Float64(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // Bools returns list of bools from group-by. It is only allowed when querying group-by with one field.
 func (hcgb *HelmConfigGroupBy) Bools(ctx context.Context) ([]bool, error) {
 	if len(hcgb.fields) > 1 {
@@ -511,9 +592,44 @@ func (hcgb *HelmConfigGroupBy) BoolsX(ctx context.Context) []bool {
 	return v
 }
 
+// Bool returns a single bool from group-by. It is only allowed when querying group-by with one field.
+func (hcgb *HelmConfigGroupBy) Bool(ctx context.Context) (_ bool, err error) {
+	var v []bool
+	if v, err = hcgb.Bools(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{helmconfig.Label}
+	default:
+		err = fmt.Errorf("ent: HelmConfigGroupBy.Bools returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// BoolX is like Bool, but panics if an error occurs.
+func (hcgb *HelmConfigGroupBy) BoolX(ctx context.Context) bool {
+	v, err := hcgb.Bool(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 func (hcgb *HelmConfigGroupBy) sqlScan(ctx context.Context, v interface{}) error {
+	for _, f := range hcgb.fields {
+		if !helmconfig.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
+		}
+	}
+	selector := hcgb.sqlQuery()
+	if err := selector.Err(); err != nil {
+		return err
+	}
 	rows := &sql.Rows{}
-	query, args := hcgb.sqlQuery().Query()
+	query, args := selector.Query()
 	if err := hcgb.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
@@ -526,7 +642,7 @@ func (hcgb *HelmConfigGroupBy) sqlQuery() *sql.Selector {
 	columns := make([]string, 0, len(hcgb.fields)+len(hcgb.fns))
 	columns = append(columns, hcgb.fields...)
 	for _, fn := range hcgb.fns {
-		columns = append(columns, fn(selector))
+		columns = append(columns, fn(selector, helmconfig.ValidColumn))
 	}
 	return selector.Select(columns...).GroupBy(hcgb.fields...)
 }
@@ -578,6 +694,32 @@ func (hcs *HelmConfigSelect) StringsX(ctx context.Context) []string {
 	return v
 }
 
+// String returns a single string from selector. It is only allowed when selecting one field.
+func (hcs *HelmConfigSelect) String(ctx context.Context) (_ string, err error) {
+	var v []string
+	if v, err = hcs.Strings(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{helmconfig.Label}
+	default:
+		err = fmt.Errorf("ent: HelmConfigSelect.Strings returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// StringX is like String, but panics if an error occurs.
+func (hcs *HelmConfigSelect) StringX(ctx context.Context) string {
+	v, err := hcs.String(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // Ints returns list of ints from selector. It is only allowed when selecting one field.
 func (hcs *HelmConfigSelect) Ints(ctx context.Context) ([]int, error) {
 	if len(hcs.fields) > 1 {
@@ -593,6 +735,32 @@ func (hcs *HelmConfigSelect) Ints(ctx context.Context) ([]int, error) {
 // IntsX is like Ints, but panics if an error occurs.
 func (hcs *HelmConfigSelect) IntsX(ctx context.Context) []int {
 	v, err := hcs.Ints(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// Int returns a single int from selector. It is only allowed when selecting one field.
+func (hcs *HelmConfigSelect) Int(ctx context.Context) (_ int, err error) {
+	var v []int
+	if v, err = hcs.Ints(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{helmconfig.Label}
+	default:
+		err = fmt.Errorf("ent: HelmConfigSelect.Ints returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// IntX is like Int, but panics if an error occurs.
+func (hcs *HelmConfigSelect) IntX(ctx context.Context) int {
+	v, err := hcs.Int(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -620,6 +788,32 @@ func (hcs *HelmConfigSelect) Float64sX(ctx context.Context) []float64 {
 	return v
 }
 
+// Float64 returns a single float64 from selector. It is only allowed when selecting one field.
+func (hcs *HelmConfigSelect) Float64(ctx context.Context) (_ float64, err error) {
+	var v []float64
+	if v, err = hcs.Float64s(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{helmconfig.Label}
+	default:
+		err = fmt.Errorf("ent: HelmConfigSelect.Float64s returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// Float64X is like Float64, but panics if an error occurs.
+func (hcs *HelmConfigSelect) Float64X(ctx context.Context) float64 {
+	v, err := hcs.Float64(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // Bools returns list of bools from selector. It is only allowed when selecting one field.
 func (hcs *HelmConfigSelect) Bools(ctx context.Context) ([]bool, error) {
 	if len(hcs.fields) > 1 {
@@ -641,7 +835,38 @@ func (hcs *HelmConfigSelect) BoolsX(ctx context.Context) []bool {
 	return v
 }
 
+// Bool returns a single bool from selector. It is only allowed when selecting one field.
+func (hcs *HelmConfigSelect) Bool(ctx context.Context) (_ bool, err error) {
+	var v []bool
+	if v, err = hcs.Bools(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{helmconfig.Label}
+	default:
+		err = fmt.Errorf("ent: HelmConfigSelect.Bools returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// BoolX is like Bool, but panics if an error occurs.
+func (hcs *HelmConfigSelect) BoolX(ctx context.Context) bool {
+	v, err := hcs.Bool(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 func (hcs *HelmConfigSelect) sqlScan(ctx context.Context, v interface{}) error {
+	for _, f := range hcs.fields {
+		if !helmconfig.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for selection", f)}
+		}
+	}
 	rows := &sql.Rows{}
 	query, args := hcs.sqlQuery().Query()
 	if err := hcs.driver.Query(ctx, query, args, rows); err != nil {

@@ -21,9 +21,9 @@ import (
 	"github.com/lingfohn/lime/ent/role"
 	"github.com/lingfohn/lime/ent/user"
 
-	"github.com/facebookincubator/ent/dialect"
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/dialect"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
 )
 
 // Client is the client that holds all ent builders.
@@ -79,8 +79,8 @@ func (c *Client) init() {
 	c.User = NewUserClient(c.config)
 }
 
-// Open opens a connection to the database specified by the driver name and a
-// driver-specific data source name, and returns a new client attached to it.
+// Open opens a database/sql.DB specified by the driver name and
+// the data source name, and returns a new client attached to it.
 // Optional parameters can be added for configuring the client.
 func Open(driverName, dataSourceName string, options ...Option) (*Client, error) {
 	switch driverName {
@@ -95,7 +95,8 @@ func Open(driverName, dataSourceName string, options ...Option) (*Client, error)
 	}
 }
 
-// Tx returns a new transactional client.
+// Tx returns a new transactional client. The provided context
+// is used until the transaction is committed or rolled back.
 func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	if _, ok := c.driver.(*txDriver); ok {
 		return nil, fmt.Errorf("ent: cannot start a transaction within a transaction")
@@ -106,6 +107,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	}
 	cfg := config{driver: tx, log: c.log, debug: c.debug, hooks: c.hooks}
 	return &Tx{
+		ctx:         ctx,
 		config:      cfg,
 		Application: NewApplicationClient(cfg),
 		Build:       NewBuildClient(cfg),
@@ -207,6 +209,11 @@ func (c *ApplicationClient) Create() *ApplicationCreate {
 	return &ApplicationCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
+// CreateBulk returns a builder for creating a bulk of Application entities.
+func (c *ApplicationClient) CreateBulk(builders ...*ApplicationCreate) *ApplicationCreateBulk {
+	return &ApplicationCreateBulk{config: c.config, builders: builders}
+}
+
 // Update returns an update builder for Application.
 func (c *ApplicationClient) Update() *ApplicationUpdate {
 	mutation := newApplicationMutation(c.config, OpUpdate)
@@ -215,13 +222,13 @@ func (c *ApplicationClient) Update() *ApplicationUpdate {
 
 // UpdateOne returns an update builder for the given entity.
 func (c *ApplicationClient) UpdateOne(a *Application) *ApplicationUpdateOne {
-	return c.UpdateOneID(a.ID)
+	mutation := newApplicationMutation(c.config, OpUpdateOne, withApplication(a))
+	return &ApplicationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOneID returns an update builder for the given id.
 func (c *ApplicationClient) UpdateOneID(id int) *ApplicationUpdateOne {
-	mutation := newApplicationMutation(c.config, OpUpdateOne)
-	mutation.id = &id
+	mutation := newApplicationMutation(c.config, OpUpdateOne, withApplicationID(id))
 	return &ApplicationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -244,7 +251,7 @@ func (c *ApplicationClient) DeleteOneID(id int) *ApplicationDeleteOne {
 	return &ApplicationDeleteOne{builder}
 }
 
-// Create returns a query builder for Application.
+// Query returns a query builder for Application.
 func (c *ApplicationClient) Query() *ApplicationQuery {
 	return &ApplicationQuery{config: c.config}
 }
@@ -256,11 +263,11 @@ func (c *ApplicationClient) Get(ctx context.Context, id int) (*Application, erro
 
 // GetX is like Get, but panics if an error occurs.
 func (c *ApplicationClient) GetX(ctx context.Context, id int) *Application {
-	a, err := c.Get(ctx, id)
+	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
-	return a
+	return obj
 }
 
 // QueryNamespace queries the namespace edge of a Application.
@@ -354,6 +361,11 @@ func (c *BuildClient) Create() *BuildCreate {
 	return &BuildCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
+// CreateBulk returns a builder for creating a bulk of Build entities.
+func (c *BuildClient) CreateBulk(builders ...*BuildCreate) *BuildCreateBulk {
+	return &BuildCreateBulk{config: c.config, builders: builders}
+}
+
 // Update returns an update builder for Build.
 func (c *BuildClient) Update() *BuildUpdate {
 	mutation := newBuildMutation(c.config, OpUpdate)
@@ -362,13 +374,13 @@ func (c *BuildClient) Update() *BuildUpdate {
 
 // UpdateOne returns an update builder for the given entity.
 func (c *BuildClient) UpdateOne(b *Build) *BuildUpdateOne {
-	return c.UpdateOneID(b.ID)
+	mutation := newBuildMutation(c.config, OpUpdateOne, withBuild(b))
+	return &BuildUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOneID returns an update builder for the given id.
 func (c *BuildClient) UpdateOneID(id int) *BuildUpdateOne {
-	mutation := newBuildMutation(c.config, OpUpdateOne)
-	mutation.id = &id
+	mutation := newBuildMutation(c.config, OpUpdateOne, withBuildID(id))
 	return &BuildUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -391,7 +403,7 @@ func (c *BuildClient) DeleteOneID(id int) *BuildDeleteOne {
 	return &BuildDeleteOne{builder}
 }
 
-// Create returns a query builder for Build.
+// Query returns a query builder for Build.
 func (c *BuildClient) Query() *BuildQuery {
 	return &BuildQuery{config: c.config}
 }
@@ -403,11 +415,11 @@ func (c *BuildClient) Get(ctx context.Context, id int) (*Build, error) {
 
 // GetX is like Get, but panics if an error occurs.
 func (c *BuildClient) GetX(ctx context.Context, id int) *Build {
-	b, err := c.Get(ctx, id)
+	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
-	return b
+	return obj
 }
 
 // QueryInstance queries the instance edge of a Build.
@@ -453,6 +465,11 @@ func (c *HelmConfigClient) Create() *HelmConfigCreate {
 	return &HelmConfigCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
+// CreateBulk returns a builder for creating a bulk of HelmConfig entities.
+func (c *HelmConfigClient) CreateBulk(builders ...*HelmConfigCreate) *HelmConfigCreateBulk {
+	return &HelmConfigCreateBulk{config: c.config, builders: builders}
+}
+
 // Update returns an update builder for HelmConfig.
 func (c *HelmConfigClient) Update() *HelmConfigUpdate {
 	mutation := newHelmConfigMutation(c.config, OpUpdate)
@@ -461,13 +478,13 @@ func (c *HelmConfigClient) Update() *HelmConfigUpdate {
 
 // UpdateOne returns an update builder for the given entity.
 func (c *HelmConfigClient) UpdateOne(hc *HelmConfig) *HelmConfigUpdateOne {
-	return c.UpdateOneID(hc.ID)
+	mutation := newHelmConfigMutation(c.config, OpUpdateOne, withHelmConfig(hc))
+	return &HelmConfigUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOneID returns an update builder for the given id.
 func (c *HelmConfigClient) UpdateOneID(id int) *HelmConfigUpdateOne {
-	mutation := newHelmConfigMutation(c.config, OpUpdateOne)
-	mutation.id = &id
+	mutation := newHelmConfigMutation(c.config, OpUpdateOne, withHelmConfigID(id))
 	return &HelmConfigUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -490,7 +507,7 @@ func (c *HelmConfigClient) DeleteOneID(id int) *HelmConfigDeleteOne {
 	return &HelmConfigDeleteOne{builder}
 }
 
-// Create returns a query builder for HelmConfig.
+// Query returns a query builder for HelmConfig.
 func (c *HelmConfigClient) Query() *HelmConfigQuery {
 	return &HelmConfigQuery{config: c.config}
 }
@@ -502,11 +519,11 @@ func (c *HelmConfigClient) Get(ctx context.Context, id int) (*HelmConfig, error)
 
 // GetX is like Get, but panics if an error occurs.
 func (c *HelmConfigClient) GetX(ctx context.Context, id int) *HelmConfig {
-	hc, err := c.Get(ctx, id)
+	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
-	return hc
+	return obj
 }
 
 // Hooks returns the client hooks.
@@ -536,6 +553,11 @@ func (c *InstanceClient) Create() *InstanceCreate {
 	return &InstanceCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
+// CreateBulk returns a builder for creating a bulk of Instance entities.
+func (c *InstanceClient) CreateBulk(builders ...*InstanceCreate) *InstanceCreateBulk {
+	return &InstanceCreateBulk{config: c.config, builders: builders}
+}
+
 // Update returns an update builder for Instance.
 func (c *InstanceClient) Update() *InstanceUpdate {
 	mutation := newInstanceMutation(c.config, OpUpdate)
@@ -544,13 +566,13 @@ func (c *InstanceClient) Update() *InstanceUpdate {
 
 // UpdateOne returns an update builder for the given entity.
 func (c *InstanceClient) UpdateOne(i *Instance) *InstanceUpdateOne {
-	return c.UpdateOneID(i.ID)
+	mutation := newInstanceMutation(c.config, OpUpdateOne, withInstance(i))
+	return &InstanceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOneID returns an update builder for the given id.
 func (c *InstanceClient) UpdateOneID(id int) *InstanceUpdateOne {
-	mutation := newInstanceMutation(c.config, OpUpdateOne)
-	mutation.id = &id
+	mutation := newInstanceMutation(c.config, OpUpdateOne, withInstanceID(id))
 	return &InstanceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -573,7 +595,7 @@ func (c *InstanceClient) DeleteOneID(id int) *InstanceDeleteOne {
 	return &InstanceDeleteOne{builder}
 }
 
-// Create returns a query builder for Instance.
+// Query returns a query builder for Instance.
 func (c *InstanceClient) Query() *InstanceQuery {
 	return &InstanceQuery{config: c.config}
 }
@@ -585,11 +607,11 @@ func (c *InstanceClient) Get(ctx context.Context, id int) (*Instance, error) {
 
 // GetX is like Get, but panics if an error occurs.
 func (c *InstanceClient) GetX(ctx context.Context, id int) *Instance {
-	i, err := c.Get(ctx, id)
+	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
-	return i
+	return obj
 }
 
 // QueryApplication queries the application edge of a Instance.
@@ -667,6 +689,11 @@ func (c *K8sClusterClient) Create() *K8sClusterCreate {
 	return &K8sClusterCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
+// CreateBulk returns a builder for creating a bulk of K8sCluster entities.
+func (c *K8sClusterClient) CreateBulk(builders ...*K8sClusterCreate) *K8sClusterCreateBulk {
+	return &K8sClusterCreateBulk{config: c.config, builders: builders}
+}
+
 // Update returns an update builder for K8sCluster.
 func (c *K8sClusterClient) Update() *K8sClusterUpdate {
 	mutation := newK8sClusterMutation(c.config, OpUpdate)
@@ -675,13 +702,13 @@ func (c *K8sClusterClient) Update() *K8sClusterUpdate {
 
 // UpdateOne returns an update builder for the given entity.
 func (c *K8sClusterClient) UpdateOne(kc *K8sCluster) *K8sClusterUpdateOne {
-	return c.UpdateOneID(kc.ID)
+	mutation := newK8sClusterMutation(c.config, OpUpdateOne, withK8sCluster(kc))
+	return &K8sClusterUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOneID returns an update builder for the given id.
 func (c *K8sClusterClient) UpdateOneID(id int) *K8sClusterUpdateOne {
-	mutation := newK8sClusterMutation(c.config, OpUpdateOne)
-	mutation.id = &id
+	mutation := newK8sClusterMutation(c.config, OpUpdateOne, withK8sClusterID(id))
 	return &K8sClusterUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -704,7 +731,7 @@ func (c *K8sClusterClient) DeleteOneID(id int) *K8sClusterDeleteOne {
 	return &K8sClusterDeleteOne{builder}
 }
 
-// Create returns a query builder for K8sCluster.
+// Query returns a query builder for K8sCluster.
 func (c *K8sClusterClient) Query() *K8sClusterQuery {
 	return &K8sClusterQuery{config: c.config}
 }
@@ -716,11 +743,11 @@ func (c *K8sClusterClient) Get(ctx context.Context, id int) (*K8sCluster, error)
 
 // GetX is like Get, but panics if an error occurs.
 func (c *K8sClusterClient) GetX(ctx context.Context, id int) *K8sCluster {
-	kc, err := c.Get(ctx, id)
+	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
-	return kc
+	return obj
 }
 
 // QueryNamespaces queries the namespaces edge of a K8sCluster.
@@ -766,6 +793,11 @@ func (c *MenuClient) Create() *MenuCreate {
 	return &MenuCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
+// CreateBulk returns a builder for creating a bulk of Menu entities.
+func (c *MenuClient) CreateBulk(builders ...*MenuCreate) *MenuCreateBulk {
+	return &MenuCreateBulk{config: c.config, builders: builders}
+}
+
 // Update returns an update builder for Menu.
 func (c *MenuClient) Update() *MenuUpdate {
 	mutation := newMenuMutation(c.config, OpUpdate)
@@ -774,13 +806,13 @@ func (c *MenuClient) Update() *MenuUpdate {
 
 // UpdateOne returns an update builder for the given entity.
 func (c *MenuClient) UpdateOne(m *Menu) *MenuUpdateOne {
-	return c.UpdateOneID(m.ID)
+	mutation := newMenuMutation(c.config, OpUpdateOne, withMenu(m))
+	return &MenuUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOneID returns an update builder for the given id.
 func (c *MenuClient) UpdateOneID(id int) *MenuUpdateOne {
-	mutation := newMenuMutation(c.config, OpUpdateOne)
-	mutation.id = &id
+	mutation := newMenuMutation(c.config, OpUpdateOne, withMenuID(id))
 	return &MenuUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -803,7 +835,7 @@ func (c *MenuClient) DeleteOneID(id int) *MenuDeleteOne {
 	return &MenuDeleteOne{builder}
 }
 
-// Create returns a query builder for Menu.
+// Query returns a query builder for Menu.
 func (c *MenuClient) Query() *MenuQuery {
 	return &MenuQuery{config: c.config}
 }
@@ -815,11 +847,11 @@ func (c *MenuClient) Get(ctx context.Context, id int) (*Menu, error) {
 
 // GetX is like Get, but panics if an error occurs.
 func (c *MenuClient) GetX(ctx context.Context, id int) *Menu {
-	m, err := c.Get(ctx, id)
+	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
-	return m
+	return obj
 }
 
 // QueryParent queries the parent edge of a Menu.
@@ -881,6 +913,11 @@ func (c *NamespaceClient) Create() *NamespaceCreate {
 	return &NamespaceCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
+// CreateBulk returns a builder for creating a bulk of Namespace entities.
+func (c *NamespaceClient) CreateBulk(builders ...*NamespaceCreate) *NamespaceCreateBulk {
+	return &NamespaceCreateBulk{config: c.config, builders: builders}
+}
+
 // Update returns an update builder for Namespace.
 func (c *NamespaceClient) Update() *NamespaceUpdate {
 	mutation := newNamespaceMutation(c.config, OpUpdate)
@@ -889,13 +926,13 @@ func (c *NamespaceClient) Update() *NamespaceUpdate {
 
 // UpdateOne returns an update builder for the given entity.
 func (c *NamespaceClient) UpdateOne(n *Namespace) *NamespaceUpdateOne {
-	return c.UpdateOneID(n.ID)
+	mutation := newNamespaceMutation(c.config, OpUpdateOne, withNamespace(n))
+	return &NamespaceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOneID returns an update builder for the given id.
 func (c *NamespaceClient) UpdateOneID(id int) *NamespaceUpdateOne {
-	mutation := newNamespaceMutation(c.config, OpUpdateOne)
-	mutation.id = &id
+	mutation := newNamespaceMutation(c.config, OpUpdateOne, withNamespaceID(id))
 	return &NamespaceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -918,7 +955,7 @@ func (c *NamespaceClient) DeleteOneID(id int) *NamespaceDeleteOne {
 	return &NamespaceDeleteOne{builder}
 }
 
-// Create returns a query builder for Namespace.
+// Query returns a query builder for Namespace.
 func (c *NamespaceClient) Query() *NamespaceQuery {
 	return &NamespaceQuery{config: c.config}
 }
@@ -930,11 +967,11 @@ func (c *NamespaceClient) Get(ctx context.Context, id int) (*Namespace, error) {
 
 // GetX is like Get, but panics if an error occurs.
 func (c *NamespaceClient) GetX(ctx context.Context, id int) *Namespace {
-	n, err := c.Get(ctx, id)
+	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
-	return n
+	return obj
 }
 
 // QueryCluster queries the cluster edge of a Namespace.
@@ -996,6 +1033,11 @@ func (c *PermissionClient) Create() *PermissionCreate {
 	return &PermissionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
+// CreateBulk returns a builder for creating a bulk of Permission entities.
+func (c *PermissionClient) CreateBulk(builders ...*PermissionCreate) *PermissionCreateBulk {
+	return &PermissionCreateBulk{config: c.config, builders: builders}
+}
+
 // Update returns an update builder for Permission.
 func (c *PermissionClient) Update() *PermissionUpdate {
 	mutation := newPermissionMutation(c.config, OpUpdate)
@@ -1004,13 +1046,13 @@ func (c *PermissionClient) Update() *PermissionUpdate {
 
 // UpdateOne returns an update builder for the given entity.
 func (c *PermissionClient) UpdateOne(pe *Permission) *PermissionUpdateOne {
-	return c.UpdateOneID(pe.ID)
+	mutation := newPermissionMutation(c.config, OpUpdateOne, withPermission(pe))
+	return &PermissionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOneID returns an update builder for the given id.
 func (c *PermissionClient) UpdateOneID(id int) *PermissionUpdateOne {
-	mutation := newPermissionMutation(c.config, OpUpdateOne)
-	mutation.id = &id
+	mutation := newPermissionMutation(c.config, OpUpdateOne, withPermissionID(id))
 	return &PermissionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -1033,7 +1075,7 @@ func (c *PermissionClient) DeleteOneID(id int) *PermissionDeleteOne {
 	return &PermissionDeleteOne{builder}
 }
 
-// Create returns a query builder for Permission.
+// Query returns a query builder for Permission.
 func (c *PermissionClient) Query() *PermissionQuery {
 	return &PermissionQuery{config: c.config}
 }
@@ -1045,11 +1087,11 @@ func (c *PermissionClient) Get(ctx context.Context, id int) (*Permission, error)
 
 // GetX is like Get, but panics if an error occurs.
 func (c *PermissionClient) GetX(ctx context.Context, id int) *Permission {
-	pe, err := c.Get(ctx, id)
+	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
-	return pe
+	return obj
 }
 
 // Hooks returns the client hooks.
@@ -1079,6 +1121,11 @@ func (c *ProjectClient) Create() *ProjectCreate {
 	return &ProjectCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
+// CreateBulk returns a builder for creating a bulk of Project entities.
+func (c *ProjectClient) CreateBulk(builders ...*ProjectCreate) *ProjectCreateBulk {
+	return &ProjectCreateBulk{config: c.config, builders: builders}
+}
+
 // Update returns an update builder for Project.
 func (c *ProjectClient) Update() *ProjectUpdate {
 	mutation := newProjectMutation(c.config, OpUpdate)
@@ -1087,13 +1134,13 @@ func (c *ProjectClient) Update() *ProjectUpdate {
 
 // UpdateOne returns an update builder for the given entity.
 func (c *ProjectClient) UpdateOne(pr *Project) *ProjectUpdateOne {
-	return c.UpdateOneID(pr.ID)
+	mutation := newProjectMutation(c.config, OpUpdateOne, withProject(pr))
+	return &ProjectUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOneID returns an update builder for the given id.
 func (c *ProjectClient) UpdateOneID(id int) *ProjectUpdateOne {
-	mutation := newProjectMutation(c.config, OpUpdateOne)
-	mutation.id = &id
+	mutation := newProjectMutation(c.config, OpUpdateOne, withProjectID(id))
 	return &ProjectUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -1116,7 +1163,7 @@ func (c *ProjectClient) DeleteOneID(id int) *ProjectDeleteOne {
 	return &ProjectDeleteOne{builder}
 }
 
-// Create returns a query builder for Project.
+// Query returns a query builder for Project.
 func (c *ProjectClient) Query() *ProjectQuery {
 	return &ProjectQuery{config: c.config}
 }
@@ -1128,11 +1175,11 @@ func (c *ProjectClient) Get(ctx context.Context, id int) (*Project, error) {
 
 // GetX is like Get, but panics if an error occurs.
 func (c *ProjectClient) GetX(ctx context.Context, id int) *Project {
-	pr, err := c.Get(ctx, id)
+	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
-	return pr
+	return obj
 }
 
 // QueryApplications queries the applications edge of a Project.
@@ -1178,6 +1225,11 @@ func (c *RoleClient) Create() *RoleCreate {
 	return &RoleCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
+// CreateBulk returns a builder for creating a bulk of Role entities.
+func (c *RoleClient) CreateBulk(builders ...*RoleCreate) *RoleCreateBulk {
+	return &RoleCreateBulk{config: c.config, builders: builders}
+}
+
 // Update returns an update builder for Role.
 func (c *RoleClient) Update() *RoleUpdate {
 	mutation := newRoleMutation(c.config, OpUpdate)
@@ -1186,13 +1238,13 @@ func (c *RoleClient) Update() *RoleUpdate {
 
 // UpdateOne returns an update builder for the given entity.
 func (c *RoleClient) UpdateOne(r *Role) *RoleUpdateOne {
-	return c.UpdateOneID(r.ID)
+	mutation := newRoleMutation(c.config, OpUpdateOne, withRole(r))
+	return &RoleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOneID returns an update builder for the given id.
 func (c *RoleClient) UpdateOneID(id int) *RoleUpdateOne {
-	mutation := newRoleMutation(c.config, OpUpdateOne)
-	mutation.id = &id
+	mutation := newRoleMutation(c.config, OpUpdateOne, withRoleID(id))
 	return &RoleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -1215,7 +1267,7 @@ func (c *RoleClient) DeleteOneID(id int) *RoleDeleteOne {
 	return &RoleDeleteOne{builder}
 }
 
-// Create returns a query builder for Role.
+// Query returns a query builder for Role.
 func (c *RoleClient) Query() *RoleQuery {
 	return &RoleQuery{config: c.config}
 }
@@ -1227,11 +1279,11 @@ func (c *RoleClient) Get(ctx context.Context, id int) (*Role, error) {
 
 // GetX is like Get, but panics if an error occurs.
 func (c *RoleClient) GetX(ctx context.Context, id int) *Role {
-	r, err := c.Get(ctx, id)
+	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
-	return r
+	return obj
 }
 
 // Hooks returns the client hooks.
@@ -1261,6 +1313,11 @@ func (c *UserClient) Create() *UserCreate {
 	return &UserCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
+// CreateBulk returns a builder for creating a bulk of User entities.
+func (c *UserClient) CreateBulk(builders ...*UserCreate) *UserCreateBulk {
+	return &UserCreateBulk{config: c.config, builders: builders}
+}
+
 // Update returns an update builder for User.
 func (c *UserClient) Update() *UserUpdate {
 	mutation := newUserMutation(c.config, OpUpdate)
@@ -1269,13 +1326,13 @@ func (c *UserClient) Update() *UserUpdate {
 
 // UpdateOne returns an update builder for the given entity.
 func (c *UserClient) UpdateOne(u *User) *UserUpdateOne {
-	return c.UpdateOneID(u.ID)
+	mutation := newUserMutation(c.config, OpUpdateOne, withUser(u))
+	return &UserUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOneID returns an update builder for the given id.
 func (c *UserClient) UpdateOneID(id int) *UserUpdateOne {
-	mutation := newUserMutation(c.config, OpUpdateOne)
-	mutation.id = &id
+	mutation := newUserMutation(c.config, OpUpdateOne, withUserID(id))
 	return &UserUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -1298,7 +1355,7 @@ func (c *UserClient) DeleteOneID(id int) *UserDeleteOne {
 	return &UserDeleteOne{builder}
 }
 
-// Create returns a query builder for User.
+// Query returns a query builder for User.
 func (c *UserClient) Query() *UserQuery {
 	return &UserQuery{config: c.config}
 }
@@ -1310,11 +1367,11 @@ func (c *UserClient) Get(ctx context.Context, id int) (*User, error) {
 
 // GetX is like Get, but panics if an error occurs.
 func (c *UserClient) GetX(ctx context.Context, id int) *User {
-	u, err := c.Get(ctx, id)
+	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
-	return u
+	return obj
 }
 
 // Hooks returns the client hooks.

@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/permission"
 )
 
@@ -92,40 +92,22 @@ func (pc *PermissionCreate) SetNillableUpdatedAt(t *time.Time) *PermissionCreate
 	return pc
 }
 
+// Mutation returns the PermissionMutation object of the builder.
+func (pc *PermissionCreate) Mutation() *PermissionMutation {
+	return pc.mutation
+}
+
 // Save creates the Permission in the database.
 func (pc *PermissionCreate) Save(ctx context.Context) (*Permission, error) {
-	if _, ok := pc.mutation.Method(); !ok {
-		return nil, errors.New("ent: missing required field \"method\"")
-	}
-	if _, ok := pc.mutation.Fullpath(); !ok {
-		return nil, errors.New("ent: missing required field \"fullpath\"")
-	}
-	if _, ok := pc.mutation.Action(); !ok {
-		return nil, errors.New("ent: missing required field \"action\"")
-	}
-	if _, ok := pc.mutation.Summary(); !ok {
-		return nil, errors.New("ent: missing required field \"summary\"")
-	}
-	if _, ok := pc.mutation.ControlLevel(); !ok {
-		return nil, errors.New("ent: missing required field \"controlLevel\"")
-	}
-	if _, ok := pc.mutation.Status(); !ok {
-		v := permission.DefaultStatus
-		pc.mutation.SetStatus(v)
-	}
-	if _, ok := pc.mutation.CreatedAt(); !ok {
-		v := permission.DefaultCreatedAt()
-		pc.mutation.SetCreatedAt(v)
-	}
-	if _, ok := pc.mutation.UpdatedAt(); !ok {
-		v := permission.DefaultUpdatedAt()
-		pc.mutation.SetUpdatedAt(v)
-	}
 	var (
 		err  error
 		node *Permission
 	)
+	pc.defaults()
 	if len(pc.hooks) == 0 {
+		if err = pc.check(); err != nil {
+			return nil, err
+		}
 		node, err = pc.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
@@ -133,8 +115,12 @@ func (pc *PermissionCreate) Save(ctx context.Context) (*Permission, error) {
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
 			}
+			if err = pc.check(); err != nil {
+				return nil, err
+			}
 			pc.mutation = mutation
 			node, err = pc.sqlSave(ctx)
+			mutation.done = true
 			return node, err
 		})
 		for i := len(pc.hooks) - 1; i >= 0; i-- {
@@ -156,9 +142,67 @@ func (pc *PermissionCreate) SaveX(ctx context.Context) *Permission {
 	return v
 }
 
+// defaults sets the default values of the builder before save.
+func (pc *PermissionCreate) defaults() {
+	if _, ok := pc.mutation.Status(); !ok {
+		v := permission.DefaultStatus
+		pc.mutation.SetStatus(v)
+	}
+	if _, ok := pc.mutation.CreatedAt(); !ok {
+		v := permission.DefaultCreatedAt()
+		pc.mutation.SetCreatedAt(v)
+	}
+	if _, ok := pc.mutation.UpdatedAt(); !ok {
+		v := permission.DefaultUpdatedAt()
+		pc.mutation.SetUpdatedAt(v)
+	}
+}
+
+// check runs all checks and user-defined validators on the builder.
+func (pc *PermissionCreate) check() error {
+	if _, ok := pc.mutation.Method(); !ok {
+		return &ValidationError{Name: "method", err: errors.New("ent: missing required field \"method\"")}
+	}
+	if _, ok := pc.mutation.Fullpath(); !ok {
+		return &ValidationError{Name: "fullpath", err: errors.New("ent: missing required field \"fullpath\"")}
+	}
+	if _, ok := pc.mutation.Action(); !ok {
+		return &ValidationError{Name: "action", err: errors.New("ent: missing required field \"action\"")}
+	}
+	if _, ok := pc.mutation.Summary(); !ok {
+		return &ValidationError{Name: "summary", err: errors.New("ent: missing required field \"summary\"")}
+	}
+	if _, ok := pc.mutation.ControlLevel(); !ok {
+		return &ValidationError{Name: "controlLevel", err: errors.New("ent: missing required field \"controlLevel\"")}
+	}
+	if _, ok := pc.mutation.Status(); !ok {
+		return &ValidationError{Name: "status", err: errors.New("ent: missing required field \"status\"")}
+	}
+	if _, ok := pc.mutation.CreatedAt(); !ok {
+		return &ValidationError{Name: "createdAt", err: errors.New("ent: missing required field \"createdAt\"")}
+	}
+	if _, ok := pc.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updatedAt", err: errors.New("ent: missing required field \"updatedAt\"")}
+	}
+	return nil
+}
+
 func (pc *PermissionCreate) sqlSave(ctx context.Context) (*Permission, error) {
+	_node, _spec := pc.createSpec()
+	if err := sqlgraph.CreateNode(ctx, pc.driver, _spec); err != nil {
+		if cerr, ok := isSQLConstraintError(err); ok {
+			err = cerr
+		}
+		return nil, err
+	}
+	id := _spec.ID.Value.(int64)
+	_node.ID = int(id)
+	return _node, nil
+}
+
+func (pc *PermissionCreate) createSpec() (*Permission, *sqlgraph.CreateSpec) {
 	var (
-		pe    = &Permission{config: pc.config}
+		_node = &Permission{config: pc.config}
 		_spec = &sqlgraph.CreateSpec{
 			Table: permission.Table,
 			ID: &sqlgraph.FieldSpec{
@@ -173,7 +217,7 @@ func (pc *PermissionCreate) sqlSave(ctx context.Context) (*Permission, error) {
 			Value:  value,
 			Column: permission.FieldMethod,
 		})
-		pe.Method = value
+		_node.Method = value
 	}
 	if value, ok := pc.mutation.Fullpath(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -181,7 +225,7 @@ func (pc *PermissionCreate) sqlSave(ctx context.Context) (*Permission, error) {
 			Value:  value,
 			Column: permission.FieldFullpath,
 		})
-		pe.Fullpath = value
+		_node.Fullpath = value
 	}
 	if value, ok := pc.mutation.Action(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -189,7 +233,7 @@ func (pc *PermissionCreate) sqlSave(ctx context.Context) (*Permission, error) {
 			Value:  value,
 			Column: permission.FieldAction,
 		})
-		pe.Action = value
+		_node.Action = value
 	}
 	if value, ok := pc.mutation.Summary(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -197,7 +241,7 @@ func (pc *PermissionCreate) sqlSave(ctx context.Context) (*Permission, error) {
 			Value:  value,
 			Column: permission.FieldSummary,
 		})
-		pe.Summary = value
+		_node.Summary = value
 	}
 	if value, ok := pc.mutation.ControlLevel(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -205,7 +249,7 @@ func (pc *PermissionCreate) sqlSave(ctx context.Context) (*Permission, error) {
 			Value:  value,
 			Column: permission.FieldControlLevel,
 		})
-		pe.ControlLevel = value
+		_node.ControlLevel = value
 	}
 	if value, ok := pc.mutation.Status(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -213,7 +257,7 @@ func (pc *PermissionCreate) sqlSave(ctx context.Context) (*Permission, error) {
 			Value:  value,
 			Column: permission.FieldStatus,
 		})
-		pe.Status = value
+		_node.Status = value
 	}
 	if value, ok := pc.mutation.CreatedAt(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -221,7 +265,7 @@ func (pc *PermissionCreate) sqlSave(ctx context.Context) (*Permission, error) {
 			Value:  value,
 			Column: permission.FieldCreatedAt,
 		})
-		pe.CreatedAt = value
+		_node.CreatedAt = value
 	}
 	if value, ok := pc.mutation.UpdatedAt(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -229,15 +273,74 @@ func (pc *PermissionCreate) sqlSave(ctx context.Context) (*Permission, error) {
 			Value:  value,
 			Column: permission.FieldUpdatedAt,
 		})
-		pe.UpdatedAt = value
+		_node.UpdatedAt = value
 	}
-	if err := sqlgraph.CreateNode(ctx, pc.driver, _spec); err != nil {
-		if cerr, ok := isSQLConstraintError(err); ok {
-			err = cerr
+	return _node, _spec
+}
+
+// PermissionCreateBulk is the builder for creating a bulk of Permission entities.
+type PermissionCreateBulk struct {
+	config
+	builders []*PermissionCreate
+}
+
+// Save creates the Permission entities in the database.
+func (pcb *PermissionCreateBulk) Save(ctx context.Context) ([]*Permission, error) {
+	specs := make([]*sqlgraph.CreateSpec, len(pcb.builders))
+	nodes := make([]*Permission, len(pcb.builders))
+	mutators := make([]Mutator, len(pcb.builders))
+	for i := range pcb.builders {
+		func(i int, root context.Context) {
+			builder := pcb.builders[i]
+			builder.defaults()
+			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
+				mutation, ok := m.(*PermissionMutation)
+				if !ok {
+					return nil, fmt.Errorf("unexpected mutation type %T", m)
+				}
+				if err := builder.check(); err != nil {
+					return nil, err
+				}
+				builder.mutation = mutation
+				nodes[i], specs[i] = builder.createSpec()
+				var err error
+				if i < len(mutators)-1 {
+					_, err = mutators[i+1].Mutate(root, pcb.builders[i+1].mutation)
+				} else {
+					// Invoke the actual operation on the latest mutation in the chain.
+					if err = sqlgraph.BatchCreate(ctx, pcb.driver, &sqlgraph.BatchCreateSpec{Nodes: specs}); err != nil {
+						if cerr, ok := isSQLConstraintError(err); ok {
+							err = cerr
+						}
+					}
+				}
+				mutation.done = true
+				if err != nil {
+					return nil, err
+				}
+				id := specs[i].ID.Value.(int64)
+				nodes[i].ID = int(id)
+				return nodes[i], nil
+			})
+			for i := len(builder.hooks) - 1; i >= 0; i-- {
+				mut = builder.hooks[i](mut)
+			}
+			mutators[i] = mut
+		}(i, ctx)
+	}
+	if len(mutators) > 0 {
+		if _, err := mutators[0].Mutate(ctx, pcb.builders[0].mutation); err != nil {
+			return nil, err
 		}
-		return nil, err
 	}
-	id := _spec.ID.Value.(int64)
-	pe.ID = int(id)
-	return pe, nil
+	return nodes, nil
+}
+
+// SaveX calls Save and panics if Save returns an error.
+func (pcb *PermissionCreateBulk) SaveX(ctx context.Context) []*Permission {
+	v, err := pcb.Save(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
 }

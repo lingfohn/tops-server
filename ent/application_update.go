@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/application"
 	"github.com/lingfohn/lime/ent/helmconfig"
 	"github.com/lingfohn/lime/ent/instance"
@@ -21,14 +21,13 @@ import (
 // ApplicationUpdate is the builder for updating Application entities.
 type ApplicationUpdate struct {
 	config
-	hooks      []Hook
-	mutation   *ApplicationMutation
-	predicates []predicate.Application
+	hooks    []Hook
+	mutation *ApplicationMutation
 }
 
 // Where adds a new predicate for the builder.
 func (au *ApplicationUpdate) Where(ps ...predicate.Application) *ApplicationUpdate {
-	au.predicates = append(au.predicates, ps...)
+	au.mutation.predicates = append(au.mutation.predicates, ps...)
 	return au
 }
 
@@ -156,15 +155,26 @@ func (au *ApplicationUpdate) SetConfig(h *HelmConfig) *ApplicationUpdate {
 	return au.SetConfigID(h.ID)
 }
 
-// ClearNamespace clears the namespace edge to Namespace.
+// Mutation returns the ApplicationMutation object of the builder.
+func (au *ApplicationUpdate) Mutation() *ApplicationMutation {
+	return au.mutation
+}
+
+// ClearNamespace clears the "namespace" edge to type Namespace.
 func (au *ApplicationUpdate) ClearNamespace() *ApplicationUpdate {
 	au.mutation.ClearNamespace()
 	return au
 }
 
-// ClearProject clears the project edge to Project.
+// ClearProject clears the "project" edge to type Project.
 func (au *ApplicationUpdate) ClearProject() *ApplicationUpdate {
 	au.mutation.ClearProject()
+	return au
+}
+
+// ClearInstances clears all "instances" edges to type Instance.
+func (au *ApplicationUpdate) ClearInstances() *ApplicationUpdate {
+	au.mutation.ClearInstances()
 	return au
 }
 
@@ -183,23 +193,19 @@ func (au *ApplicationUpdate) RemoveInstances(i ...*Instance) *ApplicationUpdate 
 	return au.RemoveInstanceIDs(ids...)
 }
 
-// ClearConfig clears the config edge to HelmConfig.
+// ClearConfig clears the "config" edge to type HelmConfig.
 func (au *ApplicationUpdate) ClearConfig() *ApplicationUpdate {
 	au.mutation.ClearConfig()
 	return au
 }
 
-// Save executes the query and returns the number of rows/vertices matched by this operation.
+// Save executes the query and returns the number of nodes affected by the update operation.
 func (au *ApplicationUpdate) Save(ctx context.Context) (int, error) {
-	if _, ok := au.mutation.UpdatedAt(); !ok {
-		v := application.UpdateDefaultUpdatedAt()
-		au.mutation.SetUpdatedAt(v)
-	}
-
 	var (
 		err      error
 		affected int
 	)
+	au.defaults()
 	if len(au.hooks) == 0 {
 		affected, err = au.sqlSave(ctx)
 	} else {
@@ -210,6 +216,7 @@ func (au *ApplicationUpdate) Save(ctx context.Context) (int, error) {
 			}
 			au.mutation = mutation
 			affected, err = au.sqlSave(ctx)
+			mutation.done = true
 			return affected, err
 		})
 		for i := len(au.hooks) - 1; i >= 0; i-- {
@@ -244,6 +251,14 @@ func (au *ApplicationUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (au *ApplicationUpdate) defaults() {
+	if _, ok := au.mutation.UpdatedAt(); !ok {
+		v := application.UpdateDefaultUpdatedAt()
+		au.mutation.SetUpdatedAt(v)
+	}
+}
+
 func (au *ApplicationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
@@ -255,7 +270,7 @@ func (au *ApplicationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			},
 		},
 	}
-	if ps := au.predicates; len(ps) > 0 {
+	if ps := au.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -381,7 +396,23 @@ func (au *ApplicationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := au.mutation.RemovedInstancesIDs(); len(nodes) > 0 {
+	if au.mutation.InstancesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   application.InstancesTable,
+			Columns: []string{application.InstancesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: instance.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := au.mutation.RemovedInstancesIDs(); len(nodes) > 0 && !au.mutation.InstancesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -596,15 +627,26 @@ func (auo *ApplicationUpdateOne) SetConfig(h *HelmConfig) *ApplicationUpdateOne 
 	return auo.SetConfigID(h.ID)
 }
 
-// ClearNamespace clears the namespace edge to Namespace.
+// Mutation returns the ApplicationMutation object of the builder.
+func (auo *ApplicationUpdateOne) Mutation() *ApplicationMutation {
+	return auo.mutation
+}
+
+// ClearNamespace clears the "namespace" edge to type Namespace.
 func (auo *ApplicationUpdateOne) ClearNamespace() *ApplicationUpdateOne {
 	auo.mutation.ClearNamespace()
 	return auo
 }
 
-// ClearProject clears the project edge to Project.
+// ClearProject clears the "project" edge to type Project.
 func (auo *ApplicationUpdateOne) ClearProject() *ApplicationUpdateOne {
 	auo.mutation.ClearProject()
+	return auo
+}
+
+// ClearInstances clears all "instances" edges to type Instance.
+func (auo *ApplicationUpdateOne) ClearInstances() *ApplicationUpdateOne {
+	auo.mutation.ClearInstances()
 	return auo
 }
 
@@ -623,7 +665,7 @@ func (auo *ApplicationUpdateOne) RemoveInstances(i ...*Instance) *ApplicationUpd
 	return auo.RemoveInstanceIDs(ids...)
 }
 
-// ClearConfig clears the config edge to HelmConfig.
+// ClearConfig clears the "config" edge to type HelmConfig.
 func (auo *ApplicationUpdateOne) ClearConfig() *ApplicationUpdateOne {
 	auo.mutation.ClearConfig()
 	return auo
@@ -631,15 +673,11 @@ func (auo *ApplicationUpdateOne) ClearConfig() *ApplicationUpdateOne {
 
 // Save executes the query and returns the updated entity.
 func (auo *ApplicationUpdateOne) Save(ctx context.Context) (*Application, error) {
-	if _, ok := auo.mutation.UpdatedAt(); !ok {
-		v := application.UpdateDefaultUpdatedAt()
-		auo.mutation.SetUpdatedAt(v)
-	}
-
 	var (
 		err  error
 		node *Application
 	)
+	auo.defaults()
 	if len(auo.hooks) == 0 {
 		node, err = auo.sqlSave(ctx)
 	} else {
@@ -650,6 +688,7 @@ func (auo *ApplicationUpdateOne) Save(ctx context.Context) (*Application, error)
 			}
 			auo.mutation = mutation
 			node, err = auo.sqlSave(ctx)
+			mutation.done = true
 			return node, err
 		})
 		for i := len(auo.hooks) - 1; i >= 0; i-- {
@@ -664,11 +703,11 @@ func (auo *ApplicationUpdateOne) Save(ctx context.Context) (*Application, error)
 
 // SaveX is like Save, but panics if an error occurs.
 func (auo *ApplicationUpdateOne) SaveX(ctx context.Context) *Application {
-	a, err := auo.Save(ctx)
+	node, err := auo.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return a
+	return node
 }
 
 // Exec executes the query on the entity.
@@ -684,7 +723,15 @@ func (auo *ApplicationUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-func (auo *ApplicationUpdateOne) sqlSave(ctx context.Context) (a *Application, err error) {
+// defaults sets the default values of the builder before save.
+func (auo *ApplicationUpdateOne) defaults() {
+	if _, ok := auo.mutation.UpdatedAt(); !ok {
+		v := application.UpdateDefaultUpdatedAt()
+		auo.mutation.SetUpdatedAt(v)
+	}
+}
+
+func (auo *ApplicationUpdateOne) sqlSave(ctx context.Context) (_node *Application, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
 			Table:   application.Table,
@@ -697,7 +744,7 @@ func (auo *ApplicationUpdateOne) sqlSave(ctx context.Context) (a *Application, e
 	}
 	id, ok := auo.mutation.ID()
 	if !ok {
-		return nil, fmt.Errorf("missing Application.ID for update")
+		return nil, &ValidationError{Name: "ID", err: fmt.Errorf("missing Application.ID for update")}
 	}
 	_spec.Node.ID.Value = id
 	if value, ok := auo.mutation.Name(); ok {
@@ -819,7 +866,23 @@ func (auo *ApplicationUpdateOne) sqlSave(ctx context.Context) (a *Application, e
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := auo.mutation.RemovedInstancesIDs(); len(nodes) > 0 {
+	if auo.mutation.InstancesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   application.InstancesTable,
+			Columns: []string{application.InstancesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: instance.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := auo.mutation.RemovedInstancesIDs(); len(nodes) > 0 && !auo.mutation.InstancesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -892,9 +955,9 @@ func (auo *ApplicationUpdateOne) sqlSave(ctx context.Context) (a *Application, e
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	a = &Application{config: auo.config}
-	_spec.Assign = a.assignValues
-	_spec.ScanValues = a.scanValues()
+	_node = &Application{config: auo.config}
+	_spec.Assign = _node.assignValues
+	_spec.ScanValues = _node.scanValues()
 	if err = sqlgraph.UpdateNode(ctx, auo.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{application.Label}
@@ -903,5 +966,5 @@ func (auo *ApplicationUpdateOne) sqlSave(ctx context.Context) (a *Application, e
 		}
 		return nil, err
 	}
-	return a, nil
+	return _node, nil
 }

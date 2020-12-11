@@ -40,6 +40,10 @@ func (p *ProjectManage) Query(q QueryMap)(count int,ps ent.Projects,err error)  
 	return
 }
 
+func (p *ProjectManage)Delete(id int)(err error)  {
+	return p.db.Project.DeleteOneID(id).Exec(context.TODO())
+}
+
 func (p *ProjectManage) CreateProject(pt ent.Project) (pro *ent.Project,err error) {
 	pc := p.db.Project.Create()
 	pc.SetProjectName(pt.ProjectName).

@@ -6,9 +6,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/build"
 	"github.com/lingfohn/lime/ent/predicate"
 )
@@ -16,14 +16,13 @@ import (
 // BuildDelete is the builder for deleting a Build entity.
 type BuildDelete struct {
 	config
-	hooks      []Hook
-	mutation   *BuildMutation
-	predicates []predicate.Build
+	hooks    []Hook
+	mutation *BuildMutation
 }
 
 // Where adds a new predicate to the delete builder.
 func (bd *BuildDelete) Where(ps ...predicate.Build) *BuildDelete {
-	bd.predicates = append(bd.predicates, ps...)
+	bd.mutation.predicates = append(bd.mutation.predicates, ps...)
 	return bd
 }
 
@@ -43,6 +42,7 @@ func (bd *BuildDelete) Exec(ctx context.Context) (int, error) {
 			}
 			bd.mutation = mutation
 			affected, err = bd.sqlExec(ctx)
+			mutation.done = true
 			return affected, err
 		})
 		for i := len(bd.hooks) - 1; i >= 0; i-- {
@@ -74,7 +74,7 @@ func (bd *BuildDelete) sqlExec(ctx context.Context) (int, error) {
 			},
 		},
 	}
-	if ps := bd.predicates; len(ps) > 0 {
+	if ps := bd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)

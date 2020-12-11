@@ -5,10 +5,11 @@ package ent
 import (
 	"context"
 	"fmt"
+	"time"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/build"
 	"github.com/lingfohn/lime/ent/instance"
 	"github.com/lingfohn/lime/ent/predicate"
@@ -17,20 +18,128 @@ import (
 // BuildUpdate is the builder for updating Build entities.
 type BuildUpdate struct {
 	config
-	hooks      []Hook
-	mutation   *BuildMutation
-	predicates []predicate.Build
+	hooks    []Hook
+	mutation *BuildMutation
 }
 
 // Where adds a new predicate for the builder.
 func (bu *BuildUpdate) Where(ps ...predicate.Build) *BuildUpdate {
-	bu.predicates = append(bu.predicates, ps...)
+	bu.mutation.predicates = append(bu.mutation.predicates, ps...)
+	return bu
+}
+
+// SetTag sets the tag field.
+func (bu *BuildUpdate) SetTag(s string) *BuildUpdate {
+	bu.mutation.SetTag(s)
 	return bu
 }
 
 // SetName sets the name field.
 func (bu *BuildUpdate) SetName(s string) *BuildUpdate {
 	bu.mutation.SetName(s)
+	return bu
+}
+
+// SetStatus sets the status field.
+func (bu *BuildUpdate) SetStatus(i int) *BuildUpdate {
+	bu.mutation.ResetStatus()
+	bu.mutation.SetStatus(i)
+	return bu
+}
+
+// SetNillableStatus sets the status field if the given value is not nil.
+func (bu *BuildUpdate) SetNillableStatus(i *int) *BuildUpdate {
+	if i != nil {
+		bu.SetStatus(*i)
+	}
+	return bu
+}
+
+// AddStatus adds i to status.
+func (bu *BuildUpdate) AddStatus(i int) *BuildUpdate {
+	bu.mutation.AddStatus(i)
+	return bu
+}
+
+// SetCommitId sets the commitId field.
+func (bu *BuildUpdate) SetCommitId(s string) *BuildUpdate {
+	bu.mutation.SetCommitId(s)
+	return bu
+}
+
+// SetShortId sets the shortId field.
+func (bu *BuildUpdate) SetShortId(s string) *BuildUpdate {
+	bu.mutation.SetShortId(s)
+	return bu
+}
+
+// SetMessage sets the message field.
+func (bu *BuildUpdate) SetMessage(s string) *BuildUpdate {
+	bu.mutation.SetMessage(s)
+	return bu
+}
+
+// SetCommitterName sets the committerName field.
+func (bu *BuildUpdate) SetCommitterName(s string) *BuildUpdate {
+	bu.mutation.SetCommitterName(s)
+	return bu
+}
+
+// SetCommittedData sets the committedData field.
+func (bu *BuildUpdate) SetCommittedData(t time.Time) *BuildUpdate {
+	bu.mutation.SetCommittedData(t)
+	return bu
+}
+
+// SetBuildTime sets the buildTime field.
+func (bu *BuildUpdate) SetBuildTime(t time.Time) *BuildUpdate {
+	bu.mutation.SetBuildTime(t)
+	return bu
+}
+
+// SetJenkinsQueueId sets the jenkinsQueueId field.
+func (bu *BuildUpdate) SetJenkinsQueueId(i int) *BuildUpdate {
+	bu.mutation.ResetJenkinsQueueId()
+	bu.mutation.SetJenkinsQueueId(i)
+	return bu
+}
+
+// AddJenkinsQueueId adds i to jenkinsQueueId.
+func (bu *BuildUpdate) AddJenkinsQueueId(i int) *BuildUpdate {
+	bu.mutation.AddJenkinsQueueId(i)
+	return bu
+}
+
+// SetJenkinsBuildId sets the jenkinsBuildId field.
+func (bu *BuildUpdate) SetJenkinsBuildId(i int) *BuildUpdate {
+	bu.mutation.ResetJenkinsBuildId()
+	bu.mutation.SetJenkinsBuildId(i)
+	return bu
+}
+
+// SetNillableJenkinsBuildId sets the jenkinsBuildId field if the given value is not nil.
+func (bu *BuildUpdate) SetNillableJenkinsBuildId(i *int) *BuildUpdate {
+	if i != nil {
+		bu.SetJenkinsBuildId(*i)
+	}
+	return bu
+}
+
+// AddJenkinsBuildId adds i to jenkinsBuildId.
+func (bu *BuildUpdate) AddJenkinsBuildId(i int) *BuildUpdate {
+	bu.mutation.AddJenkinsBuildId(i)
+	return bu
+}
+
+// ClearJenkinsBuildId clears the value of jenkinsBuildId.
+func (bu *BuildUpdate) ClearJenkinsBuildId() *BuildUpdate {
+	bu.mutation.ClearJenkinsBuildId()
+	return bu
+}
+
+// SetUpdatedAt sets the updatedAt field.
+func (bu *BuildUpdate) SetUpdatedAt(t time.Time) *BuildUpdate {
+	bu.mutation.SetUpdatedAt(t)
 	return bu
 }
 
@@ -53,19 +162,24 @@ func (bu *BuildUpdate) SetInstance(i *Instance) *BuildUpdate {
 	return bu.SetInstanceID(i.ID)
 }
 
-// ClearInstance clears the instance edge to Instance.
+// Mutation returns the BuildMutation object of the builder.
+func (bu *BuildUpdate) Mutation() *BuildMutation {
+	return bu.mutation
+}
+
+// ClearInstance clears the "instance" edge to type Instance.
 func (bu *BuildUpdate) ClearInstance() *BuildUpdate {
 	bu.mutation.ClearInstance()
 	return bu
 }
 
-// Save executes the query and returns the number of rows/vertices matched by this operation.
+// Save executes the query and returns the number of nodes affected by the update operation.
 func (bu *BuildUpdate) Save(ctx context.Context) (int, error) {
-
 	var (
 		err      error
 		affected int
 	)
+	bu.defaults()
 	if len(bu.hooks) == 0 {
 		affected, err = bu.sqlSave(ctx)
 	} else {
@@ -76,6 +190,7 @@ func (bu *BuildUpdate) Save(ctx context.Context) (int, error) {
 			}
 			bu.mutation = mutation
 			affected, err = bu.sqlSave(ctx)
+			mutation.done = true
 			return affected, err
 		})
 		for i := len(bu.hooks) - 1; i >= 0; i-- {
@@ -110,6 +225,14 @@ func (bu *BuildUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (bu *BuildUpdate) defaults() {
+	if _, ok := bu.mutation.UpdatedAt(); !ok {
+		v := build.UpdateDefaultUpdatedAt()
+		bu.mutation.SetUpdatedAt(v)
+	}
+}
+
 func (bu *BuildUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
@@ -121,18 +244,122 @@ func (bu *BuildUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			},
 		},
 	}
-	if ps := bu.predicates; len(ps) > 0 {
+	if ps := bu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
+	if value, ok := bu.mutation.Tag(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: build.FieldTag,
+		})
+	}
 	if value, ok := bu.mutation.Name(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
 			Value:  value,
 			Column: build.FieldName,
+		})
+	}
+	if value, ok := bu.mutation.Status(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt,
+			Value:  value,
+			Column: build.FieldStatus,
+		})
+	}
+	if value, ok := bu.mutation.AddedStatus(); ok {
+		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt,
+			Value:  value,
+			Column: build.FieldStatus,
+		})
+	}
+	if value, ok := bu.mutation.CommitId(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: build.FieldCommitId,
+		})
+	}
+	if value, ok := bu.mutation.ShortId(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: build.FieldShortId,
+		})
+	}
+	if value, ok := bu.mutation.Message(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: build.FieldMessage,
+		})
+	}
+	if value, ok := bu.mutation.CommitterName(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: build.FieldCommitterName,
+		})
+	}
+	if value, ok := bu.mutation.CommittedData(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: build.FieldCommittedData,
+		})
+	}
+	if value, ok := bu.mutation.BuildTime(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: build.FieldBuildTime,
+		})
+	}
+	if value, ok := bu.mutation.JenkinsQueueId(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt,
+			Value:  value,
+			Column: build.FieldJenkinsQueueId,
+		})
+	}
+	if value, ok := bu.mutation.AddedJenkinsQueueId(); ok {
+		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt,
+			Value:  value,
+			Column: build.FieldJenkinsQueueId,
+		})
+	}
+	if value, ok := bu.mutation.JenkinsBuildId(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt,
+			Value:  value,
+			Column: build.FieldJenkinsBuildId,
+		})
+	}
+	if value, ok := bu.mutation.AddedJenkinsBuildId(); ok {
+		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt,
+			Value:  value,
+			Column: build.FieldJenkinsBuildId,
+		})
+	}
+	if bu.mutation.JenkinsBuildIdCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt,
+			Column: build.FieldJenkinsBuildId,
+		})
+	}
+	if value, ok := bu.mutation.UpdatedAt(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: build.FieldUpdatedAt,
 		})
 	}
 	if bu.mutation.InstanceCleared() {
@@ -188,9 +415,118 @@ type BuildUpdateOne struct {
 	mutation *BuildMutation
 }
 
+// SetTag sets the tag field.
+func (buo *BuildUpdateOne) SetTag(s string) *BuildUpdateOne {
+	buo.mutation.SetTag(s)
+	return buo
+}
+
 // SetName sets the name field.
 func (buo *BuildUpdateOne) SetName(s string) *BuildUpdateOne {
 	buo.mutation.SetName(s)
+	return buo
+}
+
+// SetStatus sets the status field.
+func (buo *BuildUpdateOne) SetStatus(i int) *BuildUpdateOne {
+	buo.mutation.ResetStatus()
+	buo.mutation.SetStatus(i)
+	return buo
+}
+
+// SetNillableStatus sets the status field if the given value is not nil.
+func (buo *BuildUpdateOne) SetNillableStatus(i *int) *BuildUpdateOne {
+	if i != nil {
+		buo.SetStatus(*i)
+	}
+	return buo
+}
+
+// AddStatus adds i to status.
+func (buo *BuildUpdateOne) AddStatus(i int) *BuildUpdateOne {
+	buo.mutation.AddStatus(i)
+	return buo
+}
+
+// SetCommitId sets the commitId field.
+func (buo *BuildUpdateOne) SetCommitId(s string) *BuildUpdateOne {
+	buo.mutation.SetCommitId(s)
+	return buo
+}
+
+// SetShortId sets the shortId field.
+func (buo *BuildUpdateOne) SetShortId(s string) *BuildUpdateOne {
+	buo.mutation.SetShortId(s)
+	return buo
+}
+
+// SetMessage sets the message field.
+func (buo *BuildUpdateOne) SetMessage(s string) *BuildUpdateOne {
+	buo.mutation.SetMessage(s)
+	return buo
+}
+
+// SetCommitterName sets the committerName field.
+func (buo *BuildUpdateOne) SetCommitterName(s string) *BuildUpdateOne {
+	buo.mutation.SetCommitterName(s)
+	return buo
+}
+
+// SetCommittedData sets the committedData field.
+func (buo *BuildUpdateOne) SetCommittedData(t time.Time) *BuildUpdateOne {
+	buo.mutation.SetCommittedData(t)
+	return buo
+}
+
+// SetBuildTime sets the buildTime field.
+func (buo *BuildUpdateOne) SetBuildTime(t time.Time) *BuildUpdateOne {
+	buo.mutation.SetBuildTime(t)
+	return buo
+}
+
+// SetJenkinsQueueId sets the jenkinsQueueId field.
+func (buo *BuildUpdateOne) SetJenkinsQueueId(i int) *BuildUpdateOne {
+	buo.mutation.ResetJenkinsQueueId()
+	buo.mutation.SetJenkinsQueueId(i)
+	return buo
+}
+
+// AddJenkinsQueueId adds i to jenkinsQueueId.
+func (buo *BuildUpdateOne) AddJenkinsQueueId(i int) *BuildUpdateOne {
+	buo.mutation.AddJenkinsQueueId(i)
+	return buo
+}
+
+// SetJenkinsBuildId sets the jenkinsBuildId field.
+func (buo *BuildUpdateOne) SetJenkinsBuildId(i int) *BuildUpdateOne {
+	buo.mutation.ResetJenkinsBuildId()
+	buo.mutation.SetJenkinsBuildId(i)
+	return buo
+}
+
+// SetNillableJenkinsBuildId sets the jenkinsBuildId field if the given value is not nil.
+func (buo *BuildUpdateOne) SetNillableJenkinsBuildId(i *int) *BuildUpdateOne {
+	if i != nil {
+		buo.SetJenkinsBuildId(*i)
+	}
+	return buo
+}
+
+// AddJenkinsBuildId adds i to jenkinsBuildId.
+func (buo *BuildUpdateOne) AddJenkinsBuildId(i int) *BuildUpdateOne {
+	buo.mutation.AddJenkinsBuildId(i)
+	return buo
+}
+
+// ClearJenkinsBuildId clears the value of jenkinsBuildId.
+func (buo *BuildUpdateOne) ClearJenkinsBuildId() *BuildUpdateOne {
+	buo.mutation.ClearJenkinsBuildId()
+	return buo
+}
+
+// SetUpdatedAt sets the updatedAt field.
+func (buo *BuildUpdateOne) SetUpdatedAt(t time.Time) *BuildUpdateOne {
+	buo.mutation.SetUpdatedAt(t)
 	return buo
 }
 
@@ -213,7 +549,12 @@ func (buo *BuildUpdateOne) SetInstance(i *Instance) *BuildUpdateOne {
 	return buo.SetInstanceID(i.ID)
 }
 
-// ClearInstance clears the instance edge to Instance.
+// Mutation returns the BuildMutation object of the builder.
+func (buo *BuildUpdateOne) Mutation() *BuildMutation {
+	return buo.mutation
+}
+
+// ClearInstance clears the "instance" edge to type Instance.
 func (buo *BuildUpdateOne) ClearInstance() *BuildUpdateOne {
 	buo.mutation.ClearInstance()
 	return buo
@@ -221,11 +562,11 @@ func (buo *BuildUpdateOne) ClearInstance() *BuildUpdateOne {
 
 // Save executes the query and returns the updated entity.
 func (buo *BuildUpdateOne) Save(ctx context.Context) (*Build, error) {
-
 	var (
 		err  error
 		node *Build
 	)
+	buo.defaults()
 	if len(buo.hooks) == 0 {
 		node, err = buo.sqlSave(ctx)
 	} else {
@@ -236,6 +577,7 @@ func (buo *BuildUpdateOne) Save(ctx context.Context) (*Build, error) {
 			}
 			buo.mutation = mutation
 			node, err = buo.sqlSave(ctx)
+			mutation.done = true
 			return node, err
 		})
 		for i := len(buo.hooks) - 1; i >= 0; i-- {
@@ -250,11 +592,11 @@ func (buo *BuildUpdateOne) Save(ctx context.Context) (*Build, error) {
 
 // SaveX is like Save, but panics if an error occurs.
 func (buo *BuildUpdateOne) SaveX(ctx context.Context) *Build {
-	b, err := buo.Save(ctx)
+	node, err := buo.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return b
+	return node
 }
 
 // Exec executes the query on the entity.
@@ -270,7 +612,15 @@ func (buo *BuildUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-func (buo *BuildUpdateOne) sqlSave(ctx context.Context) (b *Build, err error) {
+// defaults sets the default values of the builder before save.
+func (buo *BuildUpdateOne) defaults() {
+	if _, ok := buo.mutation.UpdatedAt(); !ok {
+		v := build.UpdateDefaultUpdatedAt()
+		buo.mutation.SetUpdatedAt(v)
+	}
+}
+
+func (buo *BuildUpdateOne) sqlSave(ctx context.Context) (_node *Build, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
 			Table:   build.Table,
@@ -283,14 +633,118 @@ func (buo *BuildUpdateOne) sqlSave(ctx context.Context) (b *Build, err error) {
 	}
 	id, ok := buo.mutation.ID()
 	if !ok {
-		return nil, fmt.Errorf("missing Build.ID for update")
+		return nil, &ValidationError{Name: "ID", err: fmt.Errorf("missing Build.ID for update")}
 	}
 	_spec.Node.ID.Value = id
+	if value, ok := buo.mutation.Tag(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: build.FieldTag,
+		})
+	}
 	if value, ok := buo.mutation.Name(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
 			Value:  value,
 			Column: build.FieldName,
+		})
+	}
+	if value, ok := buo.mutation.Status(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt,
+			Value:  value,
+			Column: build.FieldStatus,
+		})
+	}
+	if value, ok := buo.mutation.AddedStatus(); ok {
+		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt,
+			Value:  value,
+			Column: build.FieldStatus,
+		})
+	}
+	if value, ok := buo.mutation.CommitId(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: build.FieldCommitId,
+		})
+	}
+	if value, ok := buo.mutation.ShortId(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: build.FieldShortId,
+		})
+	}
+	if value, ok := buo.mutation.Message(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: build.FieldMessage,
+		})
+	}
+	if value, ok := buo.mutation.CommitterName(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: build.FieldCommitterName,
+		})
+	}
+	if value, ok := buo.mutation.CommittedData(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: build.FieldCommittedData,
+		})
+	}
+	if value, ok := buo.mutation.BuildTime(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: build.FieldBuildTime,
+		})
+	}
+	if value, ok := buo.mutation.JenkinsQueueId(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt,
+			Value:  value,
+			Column: build.FieldJenkinsQueueId,
+		})
+	}
+	if value, ok := buo.mutation.AddedJenkinsQueueId(); ok {
+		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt,
+			Value:  value,
+			Column: build.FieldJenkinsQueueId,
+		})
+	}
+	if value, ok := buo.mutation.JenkinsBuildId(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt,
+			Value:  value,
+			Column: build.FieldJenkinsBuildId,
+		})
+	}
+	if value, ok := buo.mutation.AddedJenkinsBuildId(); ok {
+		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt,
+			Value:  value,
+			Column: build.FieldJenkinsBuildId,
+		})
+	}
+	if buo.mutation.JenkinsBuildIdCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt,
+			Column: build.FieldJenkinsBuildId,
+		})
+	}
+	if value, ok := buo.mutation.UpdatedAt(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: build.FieldUpdatedAt,
 		})
 	}
 	if buo.mutation.InstanceCleared() {
@@ -328,9 +782,9 @@ func (buo *BuildUpdateOne) sqlSave(ctx context.Context) (b *Build, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	b = &Build{config: buo.config}
-	_spec.Assign = b.assignValues
-	_spec.ScanValues = b.scanValues()
+	_node = &Build{config: buo.config}
+	_spec.Assign = _node.assignValues
+	_spec.ScanValues = _node.scanValues()
 	if err = sqlgraph.UpdateNode(ctx, buo.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{build.Label}
@@ -339,5 +793,5 @@ func (buo *BuildUpdateOne) sqlSave(ctx context.Context) (b *Build, err error) {
 		}
 		return nil, err
 	}
-	return b, nil
+	return _node, nil
 }

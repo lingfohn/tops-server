@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/helmconfig"
 )
 
@@ -118,50 +118,22 @@ func (hcc *HelmConfigCreate) SetNillableUpdatedAt(t *time.Time) *HelmConfigCreat
 	return hcc
 }
 
+// Mutation returns the HelmConfigMutation object of the builder.
+func (hcc *HelmConfigCreate) Mutation() *HelmConfigMutation {
+	return hcc.mutation
+}
+
 // Save creates the HelmConfig in the database.
 func (hcc *HelmConfigCreate) Save(ctx context.Context) (*HelmConfig, error) {
-	if _, ok := hcc.mutation.ChartVersion(); !ok {
-		return nil, errors.New("ent: missing required field \"chartVersion\"")
-	}
-	if _, ok := hcc.mutation.Active(); !ok {
-		return nil, errors.New("ent: missing required field \"active\"")
-	}
-	if _, ok := hcc.mutation.EnableService(); !ok {
-		v := helmconfig.DefaultEnableService
-		hcc.mutation.SetEnableService(v)
-	}
-	if _, ok := hcc.mutation.ServiceType(); !ok {
-		v := helmconfig.DefaultServiceType
-		hcc.mutation.SetServiceType(v)
-	}
-	if _, ok := hcc.mutation.NodePort(); !ok {
-		return nil, errors.New("ent: missing required field \"nodePort\"")
-	}
-	if _, ok := hcc.mutation.LimitMem(); !ok {
-		return nil, errors.New("ent: missing required field \"limitMem\"")
-	}
-	if _, ok := hcc.mutation.LimitCPU(); !ok {
-		return nil, errors.New("ent: missing required field \"limitCPU\"")
-	}
-	if _, ok := hcc.mutation.ReqCPU(); !ok {
-		return nil, errors.New("ent: missing required field \"reqCPU\"")
-	}
-	if _, ok := hcc.mutation.ReqMem(); !ok {
-		return nil, errors.New("ent: missing required field \"reqMem\"")
-	}
-	if _, ok := hcc.mutation.CreatedAt(); !ok {
-		v := helmconfig.DefaultCreatedAt()
-		hcc.mutation.SetCreatedAt(v)
-	}
-	if _, ok := hcc.mutation.UpdatedAt(); !ok {
-		v := helmconfig.DefaultUpdatedAt()
-		hcc.mutation.SetUpdatedAt(v)
-	}
 	var (
 		err  error
 		node *HelmConfig
 	)
+	hcc.defaults()
 	if len(hcc.hooks) == 0 {
+		if err = hcc.check(); err != nil {
+			return nil, err
+		}
 		node, err = hcc.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
@@ -169,8 +141,12 @@ func (hcc *HelmConfigCreate) Save(ctx context.Context) (*HelmConfig, error) {
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
 			}
+			if err = hcc.check(); err != nil {
+				return nil, err
+			}
 			hcc.mutation = mutation
 			node, err = hcc.sqlSave(ctx)
+			mutation.done = true
 			return node, err
 		})
 		for i := len(hcc.hooks) - 1; i >= 0; i-- {
@@ -192,9 +168,80 @@ func (hcc *HelmConfigCreate) SaveX(ctx context.Context) *HelmConfig {
 	return v
 }
 
+// defaults sets the default values of the builder before save.
+func (hcc *HelmConfigCreate) defaults() {
+	if _, ok := hcc.mutation.EnableService(); !ok {
+		v := helmconfig.DefaultEnableService
+		hcc.mutation.SetEnableService(v)
+	}
+	if _, ok := hcc.mutation.ServiceType(); !ok {
+		v := helmconfig.DefaultServiceType
+		hcc.mutation.SetServiceType(v)
+	}
+	if _, ok := hcc.mutation.CreatedAt(); !ok {
+		v := helmconfig.DefaultCreatedAt()
+		hcc.mutation.SetCreatedAt(v)
+	}
+	if _, ok := hcc.mutation.UpdatedAt(); !ok {
+		v := helmconfig.DefaultUpdatedAt()
+		hcc.mutation.SetUpdatedAt(v)
+	}
+}
+
+// check runs all checks and user-defined validators on the builder.
+func (hcc *HelmConfigCreate) check() error {
+	if _, ok := hcc.mutation.ChartVersion(); !ok {
+		return &ValidationError{Name: "chartVersion", err: errors.New("ent: missing required field \"chartVersion\"")}
+	}
+	if _, ok := hcc.mutation.Active(); !ok {
+		return &ValidationError{Name: "active", err: errors.New("ent: missing required field \"active\"")}
+	}
+	if _, ok := hcc.mutation.EnableService(); !ok {
+		return &ValidationError{Name: "enableService", err: errors.New("ent: missing required field \"enableService\"")}
+	}
+	if _, ok := hcc.mutation.ServiceType(); !ok {
+		return &ValidationError{Name: "serviceType", err: errors.New("ent: missing required field \"serviceType\"")}
+	}
+	if _, ok := hcc.mutation.NodePort(); !ok {
+		return &ValidationError{Name: "nodePort", err: errors.New("ent: missing required field \"nodePort\"")}
+	}
+	if _, ok := hcc.mutation.LimitMem(); !ok {
+		return &ValidationError{Name: "limitMem", err: errors.New("ent: missing required field \"limitMem\"")}
+	}
+	if _, ok := hcc.mutation.LimitCPU(); !ok {
+		return &ValidationError{Name: "limitCPU", err: errors.New("ent: missing required field \"limitCPU\"")}
+	}
+	if _, ok := hcc.mutation.ReqCPU(); !ok {
+		return &ValidationError{Name: "reqCPU", err: errors.New("ent: missing required field \"reqCPU\"")}
+	}
+	if _, ok := hcc.mutation.ReqMem(); !ok {
+		return &ValidationError{Name: "reqMem", err: errors.New("ent: missing required field \"reqMem\"")}
+	}
+	if _, ok := hcc.mutation.CreatedAt(); !ok {
+		return &ValidationError{Name: "createdAt", err: errors.New("ent: missing required field \"createdAt\"")}
+	}
+	if _, ok := hcc.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updatedAt", err: errors.New("ent: missing required field \"updatedAt\"")}
+	}
+	return nil
+}
+
 func (hcc *HelmConfigCreate) sqlSave(ctx context.Context) (*HelmConfig, error) {
+	_node, _spec := hcc.createSpec()
+	if err := sqlgraph.CreateNode(ctx, hcc.driver, _spec); err != nil {
+		if cerr, ok := isSQLConstraintError(err); ok {
+			err = cerr
+		}
+		return nil, err
+	}
+	id := _spec.ID.Value.(int64)
+	_node.ID = int(id)
+	return _node, nil
+}
+
+func (hcc *HelmConfigCreate) createSpec() (*HelmConfig, *sqlgraph.CreateSpec) {
 	var (
-		hc    = &HelmConfig{config: hcc.config}
+		_node = &HelmConfig{config: hcc.config}
 		_spec = &sqlgraph.CreateSpec{
 			Table: helmconfig.Table,
 			ID: &sqlgraph.FieldSpec{
@@ -209,7 +256,7 @@ func (hcc *HelmConfigCreate) sqlSave(ctx context.Context) (*HelmConfig, error) {
 			Value:  value,
 			Column: helmconfig.FieldChartVersion,
 		})
-		hc.ChartVersion = value
+		_node.ChartVersion = value
 	}
 	if value, ok := hcc.mutation.Active(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -217,7 +264,7 @@ func (hcc *HelmConfigCreate) sqlSave(ctx context.Context) (*HelmConfig, error) {
 			Value:  value,
 			Column: helmconfig.FieldActive,
 		})
-		hc.Active = value
+		_node.Active = value
 	}
 	if value, ok := hcc.mutation.EnableService(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -225,7 +272,7 @@ func (hcc *HelmConfigCreate) sqlSave(ctx context.Context) (*HelmConfig, error) {
 			Value:  value,
 			Column: helmconfig.FieldEnableService,
 		})
-		hc.EnableService = value
+		_node.EnableService = value
 	}
 	if value, ok := hcc.mutation.ServiceType(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -233,7 +280,7 @@ func (hcc *HelmConfigCreate) sqlSave(ctx context.Context) (*HelmConfig, error) {
 			Value:  value,
 			Column: helmconfig.FieldServiceType,
 		})
-		hc.ServiceType = value
+		_node.ServiceType = value
 	}
 	if value, ok := hcc.mutation.NodePort(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -241,7 +288,7 @@ func (hcc *HelmConfigCreate) sqlSave(ctx context.Context) (*HelmConfig, error) {
 			Value:  value,
 			Column: helmconfig.FieldNodePort,
 		})
-		hc.NodePort = value
+		_node.NodePort = value
 	}
 	if value, ok := hcc.mutation.LimitMem(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -249,7 +296,7 @@ func (hcc *HelmConfigCreate) sqlSave(ctx context.Context) (*HelmConfig, error) {
 			Value:  value,
 			Column: helmconfig.FieldLimitMem,
 		})
-		hc.LimitMem = value
+		_node.LimitMem = value
 	}
 	if value, ok := hcc.mutation.LimitCPU(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -257,7 +304,7 @@ func (hcc *HelmConfigCreate) sqlSave(ctx context.Context) (*HelmConfig, error) {
 			Value:  value,
 			Column: helmconfig.FieldLimitCPU,
 		})
-		hc.LimitCPU = value
+		_node.LimitCPU = value
 	}
 	if value, ok := hcc.mutation.ReqCPU(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -265,7 +312,7 @@ func (hcc *HelmConfigCreate) sqlSave(ctx context.Context) (*HelmConfig, error) {
 			Value:  value,
 			Column: helmconfig.FieldReqCPU,
 		})
-		hc.ReqCPU = value
+		_node.ReqCPU = value
 	}
 	if value, ok := hcc.mutation.ReqMem(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -273,7 +320,7 @@ func (hcc *HelmConfigCreate) sqlSave(ctx context.Context) (*HelmConfig, error) {
 			Value:  value,
 			Column: helmconfig.FieldReqMem,
 		})
-		hc.ReqMem = value
+		_node.ReqMem = value
 	}
 	if value, ok := hcc.mutation.CreatedAt(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -281,7 +328,7 @@ func (hcc *HelmConfigCreate) sqlSave(ctx context.Context) (*HelmConfig, error) {
 			Value:  value,
 			Column: helmconfig.FieldCreatedAt,
 		})
-		hc.CreatedAt = value
+		_node.CreatedAt = value
 	}
 	if value, ok := hcc.mutation.UpdatedAt(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -289,15 +336,74 @@ func (hcc *HelmConfigCreate) sqlSave(ctx context.Context) (*HelmConfig, error) {
 			Value:  value,
 			Column: helmconfig.FieldUpdatedAt,
 		})
-		hc.UpdatedAt = value
+		_node.UpdatedAt = value
 	}
-	if err := sqlgraph.CreateNode(ctx, hcc.driver, _spec); err != nil {
-		if cerr, ok := isSQLConstraintError(err); ok {
-			err = cerr
+	return _node, _spec
+}
+
+// HelmConfigCreateBulk is the builder for creating a bulk of HelmConfig entities.
+type HelmConfigCreateBulk struct {
+	config
+	builders []*HelmConfigCreate
+}
+
+// Save creates the HelmConfig entities in the database.
+func (hccb *HelmConfigCreateBulk) Save(ctx context.Context) ([]*HelmConfig, error) {
+	specs := make([]*sqlgraph.CreateSpec, len(hccb.builders))
+	nodes := make([]*HelmConfig, len(hccb.builders))
+	mutators := make([]Mutator, len(hccb.builders))
+	for i := range hccb.builders {
+		func(i int, root context.Context) {
+			builder := hccb.builders[i]
+			builder.defaults()
+			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
+				mutation, ok := m.(*HelmConfigMutation)
+				if !ok {
+					return nil, fmt.Errorf("unexpected mutation type %T", m)
+				}
+				if err := builder.check(); err != nil {
+					return nil, err
+				}
+				builder.mutation = mutation
+				nodes[i], specs[i] = builder.createSpec()
+				var err error
+				if i < len(mutators)-1 {
+					_, err = mutators[i+1].Mutate(root, hccb.builders[i+1].mutation)
+				} else {
+					// Invoke the actual operation on the latest mutation in the chain.
+					if err = sqlgraph.BatchCreate(ctx, hccb.driver, &sqlgraph.BatchCreateSpec{Nodes: specs}); err != nil {
+						if cerr, ok := isSQLConstraintError(err); ok {
+							err = cerr
+						}
+					}
+				}
+				mutation.done = true
+				if err != nil {
+					return nil, err
+				}
+				id := specs[i].ID.Value.(int64)
+				nodes[i].ID = int(id)
+				return nodes[i], nil
+			})
+			for i := len(builder.hooks) - 1; i >= 0; i-- {
+				mut = builder.hooks[i](mut)
+			}
+			mutators[i] = mut
+		}(i, ctx)
+	}
+	if len(mutators) > 0 {
+		if _, err := mutators[0].Mutate(ctx, hccb.builders[0].mutation); err != nil {
+			return nil, err
 		}
-		return nil, err
 	}
-	id := _spec.ID.Value.(int64)
-	hc.ID = int(id)
-	return hc, nil
+	return nodes, nil
+}
+
+// SaveX calls Save and panics if Save returns an error.
+func (hccb *HelmConfigCreateBulk) SaveX(ctx context.Context) []*HelmConfig {
+	v, err := hccb.Save(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
 }

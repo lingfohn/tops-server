@@ -21,6 +21,7 @@ import (
 	auth2 "github.com/lingfohn/lime/auth"
 	"github.com/lingfohn/lime/handler"
 	"github.com/lingfohn/lime/middleware"
+	"github.com/lingfohn/lime/model"
 	"github.com/lingfohn/lime/storage"
 	"github.com/spf13/cobra"
 	"log"
@@ -55,6 +56,7 @@ func init() {
 
 func serve(cmd *cobra.Command, args []string) {
 	storage.InitClient()
+	model.InitBuildSession()
 	defer storage.CloseClient()
 	r := gin.Default()
 	r.Use(middleware.RequestId())
@@ -114,6 +116,7 @@ func serve(cmd *cobra.Command, args []string) {
 	proh := handler.NewProjectHandler()
 	r.GET("/api/projects",middleware.JSONRenderWrap(proh.QueryProject))
 	r.POST("/api/projects",middleware.JSONRenderWrap(proh.CreateProject))
+	r.DELETE("/api/projects/:id",middleware.JSONRenderWrap(proh.DeleteProject))
 
 	// K8sCluster
 	kch := handler.NewK8sClusterHandler()
@@ -124,6 +127,17 @@ func serve(cmd *cobra.Command, args []string) {
 	ah := handler.NewApplicationHandler()
 	r.GET("/api/applications",middleware.JSONRenderWrap(ah.QueryApplication))
 	r.POST("/api/applications",middleware.JSONRenderWrap(ah.CreateApplication))
+	r.DELETE("/api/applications/:id",middleware.JSONRenderWrap(ah.DeleteApplication))
+	r.GET("/api/applications/:id",middleware.JSONRenderWrap(ah.GetApplication))
+
+	// Instance
+	ih := handler.NewInstanceHandler()
+	r.POST("/api/applications/:id/instances",middleware.JSONRenderWrap(ih.CreateInstance))
+	r.GET("/api/applications/:id/instances",middleware.JSONRenderWrap(ih.QueryInstance))
+	r.GET("/api/instances/:id/tags",middleware.JSONRenderWrap(ih.LoadInstanceTags))
+	// Build
+	bh := handler.NewBuildHandler()
+	r.POST("/api/instances/:id/builds",middleware.JSONRenderWrap(bh.CreateBuild))
 	// 404 路由
 	r.NoRoute(func(c *gin.Context) {
 		claims := jwt.ExtractClaims(c)

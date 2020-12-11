@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/application"
 	"github.com/lingfohn/lime/ent/predicate"
 	"github.com/lingfohn/lime/ent/project"
@@ -18,14 +18,13 @@ import (
 // ProjectUpdate is the builder for updating Project entities.
 type ProjectUpdate struct {
 	config
-	hooks      []Hook
-	mutation   *ProjectMutation
-	predicates []predicate.Project
+	hooks    []Hook
+	mutation *ProjectMutation
 }
 
 // Where adds a new predicate for the builder.
 func (pu *ProjectUpdate) Where(ps ...predicate.Project) *ProjectUpdate {
-	pu.predicates = append(pu.predicates, ps...)
+	pu.mutation.predicates = append(pu.mutation.predicates, ps...)
 	return pu
 }
 
@@ -114,6 +113,17 @@ func (pu *ProjectUpdate) AddApplications(a ...*Application) *ProjectUpdate {
 	return pu.AddApplicationIDs(ids...)
 }
 
+// Mutation returns the ProjectMutation object of the builder.
+func (pu *ProjectUpdate) Mutation() *ProjectMutation {
+	return pu.mutation
+}
+
+// ClearApplications clears all "applications" edges to type Application.
+func (pu *ProjectUpdate) ClearApplications() *ProjectUpdate {
+	pu.mutation.ClearApplications()
+	return pu
+}
+
 // RemoveApplicationIDs removes the applications edge to Application by ids.
 func (pu *ProjectUpdate) RemoveApplicationIDs(ids ...int) *ProjectUpdate {
 	pu.mutation.RemoveApplicationIDs(ids...)
@@ -129,17 +139,13 @@ func (pu *ProjectUpdate) RemoveApplications(a ...*Application) *ProjectUpdate {
 	return pu.RemoveApplicationIDs(ids...)
 }
 
-// Save executes the query and returns the number of rows/vertices matched by this operation.
+// Save executes the query and returns the number of nodes affected by the update operation.
 func (pu *ProjectUpdate) Save(ctx context.Context) (int, error) {
-	if _, ok := pu.mutation.UpdatedAt(); !ok {
-		v := project.UpdateDefaultUpdatedAt()
-		pu.mutation.SetUpdatedAt(v)
-	}
-
 	var (
 		err      error
 		affected int
 	)
+	pu.defaults()
 	if len(pu.hooks) == 0 {
 		affected, err = pu.sqlSave(ctx)
 	} else {
@@ -150,6 +156,7 @@ func (pu *ProjectUpdate) Save(ctx context.Context) (int, error) {
 			}
 			pu.mutation = mutation
 			affected, err = pu.sqlSave(ctx)
+			mutation.done = true
 			return affected, err
 		})
 		for i := len(pu.hooks) - 1; i >= 0; i-- {
@@ -184,6 +191,14 @@ func (pu *ProjectUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (pu *ProjectUpdate) defaults() {
+	if _, ok := pu.mutation.UpdatedAt(); !ok {
+		v := project.UpdateDefaultUpdatedAt()
+		pu.mutation.SetUpdatedAt(v)
+	}
+}
+
 func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
@@ -195,7 +210,7 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			},
 		},
 	}
-	if ps := pu.predicates; len(ps) > 0 {
+	if ps := pu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -271,7 +286,23 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: project.FieldUpdatedAt,
 		})
 	}
-	if nodes := pu.mutation.RemovedApplicationsIDs(); len(nodes) > 0 {
+	if pu.mutation.ApplicationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   project.ApplicationsTable,
+			Columns: []string{project.ApplicationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: application.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.RemovedApplicationsIDs(); len(nodes) > 0 && !pu.mutation.ApplicationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -412,6 +443,17 @@ func (puo *ProjectUpdateOne) AddApplications(a ...*Application) *ProjectUpdateOn
 	return puo.AddApplicationIDs(ids...)
 }
 
+// Mutation returns the ProjectMutation object of the builder.
+func (puo *ProjectUpdateOne) Mutation() *ProjectMutation {
+	return puo.mutation
+}
+
+// ClearApplications clears all "applications" edges to type Application.
+func (puo *ProjectUpdateOne) ClearApplications() *ProjectUpdateOne {
+	puo.mutation.ClearApplications()
+	return puo
+}
+
 // RemoveApplicationIDs removes the applications edge to Application by ids.
 func (puo *ProjectUpdateOne) RemoveApplicationIDs(ids ...int) *ProjectUpdateOne {
 	puo.mutation.RemoveApplicationIDs(ids...)
@@ -429,15 +471,11 @@ func (puo *ProjectUpdateOne) RemoveApplications(a ...*Application) *ProjectUpdat
 
 // Save executes the query and returns the updated entity.
 func (puo *ProjectUpdateOne) Save(ctx context.Context) (*Project, error) {
-	if _, ok := puo.mutation.UpdatedAt(); !ok {
-		v := project.UpdateDefaultUpdatedAt()
-		puo.mutation.SetUpdatedAt(v)
-	}
-
 	var (
 		err  error
 		node *Project
 	)
+	puo.defaults()
 	if len(puo.hooks) == 0 {
 		node, err = puo.sqlSave(ctx)
 	} else {
@@ -448,6 +486,7 @@ func (puo *ProjectUpdateOne) Save(ctx context.Context) (*Project, error) {
 			}
 			puo.mutation = mutation
 			node, err = puo.sqlSave(ctx)
+			mutation.done = true
 			return node, err
 		})
 		for i := len(puo.hooks) - 1; i >= 0; i-- {
@@ -462,11 +501,11 @@ func (puo *ProjectUpdateOne) Save(ctx context.Context) (*Project, error) {
 
 // SaveX is like Save, but panics if an error occurs.
 func (puo *ProjectUpdateOne) SaveX(ctx context.Context) *Project {
-	pr, err := puo.Save(ctx)
+	node, err := puo.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return pr
+	return node
 }
 
 // Exec executes the query on the entity.
@@ -482,7 +521,15 @@ func (puo *ProjectUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (pr *Project, err error) {
+// defaults sets the default values of the builder before save.
+func (puo *ProjectUpdateOne) defaults() {
+	if _, ok := puo.mutation.UpdatedAt(); !ok {
+		v := project.UpdateDefaultUpdatedAt()
+		puo.mutation.SetUpdatedAt(v)
+	}
+}
+
+func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
 			Table:   project.Table,
@@ -495,7 +542,7 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (pr *Project, err erro
 	}
 	id, ok := puo.mutation.ID()
 	if !ok {
-		return nil, fmt.Errorf("missing Project.ID for update")
+		return nil, &ValidationError{Name: "ID", err: fmt.Errorf("missing Project.ID for update")}
 	}
 	_spec.Node.ID.Value = id
 	if value, ok := puo.mutation.ProjectName(); ok {
@@ -567,7 +614,23 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (pr *Project, err erro
 			Column: project.FieldUpdatedAt,
 		})
 	}
-	if nodes := puo.mutation.RemovedApplicationsIDs(); len(nodes) > 0 {
+	if puo.mutation.ApplicationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   project.ApplicationsTable,
+			Columns: []string{project.ApplicationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: application.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.RemovedApplicationsIDs(); len(nodes) > 0 && !puo.mutation.ApplicationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -605,9 +668,9 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (pr *Project, err erro
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	pr = &Project{config: puo.config}
-	_spec.Assign = pr.assignValues
-	_spec.ScanValues = pr.scanValues()
+	_node = &Project{config: puo.config}
+	_spec.Assign = _node.assignValues
+	_spec.ScanValues = _node.scanValues()
 	if err = sqlgraph.UpdateNode(ctx, puo.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{project.Label}
@@ -616,5 +679,5 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (pr *Project, err erro
 		}
 		return nil, err
 	}
-	return pr, nil
+	return _node, nil
 }

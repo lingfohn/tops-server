@@ -6,9 +6,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/predicate"
 	"github.com/lingfohn/lime/ent/role"
 )
@@ -16,14 +16,13 @@ import (
 // RoleDelete is the builder for deleting a Role entity.
 type RoleDelete struct {
 	config
-	hooks      []Hook
-	mutation   *RoleMutation
-	predicates []predicate.Role
+	hooks    []Hook
+	mutation *RoleMutation
 }
 
 // Where adds a new predicate to the delete builder.
 func (rd *RoleDelete) Where(ps ...predicate.Role) *RoleDelete {
-	rd.predicates = append(rd.predicates, ps...)
+	rd.mutation.predicates = append(rd.mutation.predicates, ps...)
 	return rd
 }
 
@@ -43,6 +42,7 @@ func (rd *RoleDelete) Exec(ctx context.Context) (int, error) {
 			}
 			rd.mutation = mutation
 			affected, err = rd.sqlExec(ctx)
+			mutation.done = true
 			return affected, err
 		})
 		for i := len(rd.hooks) - 1; i >= 0; i-- {
@@ -74,7 +74,7 @@ func (rd *RoleDelete) sqlExec(ctx context.Context) (int, error) {
 			},
 		},
 	}
-	if ps := rd.predicates; len(ps) > 0 {
+	if ps := rd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)

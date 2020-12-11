@@ -5,7 +5,7 @@ package helmconfig
 import (
 	"time"
 
-	"github.com/facebookincubator/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql"
 	"github.com/lingfohn/lime/ent/predicate"
 )
 
@@ -192,7 +192,7 @@ func ChartVersionIn(vs ...string) predicate.HelmConfig {
 	return predicate.HelmConfig(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -209,7 +209,7 @@ func ChartVersionNotIn(vs ...string) predicate.HelmConfig {
 	return predicate.HelmConfig(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -303,7 +303,7 @@ func ActiveIn(vs ...string) predicate.HelmConfig {
 	return predicate.HelmConfig(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -320,7 +320,7 @@ func ActiveNotIn(vs ...string) predicate.HelmConfig {
 	return predicate.HelmConfig(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -428,7 +428,7 @@ func ServiceTypeIn(vs ...string) predicate.HelmConfig {
 	return predicate.HelmConfig(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -445,7 +445,7 @@ func ServiceTypeNotIn(vs ...string) predicate.HelmConfig {
 	return predicate.HelmConfig(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -539,7 +539,7 @@ func NodePortIn(vs ...int) predicate.HelmConfig {
 	return predicate.HelmConfig(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -556,7 +556,7 @@ func NodePortNotIn(vs ...int) predicate.HelmConfig {
 	return predicate.HelmConfig(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -615,7 +615,7 @@ func LimitMemIn(vs ...string) predicate.HelmConfig {
 	return predicate.HelmConfig(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -632,7 +632,7 @@ func LimitMemNotIn(vs ...string) predicate.HelmConfig {
 	return predicate.HelmConfig(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -726,7 +726,7 @@ func LimitCPUIn(vs ...string) predicate.HelmConfig {
 	return predicate.HelmConfig(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -743,7 +743,7 @@ func LimitCPUNotIn(vs ...string) predicate.HelmConfig {
 	return predicate.HelmConfig(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -837,7 +837,7 @@ func ReqCPUIn(vs ...string) predicate.HelmConfig {
 	return predicate.HelmConfig(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -854,7 +854,7 @@ func ReqCPUNotIn(vs ...string) predicate.HelmConfig {
 	return predicate.HelmConfig(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -948,7 +948,7 @@ func ReqMemIn(vs ...string) predicate.HelmConfig {
 	return predicate.HelmConfig(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -965,7 +965,7 @@ func ReqMemNotIn(vs ...string) predicate.HelmConfig {
 	return predicate.HelmConfig(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -1059,7 +1059,7 @@ func CreatedAtIn(vs ...time.Time) predicate.HelmConfig {
 	return predicate.HelmConfig(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -1076,7 +1076,7 @@ func CreatedAtNotIn(vs ...time.Time) predicate.HelmConfig {
 	return predicate.HelmConfig(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -1135,7 +1135,7 @@ func UpdatedAtIn(vs ...time.Time) predicate.HelmConfig {
 	return predicate.HelmConfig(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -1152,7 +1152,7 @@ func UpdatedAtNotIn(vs ...time.Time) predicate.HelmConfig {
 	return predicate.HelmConfig(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}

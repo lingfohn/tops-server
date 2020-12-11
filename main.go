@@ -16,7 +16,6 @@ limitations under the License.
 package main
 
 import "github.com/lingfohn/lime/cmd"
-import _ "github.com/facebookincubator/ent"
 
 func main() {
 	cmd.Execute()

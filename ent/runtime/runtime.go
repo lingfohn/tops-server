@@ -5,6 +5,6 @@ package runtime
 // The schema-stitching logic is generated in github.com/lingfohn/lime/ent/runtime.go
 
 const (
-	Version = "v0.2.1"                                          // Version of ent codegen.
-	Sum     = "h1:l8Au/k8u2r+qfuk5Cq5MJwq75gv1necDQeHWysZFcO4=" // Sum of ent codegen.
+	Version = "v0.5.1"                                          // Version of ent codegen.
+	Sum     = "h1:XNIUdx1m8s2IBf36cnDoKKIaS2VaGJI/jkMKr8G9adE=" // Sum of ent codegen.
 )

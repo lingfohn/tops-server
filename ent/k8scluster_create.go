@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/k8scluster"
 	"github.com/lingfohn/lime/ent/namespace"
 )
@@ -90,27 +90,22 @@ func (kcc *K8sClusterCreate) AddNamespaces(n ...*Namespace) *K8sClusterCreate {
 	return kcc.AddNamespaceIDs(ids...)
 }
 
+// Mutation returns the K8sClusterMutation object of the builder.
+func (kcc *K8sClusterCreate) Mutation() *K8sClusterMutation {
+	return kcc.mutation
+}
+
 // Save creates the K8sCluster in the database.
 func (kcc *K8sClusterCreate) Save(ctx context.Context) (*K8sCluster, error) {
-	if _, ok := kcc.mutation.Cluster(); !ok {
-		return nil, errors.New("ent: missing required field \"cluster\"")
-	}
-	if _, ok := kcc.mutation.HelmApi(); !ok {
-		return nil, errors.New("ent: missing required field \"helmApi\"")
-	}
-	if _, ok := kcc.mutation.CreatedAt(); !ok {
-		v := k8scluster.DefaultCreatedAt()
-		kcc.mutation.SetCreatedAt(v)
-	}
-	if _, ok := kcc.mutation.UpdatedAt(); !ok {
-		v := k8scluster.DefaultUpdatedAt()
-		kcc.mutation.SetUpdatedAt(v)
-	}
 	var (
 		err  error
 		node *K8sCluster
 	)
+	kcc.defaults()
 	if len(kcc.hooks) == 0 {
+		if err = kcc.check(); err != nil {
+			return nil, err
+		}
 		node, err = kcc.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
@@ -118,8 +113,12 @@ func (kcc *K8sClusterCreate) Save(ctx context.Context) (*K8sCluster, error) {
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
 			}
+			if err = kcc.check(); err != nil {
+				return nil, err
+			}
 			kcc.mutation = mutation
 			node, err = kcc.sqlSave(ctx)
+			mutation.done = true
 			return node, err
 		})
 		for i := len(kcc.hooks) - 1; i >= 0; i-- {
@@ -141,9 +140,51 @@ func (kcc *K8sClusterCreate) SaveX(ctx context.Context) *K8sCluster {
 	return v
 }
 
+// defaults sets the default values of the builder before save.
+func (kcc *K8sClusterCreate) defaults() {
+	if _, ok := kcc.mutation.CreatedAt(); !ok {
+		v := k8scluster.DefaultCreatedAt()
+		kcc.mutation.SetCreatedAt(v)
+	}
+	if _, ok := kcc.mutation.UpdatedAt(); !ok {
+		v := k8scluster.DefaultUpdatedAt()
+		kcc.mutation.SetUpdatedAt(v)
+	}
+}
+
+// check runs all checks and user-defined validators on the builder.
+func (kcc *K8sClusterCreate) check() error {
+	if _, ok := kcc.mutation.Cluster(); !ok {
+		return &ValidationError{Name: "cluster", err: errors.New("ent: missing required field \"cluster\"")}
+	}
+	if _, ok := kcc.mutation.HelmApi(); !ok {
+		return &ValidationError{Name: "helmApi", err: errors.New("ent: missing required field \"helmApi\"")}
+	}
+	if _, ok := kcc.mutation.CreatedAt(); !ok {
+		return &ValidationError{Name: "createdAt", err: errors.New("ent: missing required field \"createdAt\"")}
+	}
+	if _, ok := kcc.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updatedAt", err: errors.New("ent: missing required field \"updatedAt\"")}
+	}
+	return nil
+}
+
 func (kcc *K8sClusterCreate) sqlSave(ctx context.Context) (*K8sCluster, error) {
+	_node, _spec := kcc.createSpec()
+	if err := sqlgraph.CreateNode(ctx, kcc.driver, _spec); err != nil {
+		if cerr, ok := isSQLConstraintError(err); ok {
+			err = cerr
+		}
+		return nil, err
+	}
+	id := _spec.ID.Value.(int64)
+	_node.ID = int(id)
+	return _node, nil
+}
+
+func (kcc *K8sClusterCreate) createSpec() (*K8sCluster, *sqlgraph.CreateSpec) {
 	var (
-		kc    = &K8sCluster{config: kcc.config}
+		_node = &K8sCluster{config: kcc.config}
 		_spec = &sqlgraph.CreateSpec{
 			Table: k8scluster.Table,
 			ID: &sqlgraph.FieldSpec{
@@ -158,7 +199,7 @@ func (kcc *K8sClusterCreate) sqlSave(ctx context.Context) (*K8sCluster, error) {
 			Value:  value,
 			Column: k8scluster.FieldCluster,
 		})
-		kc.Cluster = value
+		_node.Cluster = value
 	}
 	if value, ok := kcc.mutation.HelmApi(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -166,7 +207,7 @@ func (kcc *K8sClusterCreate) sqlSave(ctx context.Context) (*K8sCluster, error) {
 			Value:  value,
 			Column: k8scluster.FieldHelmApi,
 		})
-		kc.HelmApi = value
+		_node.HelmApi = value
 	}
 	if value, ok := kcc.mutation.AccessToken(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -174,7 +215,7 @@ func (kcc *K8sClusterCreate) sqlSave(ctx context.Context) (*K8sCluster, error) {
 			Value:  value,
 			Column: k8scluster.FieldAccessToken,
 		})
-		kc.AccessToken = value
+		_node.AccessToken = value
 	}
 	if value, ok := kcc.mutation.CreatedAt(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -182,7 +223,7 @@ func (kcc *K8sClusterCreate) sqlSave(ctx context.Context) (*K8sCluster, error) {
 			Value:  value,
 			Column: k8scluster.FieldCreatedAt,
 		})
-		kc.CreatedAt = value
+		_node.CreatedAt = value
 	}
 	if value, ok := kcc.mutation.UpdatedAt(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -190,7 +231,7 @@ func (kcc *K8sClusterCreate) sqlSave(ctx context.Context) (*K8sCluster, error) {
 			Value:  value,
 			Column: k8scluster.FieldUpdatedAt,
 		})
-		kc.UpdatedAt = value
+		_node.UpdatedAt = value
 	}
 	if nodes := kcc.mutation.NamespacesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -211,13 +252,72 @@ func (kcc *K8sClusterCreate) sqlSave(ctx context.Context) (*K8sCluster, error) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if err := sqlgraph.CreateNode(ctx, kcc.driver, _spec); err != nil {
-		if cerr, ok := isSQLConstraintError(err); ok {
-			err = cerr
-		}
-		return nil, err
+	return _node, _spec
+}
+
+// K8sClusterCreateBulk is the builder for creating a bulk of K8sCluster entities.
+type K8sClusterCreateBulk struct {
+	config
+	builders []*K8sClusterCreate
+}
+
+// Save creates the K8sCluster entities in the database.
+func (kccb *K8sClusterCreateBulk) Save(ctx context.Context) ([]*K8sCluster, error) {
+	specs := make([]*sqlgraph.CreateSpec, len(kccb.builders))
+	nodes := make([]*K8sCluster, len(kccb.builders))
+	mutators := make([]Mutator, len(kccb.builders))
+	for i := range kccb.builders {
+		func(i int, root context.Context) {
+			builder := kccb.builders[i]
+			builder.defaults()
+			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
+				mutation, ok := m.(*K8sClusterMutation)
+				if !ok {
+					return nil, fmt.Errorf("unexpected mutation type %T", m)
+				}
+				if err := builder.check(); err != nil {
+					return nil, err
+				}
+				builder.mutation = mutation
+				nodes[i], specs[i] = builder.createSpec()
+				var err error
+				if i < len(mutators)-1 {
+					_, err = mutators[i+1].Mutate(root, kccb.builders[i+1].mutation)
+				} else {
+					// Invoke the actual operation on the latest mutation in the chain.
+					if err = sqlgraph.BatchCreate(ctx, kccb.driver, &sqlgraph.BatchCreateSpec{Nodes: specs}); err != nil {
+						if cerr, ok := isSQLConstraintError(err); ok {
+							err = cerr
+						}
+					}
+				}
+				mutation.done = true
+				if err != nil {
+					return nil, err
+				}
+				id := specs[i].ID.Value.(int64)
+				nodes[i].ID = int(id)
+				return nodes[i], nil
+			})
+			for i := len(builder.hooks) - 1; i >= 0; i-- {
+				mut = builder.hooks[i](mut)
+			}
+			mutators[i] = mut
+		}(i, ctx)
 	}
-	id := _spec.ID.Value.(int64)
-	kc.ID = int(id)
-	return kc, nil
+	if len(mutators) > 0 {
+		if _, err := mutators[0].Mutate(ctx, kccb.builders[0].mutation); err != nil {
+			return nil, err
+		}
+	}
+	return nodes, nil
+}
+
+// SaveX calls Save and panics if Save returns an error.
+func (kccb *K8sClusterCreateBulk) SaveX(ctx context.Context) []*K8sCluster {
+	v, err := kccb.Save(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
 }

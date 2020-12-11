@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/predicate"
 	"github.com/lingfohn/lime/ent/role"
 )
@@ -20,7 +20,7 @@ type RoleQuery struct {
 	config
 	limit      *int
 	offset     *int
-	order      []Order
+	order      []OrderFunc
 	unique     []string
 	predicates []predicate.Role
 	// intermediate query (i.e. traversal path).
@@ -47,30 +47,30 @@ func (rq *RoleQuery) Offset(offset int) *RoleQuery {
 }
 
 // Order adds an order step to the query.
-func (rq *RoleQuery) Order(o ...Order) *RoleQuery {
+func (rq *RoleQuery) Order(o ...OrderFunc) *RoleQuery {
 	rq.order = append(rq.order, o...)
 	return rq
 }
 
 // First returns the first Role entity in the query. Returns *NotFoundError when no role was found.
 func (rq *RoleQuery) First(ctx context.Context) (*Role, error) {
-	rs, err := rq.Limit(1).All(ctx)
+	nodes, err := rq.Limit(1).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if len(rs) == 0 {
+	if len(nodes) == 0 {
 		return nil, &NotFoundError{role.Label}
 	}
-	return rs[0], nil
+	return nodes[0], nil
 }
 
 // FirstX is like First, but panics if an error occurs.
 func (rq *RoleQuery) FirstX(ctx context.Context) *Role {
-	r, err := rq.First(ctx)
+	node, err := rq.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
-	return r
+	return node
 }
 
 // FirstID returns the first Role id in the query. Returns *NotFoundError when no id was found.
@@ -86,8 +86,8 @@ func (rq *RoleQuery) FirstID(ctx context.Context) (id int, err error) {
 	return ids[0], nil
 }
 
-// FirstXID is like FirstID, but panics if an error occurs.
-func (rq *RoleQuery) FirstXID(ctx context.Context) int {
+// FirstIDX is like FirstID, but panics if an error occurs.
+func (rq *RoleQuery) FirstIDX(ctx context.Context) int {
 	id, err := rq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -97,13 +97,13 @@ func (rq *RoleQuery) FirstXID(ctx context.Context) int {
 
 // Only returns the only Role entity in the query, returns an error if not exactly one entity was returned.
 func (rq *RoleQuery) Only(ctx context.Context) (*Role, error) {
-	rs, err := rq.Limit(2).All(ctx)
+	nodes, err := rq.Limit(2).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	switch len(rs) {
+	switch len(nodes) {
 	case 1:
-		return rs[0], nil
+		return nodes[0], nil
 	case 0:
 		return nil, &NotFoundError{role.Label}
 	default:
@@ -113,11 +113,11 @@ func (rq *RoleQuery) Only(ctx context.Context) (*Role, error) {
 
 // OnlyX is like Only, but panics if an error occurs.
 func (rq *RoleQuery) OnlyX(ctx context.Context) *Role {
-	r, err := rq.Only(ctx)
+	node, err := rq.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return r
+	return node
 }
 
 // OnlyID returns the only Role id in the query, returns an error if not exactly one id was returned.
@@ -137,8 +137,8 @@ func (rq *RoleQuery) OnlyID(ctx context.Context) (id int, err error) {
 	return
 }
 
-// OnlyXID is like OnlyID, but panics if an error occurs.
-func (rq *RoleQuery) OnlyXID(ctx context.Context) int {
+// OnlyIDX is like OnlyID, but panics if an error occurs.
+func (rq *RoleQuery) OnlyIDX(ctx context.Context) int {
 	id, err := rq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -156,11 +156,11 @@ func (rq *RoleQuery) All(ctx context.Context) ([]*Role, error) {
 
 // AllX is like All, but panics if an error occurs.
 func (rq *RoleQuery) AllX(ctx context.Context) []*Role {
-	rs, err := rq.All(ctx)
+	nodes, err := rq.All(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return rs
+	return nodes
 }
 
 // IDs executes the query and returns a list of Role ids.
@@ -218,11 +218,14 @@ func (rq *RoleQuery) ExistX(ctx context.Context) bool {
 // Clone returns a duplicate of the query builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
 func (rq *RoleQuery) Clone() *RoleQuery {
+	if rq == nil {
+		return nil
+	}
 	return &RoleQuery{
 		config:     rq.config,
 		limit:      rq.limit,
 		offset:     rq.offset,
-		order:      append([]Order{}, rq.order...),
+		order:      append([]OrderFunc{}, rq.order...),
 		unique:     append([]string{}, rq.unique...),
 		predicates: append([]predicate.Role{}, rq.predicates...),
 		// clone intermediate query.
@@ -362,7 +365,7 @@ func (rq *RoleQuery) querySpec() *sqlgraph.QuerySpec {
 	if ps := rq.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
-				ps[i](selector)
+				ps[i](selector, role.ValidColumn)
 			}
 		}
 	}
@@ -381,7 +384,7 @@ func (rq *RoleQuery) sqlQuery() *sql.Selector {
 		p(selector)
 	}
 	for _, p := range rq.order {
-		p(selector)
+		p(selector, role.ValidColumn)
 	}
 	if offset := rq.offset; offset != nil {
 		// limit is mandatory for offset clause. We start
@@ -398,14 +401,14 @@ func (rq *RoleQuery) sqlQuery() *sql.Selector {
 type RoleGroupBy struct {
 	config
 	fields []string
-	fns    []Aggregate
+	fns    []AggregateFunc
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (rgb *RoleGroupBy) Aggregate(fns ...Aggregate) *RoleGroupBy {
+func (rgb *RoleGroupBy) Aggregate(fns ...AggregateFunc) *RoleGroupBy {
 	rgb.fns = append(rgb.fns, fns...)
 	return rgb
 }
@@ -448,6 +451,32 @@ func (rgb *RoleGroupBy) StringsX(ctx context.Context) []string {
 	return v
 }
 
+// String returns a single string from group-by. It is only allowed when querying group-by with one field.
+func (rgb *RoleGroupBy) String(ctx context.Context) (_ string, err error) {
+	var v []string
+	if v, err = rgb.Strings(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{role.Label}
+	default:
+		err = fmt.Errorf("ent: RoleGroupBy.Strings returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// StringX is like String, but panics if an error occurs.
+func (rgb *RoleGroupBy) StringX(ctx context.Context) string {
+	v, err := rgb.String(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // Ints returns list of ints from group-by. It is only allowed when querying group-by with one field.
 func (rgb *RoleGroupBy) Ints(ctx context.Context) ([]int, error) {
 	if len(rgb.fields) > 1 {
@@ -463,6 +492,32 @@ func (rgb *RoleGroupBy) Ints(ctx context.Context) ([]int, error) {
 // IntsX is like Ints, but panics if an error occurs.
 func (rgb *RoleGroupBy) IntsX(ctx context.Context) []int {
 	v, err := rgb.Ints(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// Int returns a single int from group-by. It is only allowed when querying group-by with one field.
+func (rgb *RoleGroupBy) Int(ctx context.Context) (_ int, err error) {
+	var v []int
+	if v, err = rgb.Ints(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{role.Label}
+	default:
+		err = fmt.Errorf("ent: RoleGroupBy.Ints returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// IntX is like Int, but panics if an error occurs.
+func (rgb *RoleGroupBy) IntX(ctx context.Context) int {
+	v, err := rgb.Int(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -490,6 +545,32 @@ func (rgb *RoleGroupBy) Float64sX(ctx context.Context) []float64 {
 	return v
 }
 
+// Float64 returns a single float64 from group-by. It is only allowed when querying group-by with one field.
+func (rgb *RoleGroupBy) Float64(ctx context.Context) (_ float64, err error) {
+	var v []float64
+	if v, err = rgb.Float64s(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{role.Label}
+	default:
+		err = fmt.Errorf("ent: RoleGroupBy.Float64s returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// Float64X is like Float64, but panics if an error occurs.
+func (rgb *RoleGroupBy) Float64X(ctx context.Context) float64 {
+	v, err := rgb.Float64(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // Bools returns list of bools from group-by. It is only allowed when querying group-by with one field.
 func (rgb *RoleGroupBy) Bools(ctx context.Context) ([]bool, error) {
 	if len(rgb.fields) > 1 {
@@ -511,9 +592,44 @@ func (rgb *RoleGroupBy) BoolsX(ctx context.Context) []bool {
 	return v
 }
 
+// Bool returns a single bool from group-by. It is only allowed when querying group-by with one field.
+func (rgb *RoleGroupBy) Bool(ctx context.Context) (_ bool, err error) {
+	var v []bool
+	if v, err = rgb.Bools(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{role.Label}
+	default:
+		err = fmt.Errorf("ent: RoleGroupBy.Bools returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// BoolX is like Bool, but panics if an error occurs.
+func (rgb *RoleGroupBy) BoolX(ctx context.Context) bool {
+	v, err := rgb.Bool(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 func (rgb *RoleGroupBy) sqlScan(ctx context.Context, v interface{}) error {
+	for _, f := range rgb.fields {
+		if !role.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
+		}
+	}
+	selector := rgb.sqlQuery()
+	if err := selector.Err(); err != nil {
+		return err
+	}
 	rows := &sql.Rows{}
-	query, args := rgb.sqlQuery().Query()
+	query, args := selector.Query()
 	if err := rgb.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
@@ -526,7 +642,7 @@ func (rgb *RoleGroupBy) sqlQuery() *sql.Selector {
 	columns := make([]string, 0, len(rgb.fields)+len(rgb.fns))
 	columns = append(columns, rgb.fields...)
 	for _, fn := range rgb.fns {
-		columns = append(columns, fn(selector))
+		columns = append(columns, fn(selector, role.ValidColumn))
 	}
 	return selector.Select(columns...).GroupBy(rgb.fields...)
 }
@@ -578,6 +694,32 @@ func (rs *RoleSelect) StringsX(ctx context.Context) []string {
 	return v
 }
 
+// String returns a single string from selector. It is only allowed when selecting one field.
+func (rs *RoleSelect) String(ctx context.Context) (_ string, err error) {
+	var v []string
+	if v, err = rs.Strings(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{role.Label}
+	default:
+		err = fmt.Errorf("ent: RoleSelect.Strings returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// StringX is like String, but panics if an error occurs.
+func (rs *RoleSelect) StringX(ctx context.Context) string {
+	v, err := rs.String(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // Ints returns list of ints from selector. It is only allowed when selecting one field.
 func (rs *RoleSelect) Ints(ctx context.Context) ([]int, error) {
 	if len(rs.fields) > 1 {
@@ -593,6 +735,32 @@ func (rs *RoleSelect) Ints(ctx context.Context) ([]int, error) {
 // IntsX is like Ints, but panics if an error occurs.
 func (rs *RoleSelect) IntsX(ctx context.Context) []int {
 	v, err := rs.Ints(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// Int returns a single int from selector. It is only allowed when selecting one field.
+func (rs *RoleSelect) Int(ctx context.Context) (_ int, err error) {
+	var v []int
+	if v, err = rs.Ints(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{role.Label}
+	default:
+		err = fmt.Errorf("ent: RoleSelect.Ints returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// IntX is like Int, but panics if an error occurs.
+func (rs *RoleSelect) IntX(ctx context.Context) int {
+	v, err := rs.Int(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -620,6 +788,32 @@ func (rs *RoleSelect) Float64sX(ctx context.Context) []float64 {
 	return v
 }
 
+// Float64 returns a single float64 from selector. It is only allowed when selecting one field.
+func (rs *RoleSelect) Float64(ctx context.Context) (_ float64, err error) {
+	var v []float64
+	if v, err = rs.Float64s(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{role.Label}
+	default:
+		err = fmt.Errorf("ent: RoleSelect.Float64s returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// Float64X is like Float64, but panics if an error occurs.
+func (rs *RoleSelect) Float64X(ctx context.Context) float64 {
+	v, err := rs.Float64(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // Bools returns list of bools from selector. It is only allowed when selecting one field.
 func (rs *RoleSelect) Bools(ctx context.Context) ([]bool, error) {
 	if len(rs.fields) > 1 {
@@ -641,7 +835,38 @@ func (rs *RoleSelect) BoolsX(ctx context.Context) []bool {
 	return v
 }
 
+// Bool returns a single bool from selector. It is only allowed when selecting one field.
+func (rs *RoleSelect) Bool(ctx context.Context) (_ bool, err error) {
+	var v []bool
+	if v, err = rs.Bools(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{role.Label}
+	default:
+		err = fmt.Errorf("ent: RoleSelect.Bools returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// BoolX is like Bool, but panics if an error occurs.
+func (rs *RoleSelect) BoolX(ctx context.Context) bool {
+	v, err := rs.Bool(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 func (rs *RoleSelect) sqlScan(ctx context.Context, v interface{}) error {
+	for _, f := range rs.fields {
+		if !role.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for selection", f)}
+		}
+	}
 	rows := &sql.Rows{}
 	query, args := rs.sqlQuery().Query()
 	if err := rs.driver.Query(ctx, query, args, rows); err != nil {

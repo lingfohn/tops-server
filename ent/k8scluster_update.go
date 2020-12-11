@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/k8scluster"
 	"github.com/lingfohn/lime/ent/namespace"
 	"github.com/lingfohn/lime/ent/predicate"
@@ -18,14 +18,13 @@ import (
 // K8sClusterUpdate is the builder for updating K8sCluster entities.
 type K8sClusterUpdate struct {
 	config
-	hooks      []Hook
-	mutation   *K8sClusterMutation
-	predicates []predicate.K8sCluster
+	hooks    []Hook
+	mutation *K8sClusterMutation
 }
 
 // Where adds a new predicate for the builder.
 func (kcu *K8sClusterUpdate) Where(ps ...predicate.K8sCluster) *K8sClusterUpdate {
-	kcu.predicates = append(kcu.predicates, ps...)
+	kcu.mutation.predicates = append(kcu.mutation.predicates, ps...)
 	return kcu
 }
 
@@ -82,6 +81,17 @@ func (kcu *K8sClusterUpdate) AddNamespaces(n ...*Namespace) *K8sClusterUpdate {
 	return kcu.AddNamespaceIDs(ids...)
 }
 
+// Mutation returns the K8sClusterMutation object of the builder.
+func (kcu *K8sClusterUpdate) Mutation() *K8sClusterMutation {
+	return kcu.mutation
+}
+
+// ClearNamespaces clears all "namespaces" edges to type Namespace.
+func (kcu *K8sClusterUpdate) ClearNamespaces() *K8sClusterUpdate {
+	kcu.mutation.ClearNamespaces()
+	return kcu
+}
+
 // RemoveNamespaceIDs removes the namespaces edge to Namespace by ids.
 func (kcu *K8sClusterUpdate) RemoveNamespaceIDs(ids ...int) *K8sClusterUpdate {
 	kcu.mutation.RemoveNamespaceIDs(ids...)
@@ -97,17 +107,13 @@ func (kcu *K8sClusterUpdate) RemoveNamespaces(n ...*Namespace) *K8sClusterUpdate
 	return kcu.RemoveNamespaceIDs(ids...)
 }
 
-// Save executes the query and returns the number of rows/vertices matched by this operation.
+// Save executes the query and returns the number of nodes affected by the update operation.
 func (kcu *K8sClusterUpdate) Save(ctx context.Context) (int, error) {
-	if _, ok := kcu.mutation.UpdatedAt(); !ok {
-		v := k8scluster.UpdateDefaultUpdatedAt()
-		kcu.mutation.SetUpdatedAt(v)
-	}
-
 	var (
 		err      error
 		affected int
 	)
+	kcu.defaults()
 	if len(kcu.hooks) == 0 {
 		affected, err = kcu.sqlSave(ctx)
 	} else {
@@ -118,6 +124,7 @@ func (kcu *K8sClusterUpdate) Save(ctx context.Context) (int, error) {
 			}
 			kcu.mutation = mutation
 			affected, err = kcu.sqlSave(ctx)
+			mutation.done = true
 			return affected, err
 		})
 		for i := len(kcu.hooks) - 1; i >= 0; i-- {
@@ -152,6 +159,14 @@ func (kcu *K8sClusterUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (kcu *K8sClusterUpdate) defaults() {
+	if _, ok := kcu.mutation.UpdatedAt(); !ok {
+		v := k8scluster.UpdateDefaultUpdatedAt()
+		kcu.mutation.SetUpdatedAt(v)
+	}
+}
+
 func (kcu *K8sClusterUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
@@ -163,7 +178,7 @@ func (kcu *K8sClusterUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			},
 		},
 	}
-	if ps := kcu.predicates; len(ps) > 0 {
+	if ps := kcu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -204,7 +219,23 @@ func (kcu *K8sClusterUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: k8scluster.FieldUpdatedAt,
 		})
 	}
-	if nodes := kcu.mutation.RemovedNamespacesIDs(); len(nodes) > 0 {
+	if kcu.mutation.NamespacesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   k8scluster.NamespacesTable,
+			Columns: []string{k8scluster.NamespacesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: namespace.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := kcu.mutation.RemovedNamespacesIDs(); len(nodes) > 0 && !kcu.mutation.NamespacesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -313,6 +344,17 @@ func (kcuo *K8sClusterUpdateOne) AddNamespaces(n ...*Namespace) *K8sClusterUpdat
 	return kcuo.AddNamespaceIDs(ids...)
 }
 
+// Mutation returns the K8sClusterMutation object of the builder.
+func (kcuo *K8sClusterUpdateOne) Mutation() *K8sClusterMutation {
+	return kcuo.mutation
+}
+
+// ClearNamespaces clears all "namespaces" edges to type Namespace.
+func (kcuo *K8sClusterUpdateOne) ClearNamespaces() *K8sClusterUpdateOne {
+	kcuo.mutation.ClearNamespaces()
+	return kcuo
+}
+
 // RemoveNamespaceIDs removes the namespaces edge to Namespace by ids.
 func (kcuo *K8sClusterUpdateOne) RemoveNamespaceIDs(ids ...int) *K8sClusterUpdateOne {
 	kcuo.mutation.RemoveNamespaceIDs(ids...)
@@ -330,15 +372,11 @@ func (kcuo *K8sClusterUpdateOne) RemoveNamespaces(n ...*Namespace) *K8sClusterUp
 
 // Save executes the query and returns the updated entity.
 func (kcuo *K8sClusterUpdateOne) Save(ctx context.Context) (*K8sCluster, error) {
-	if _, ok := kcuo.mutation.UpdatedAt(); !ok {
-		v := k8scluster.UpdateDefaultUpdatedAt()
-		kcuo.mutation.SetUpdatedAt(v)
-	}
-
 	var (
 		err  error
 		node *K8sCluster
 	)
+	kcuo.defaults()
 	if len(kcuo.hooks) == 0 {
 		node, err = kcuo.sqlSave(ctx)
 	} else {
@@ -349,6 +387,7 @@ func (kcuo *K8sClusterUpdateOne) Save(ctx context.Context) (*K8sCluster, error) 
 			}
 			kcuo.mutation = mutation
 			node, err = kcuo.sqlSave(ctx)
+			mutation.done = true
 			return node, err
 		})
 		for i := len(kcuo.hooks) - 1; i >= 0; i-- {
@@ -363,11 +402,11 @@ func (kcuo *K8sClusterUpdateOne) Save(ctx context.Context) (*K8sCluster, error) 
 
 // SaveX is like Save, but panics if an error occurs.
 func (kcuo *K8sClusterUpdateOne) SaveX(ctx context.Context) *K8sCluster {
-	kc, err := kcuo.Save(ctx)
+	node, err := kcuo.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return kc
+	return node
 }
 
 // Exec executes the query on the entity.
@@ -383,7 +422,15 @@ func (kcuo *K8sClusterUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-func (kcuo *K8sClusterUpdateOne) sqlSave(ctx context.Context) (kc *K8sCluster, err error) {
+// defaults sets the default values of the builder before save.
+func (kcuo *K8sClusterUpdateOne) defaults() {
+	if _, ok := kcuo.mutation.UpdatedAt(); !ok {
+		v := k8scluster.UpdateDefaultUpdatedAt()
+		kcuo.mutation.SetUpdatedAt(v)
+	}
+}
+
+func (kcuo *K8sClusterUpdateOne) sqlSave(ctx context.Context) (_node *K8sCluster, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
 			Table:   k8scluster.Table,
@@ -396,7 +443,7 @@ func (kcuo *K8sClusterUpdateOne) sqlSave(ctx context.Context) (kc *K8sCluster, e
 	}
 	id, ok := kcuo.mutation.ID()
 	if !ok {
-		return nil, fmt.Errorf("missing K8sCluster.ID for update")
+		return nil, &ValidationError{Name: "ID", err: fmt.Errorf("missing K8sCluster.ID for update")}
 	}
 	_spec.Node.ID.Value = id
 	if value, ok := kcuo.mutation.Cluster(); ok {
@@ -433,7 +480,23 @@ func (kcuo *K8sClusterUpdateOne) sqlSave(ctx context.Context) (kc *K8sCluster, e
 			Column: k8scluster.FieldUpdatedAt,
 		})
 	}
-	if nodes := kcuo.mutation.RemovedNamespacesIDs(); len(nodes) > 0 {
+	if kcuo.mutation.NamespacesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   k8scluster.NamespacesTable,
+			Columns: []string{k8scluster.NamespacesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: namespace.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := kcuo.mutation.RemovedNamespacesIDs(); len(nodes) > 0 && !kcuo.mutation.NamespacesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -471,9 +534,9 @@ func (kcuo *K8sClusterUpdateOne) sqlSave(ctx context.Context) (kc *K8sCluster, e
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	kc = &K8sCluster{config: kcuo.config}
-	_spec.Assign = kc.assignValues
-	_spec.ScanValues = kc.scanValues()
+	_node = &K8sCluster{config: kcuo.config}
+	_spec.Assign = _node.assignValues
+	_spec.ScanValues = _node.scanValues()
 	if err = sqlgraph.UpdateNode(ctx, kcuo.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{k8scluster.Label}
@@ -482,5 +545,5 @@ func (kcuo *K8sClusterUpdateOne) sqlSave(ctx context.Context) (kc *K8sCluster, e
 		}
 		return nil, err
 	}
-	return kc, nil
+	return _node, nil
 }

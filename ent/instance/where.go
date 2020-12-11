@@ -3,8 +3,10 @@
 package instance
 
 import (
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
+	"time"
+
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
 	"github.com/lingfohn/lime/ent/predicate"
 )
 
@@ -98,6 +100,27 @@ func Name(v string) predicate.Instance {
 	})
 }
 
+// ApplicationId applies equality check predicate on the "applicationId" field. It's identical to ApplicationIdEQ.
+func ApplicationId(v int) predicate.Instance {
+	return predicate.Instance(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldApplicationId), v))
+	})
+}
+
+// CreatedAt applies equality check predicate on the "createdAt" field. It's identical to CreatedAtEQ.
+func CreatedAt(v time.Time) predicate.Instance {
+	return predicate.Instance(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldCreatedAt), v))
+	})
+}
+
+// UpdatedAt applies equality check predicate on the "updatedAt" field. It's identical to UpdatedAtEQ.
+func UpdatedAt(v time.Time) predicate.Instance {
+	return predicate.Instance(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldUpdatedAt), v))
+	})
+}
+
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.Instance {
 	return predicate.Instance(func(s *sql.Selector) {
@@ -121,7 +144,7 @@ func NameIn(vs ...string) predicate.Instance {
 	return predicate.Instance(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -138,7 +161,7 @@ func NameNotIn(vs ...string) predicate.Instance {
 	return predicate.Instance(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -206,6 +229,234 @@ func NameEqualFold(v string) predicate.Instance {
 func NameContainsFold(v string) predicate.Instance {
 	return predicate.Instance(func(s *sql.Selector) {
 		s.Where(sql.ContainsFold(s.C(FieldName), v))
+	})
+}
+
+// ApplicationIdEQ applies the EQ predicate on the "applicationId" field.
+func ApplicationIdEQ(v int) predicate.Instance {
+	return predicate.Instance(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldApplicationId), v))
+	})
+}
+
+// ApplicationIdNEQ applies the NEQ predicate on the "applicationId" field.
+func ApplicationIdNEQ(v int) predicate.Instance {
+	return predicate.Instance(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldApplicationId), v))
+	})
+}
+
+// ApplicationIdIn applies the In predicate on the "applicationId" field.
+func ApplicationIdIn(vs ...int) predicate.Instance {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Instance(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldApplicationId), v...))
+	})
+}
+
+// ApplicationIdNotIn applies the NotIn predicate on the "applicationId" field.
+func ApplicationIdNotIn(vs ...int) predicate.Instance {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Instance(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldApplicationId), v...))
+	})
+}
+
+// ApplicationIdGT applies the GT predicate on the "applicationId" field.
+func ApplicationIdGT(v int) predicate.Instance {
+	return predicate.Instance(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldApplicationId), v))
+	})
+}
+
+// ApplicationIdGTE applies the GTE predicate on the "applicationId" field.
+func ApplicationIdGTE(v int) predicate.Instance {
+	return predicate.Instance(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldApplicationId), v))
+	})
+}
+
+// ApplicationIdLT applies the LT predicate on the "applicationId" field.
+func ApplicationIdLT(v int) predicate.Instance {
+	return predicate.Instance(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldApplicationId), v))
+	})
+}
+
+// ApplicationIdLTE applies the LTE predicate on the "applicationId" field.
+func ApplicationIdLTE(v int) predicate.Instance {
+	return predicate.Instance(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldApplicationId), v))
+	})
+}
+
+// CreatedAtEQ applies the EQ predicate on the "createdAt" field.
+func CreatedAtEQ(v time.Time) predicate.Instance {
+	return predicate.Instance(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldCreatedAt), v))
+	})
+}
+
+// CreatedAtNEQ applies the NEQ predicate on the "createdAt" field.
+func CreatedAtNEQ(v time.Time) predicate.Instance {
+	return predicate.Instance(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldCreatedAt), v))
+	})
+}
+
+// CreatedAtIn applies the In predicate on the "createdAt" field.
+func CreatedAtIn(vs ...time.Time) predicate.Instance {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Instance(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldCreatedAt), v...))
+	})
+}
+
+// CreatedAtNotIn applies the NotIn predicate on the "createdAt" field.
+func CreatedAtNotIn(vs ...time.Time) predicate.Instance {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Instance(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldCreatedAt), v...))
+	})
+}
+
+// CreatedAtGT applies the GT predicate on the "createdAt" field.
+func CreatedAtGT(v time.Time) predicate.Instance {
+	return predicate.Instance(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldCreatedAt), v))
+	})
+}
+
+// CreatedAtGTE applies the GTE predicate on the "createdAt" field.
+func CreatedAtGTE(v time.Time) predicate.Instance {
+	return predicate.Instance(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldCreatedAt), v))
+	})
+}
+
+// CreatedAtLT applies the LT predicate on the "createdAt" field.
+func CreatedAtLT(v time.Time) predicate.Instance {
+	return predicate.Instance(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldCreatedAt), v))
+	})
+}
+
+// CreatedAtLTE applies the LTE predicate on the "createdAt" field.
+func CreatedAtLTE(v time.Time) predicate.Instance {
+	return predicate.Instance(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldCreatedAt), v))
+	})
+}
+
+// UpdatedAtEQ applies the EQ predicate on the "updatedAt" field.
+func UpdatedAtEQ(v time.Time) predicate.Instance {
+	return predicate.Instance(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldUpdatedAt), v))
+	})
+}
+
+// UpdatedAtNEQ applies the NEQ predicate on the "updatedAt" field.
+func UpdatedAtNEQ(v time.Time) predicate.Instance {
+	return predicate.Instance(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldUpdatedAt), v))
+	})
+}
+
+// UpdatedAtIn applies the In predicate on the "updatedAt" field.
+func UpdatedAtIn(vs ...time.Time) predicate.Instance {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Instance(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldUpdatedAt), v...))
+	})
+}
+
+// UpdatedAtNotIn applies the NotIn predicate on the "updatedAt" field.
+func UpdatedAtNotIn(vs ...time.Time) predicate.Instance {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Instance(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldUpdatedAt), v...))
+	})
+}
+
+// UpdatedAtGT applies the GT predicate on the "updatedAt" field.
+func UpdatedAtGT(v time.Time) predicate.Instance {
+	return predicate.Instance(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldUpdatedAt), v))
+	})
+}
+
+// UpdatedAtGTE applies the GTE predicate on the "updatedAt" field.
+func UpdatedAtGTE(v time.Time) predicate.Instance {
+	return predicate.Instance(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldUpdatedAt), v))
+	})
+}
+
+// UpdatedAtLT applies the LT predicate on the "updatedAt" field.
+func UpdatedAtLT(v time.Time) predicate.Instance {
+	return predicate.Instance(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldUpdatedAt), v))
+	})
+}
+
+// UpdatedAtLTE applies the LTE predicate on the "updatedAt" field.
+func UpdatedAtLTE(v time.Time) predicate.Instance {
+	return predicate.Instance(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldUpdatedAt), v))
 	})
 }
 

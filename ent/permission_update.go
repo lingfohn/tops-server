@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/permission"
 	"github.com/lingfohn/lime/ent/predicate"
 )
@@ -17,14 +17,13 @@ import (
 // PermissionUpdate is the builder for updating Permission entities.
 type PermissionUpdate struct {
 	config
-	hooks      []Hook
-	mutation   *PermissionMutation
-	predicates []predicate.Permission
+	hooks    []Hook
+	mutation *PermissionMutation
 }
 
 // Where adds a new predicate for the builder.
 func (pu *PermissionUpdate) Where(ps ...predicate.Permission) *PermissionUpdate {
-	pu.predicates = append(pu.predicates, ps...)
+	pu.mutation.predicates = append(pu.mutation.predicates, ps...)
 	return pu
 }
 
@@ -92,16 +91,18 @@ func (pu *PermissionUpdate) SetUpdatedAt(t time.Time) *PermissionUpdate {
 	return pu
 }
 
-// Save executes the query and returns the number of rows/vertices matched by this operation.
+// Mutation returns the PermissionMutation object of the builder.
+func (pu *PermissionUpdate) Mutation() *PermissionMutation {
+	return pu.mutation
+}
+
+// Save executes the query and returns the number of nodes affected by the update operation.
 func (pu *PermissionUpdate) Save(ctx context.Context) (int, error) {
-	if _, ok := pu.mutation.UpdatedAt(); !ok {
-		v := permission.UpdateDefaultUpdatedAt()
-		pu.mutation.SetUpdatedAt(v)
-	}
 	var (
 		err      error
 		affected int
 	)
+	pu.defaults()
 	if len(pu.hooks) == 0 {
 		affected, err = pu.sqlSave(ctx)
 	} else {
@@ -112,6 +113,7 @@ func (pu *PermissionUpdate) Save(ctx context.Context) (int, error) {
 			}
 			pu.mutation = mutation
 			affected, err = pu.sqlSave(ctx)
+			mutation.done = true
 			return affected, err
 		})
 		for i := len(pu.hooks) - 1; i >= 0; i-- {
@@ -146,6 +148,14 @@ func (pu *PermissionUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (pu *PermissionUpdate) defaults() {
+	if _, ok := pu.mutation.UpdatedAt(); !ok {
+		v := permission.UpdateDefaultUpdatedAt()
+		pu.mutation.SetUpdatedAt(v)
+	}
+}
+
 func (pu *PermissionUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
@@ -157,7 +167,7 @@ func (pu *PermissionUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			},
 		},
 	}
-	if ps := pu.predicates; len(ps) > 0 {
+	if ps := pu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -309,16 +319,18 @@ func (puo *PermissionUpdateOne) SetUpdatedAt(t time.Time) *PermissionUpdateOne {
 	return puo
 }
 
+// Mutation returns the PermissionMutation object of the builder.
+func (puo *PermissionUpdateOne) Mutation() *PermissionMutation {
+	return puo.mutation
+}
+
 // Save executes the query and returns the updated entity.
 func (puo *PermissionUpdateOne) Save(ctx context.Context) (*Permission, error) {
-	if _, ok := puo.mutation.UpdatedAt(); !ok {
-		v := permission.UpdateDefaultUpdatedAt()
-		puo.mutation.SetUpdatedAt(v)
-	}
 	var (
 		err  error
 		node *Permission
 	)
+	puo.defaults()
 	if len(puo.hooks) == 0 {
 		node, err = puo.sqlSave(ctx)
 	} else {
@@ -329,6 +341,7 @@ func (puo *PermissionUpdateOne) Save(ctx context.Context) (*Permission, error) {
 			}
 			puo.mutation = mutation
 			node, err = puo.sqlSave(ctx)
+			mutation.done = true
 			return node, err
 		})
 		for i := len(puo.hooks) - 1; i >= 0; i-- {
@@ -343,11 +356,11 @@ func (puo *PermissionUpdateOne) Save(ctx context.Context) (*Permission, error) {
 
 // SaveX is like Save, but panics if an error occurs.
 func (puo *PermissionUpdateOne) SaveX(ctx context.Context) *Permission {
-	pe, err := puo.Save(ctx)
+	node, err := puo.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return pe
+	return node
 }
 
 // Exec executes the query on the entity.
@@ -363,7 +376,15 @@ func (puo *PermissionUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-func (puo *PermissionUpdateOne) sqlSave(ctx context.Context) (pe *Permission, err error) {
+// defaults sets the default values of the builder before save.
+func (puo *PermissionUpdateOne) defaults() {
+	if _, ok := puo.mutation.UpdatedAt(); !ok {
+		v := permission.UpdateDefaultUpdatedAt()
+		puo.mutation.SetUpdatedAt(v)
+	}
+}
+
+func (puo *PermissionUpdateOne) sqlSave(ctx context.Context) (_node *Permission, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
 			Table:   permission.Table,
@@ -376,7 +397,7 @@ func (puo *PermissionUpdateOne) sqlSave(ctx context.Context) (pe *Permission, er
 	}
 	id, ok := puo.mutation.ID()
 	if !ok {
-		return nil, fmt.Errorf("missing Permission.ID for update")
+		return nil, &ValidationError{Name: "ID", err: fmt.Errorf("missing Permission.ID for update")}
 	}
 	_spec.Node.ID.Value = id
 	if value, ok := puo.mutation.Method(); ok {
@@ -442,9 +463,9 @@ func (puo *PermissionUpdateOne) sqlSave(ctx context.Context) (pe *Permission, er
 			Column: permission.FieldUpdatedAt,
 		})
 	}
-	pe = &Permission{config: puo.config}
-	_spec.Assign = pe.assignValues
-	_spec.ScanValues = pe.scanValues()
+	_node = &Permission{config: puo.config}
+	_spec.Assign = _node.assignValues
+	_spec.ScanValues = _node.scanValues()
 	if err = sqlgraph.UpdateNode(ctx, puo.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{permission.Label}
@@ -453,5 +474,5 @@ func (puo *PermissionUpdateOne) sqlSave(ctx context.Context) (pe *Permission, er
 		}
 		return nil, err
 	}
-	return pe, nil
+	return _node, nil
 }

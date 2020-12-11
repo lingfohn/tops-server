@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/menu"
 )
 
@@ -202,43 +202,22 @@ func (mc *MenuCreate) AddSubmenus(m ...*Menu) *MenuCreate {
 	return mc.AddSubmenuIDs(ids...)
 }
 
+// Mutation returns the MenuMutation object of the builder.
+func (mc *MenuCreate) Mutation() *MenuMutation {
+	return mc.mutation
+}
+
 // Save creates the Menu in the database.
 func (mc *MenuCreate) Save(ctx context.Context) (*Menu, error) {
-	if _, ok := mc.mutation.Path(); !ok {
-		return nil, errors.New("ent: missing required field \"path\"")
-	}
-	if _, ok := mc.mutation.Name(); !ok {
-		return nil, errors.New("ent: missing required field \"name\"")
-	}
-	if _, ok := mc.mutation.Component(); !ok {
-		return nil, errors.New("ent: missing required field \"component\"")
-	}
-	if _, ok := mc.mutation.ParentId(); !ok {
-		return nil, errors.New("ent: missing required field \"parentId\"")
-	}
-	if _, ok := mc.mutation.Weight(); !ok {
-		v := menu.DefaultWeight
-		mc.mutation.SetWeight(v)
-	}
-	if _, ok := mc.mutation.Level(); !ok {
-		return nil, errors.New("ent: missing required field \"level\"")
-	}
-	if _, ok := mc.mutation.KeepAlive(); !ok {
-		return nil, errors.New("ent: missing required field \"keepAlive\"")
-	}
-	if _, ok := mc.mutation.CreatedAt(); !ok {
-		v := menu.DefaultCreatedAt()
-		mc.mutation.SetCreatedAt(v)
-	}
-	if _, ok := mc.mutation.UpdatedAt(); !ok {
-		v := menu.DefaultUpdatedAt()
-		mc.mutation.SetUpdatedAt(v)
-	}
 	var (
 		err  error
 		node *Menu
 	)
+	mc.defaults()
 	if len(mc.hooks) == 0 {
+		if err = mc.check(); err != nil {
+			return nil, err
+		}
 		node, err = mc.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
@@ -246,8 +225,12 @@ func (mc *MenuCreate) Save(ctx context.Context) (*Menu, error) {
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
 			}
+			if err = mc.check(); err != nil {
+				return nil, err
+			}
 			mc.mutation = mutation
 			node, err = mc.sqlSave(ctx)
+			mutation.done = true
 			return node, err
 		})
 		for i := len(mc.hooks) - 1; i >= 0; i-- {
@@ -269,9 +252,67 @@ func (mc *MenuCreate) SaveX(ctx context.Context) *Menu {
 	return v
 }
 
+// defaults sets the default values of the builder before save.
+func (mc *MenuCreate) defaults() {
+	if _, ok := mc.mutation.Weight(); !ok {
+		v := menu.DefaultWeight
+		mc.mutation.SetWeight(v)
+	}
+	if _, ok := mc.mutation.CreatedAt(); !ok {
+		v := menu.DefaultCreatedAt()
+		mc.mutation.SetCreatedAt(v)
+	}
+	if _, ok := mc.mutation.UpdatedAt(); !ok {
+		v := menu.DefaultUpdatedAt()
+		mc.mutation.SetUpdatedAt(v)
+	}
+}
+
+// check runs all checks and user-defined validators on the builder.
+func (mc *MenuCreate) check() error {
+	if _, ok := mc.mutation.Path(); !ok {
+		return &ValidationError{Name: "path", err: errors.New("ent: missing required field \"path\"")}
+	}
+	if _, ok := mc.mutation.Name(); !ok {
+		return &ValidationError{Name: "name", err: errors.New("ent: missing required field \"name\"")}
+	}
+	if _, ok := mc.mutation.Component(); !ok {
+		return &ValidationError{Name: "component", err: errors.New("ent: missing required field \"component\"")}
+	}
+	if _, ok := mc.mutation.ParentId(); !ok {
+		return &ValidationError{Name: "parentId", err: errors.New("ent: missing required field \"parentId\"")}
+	}
+	if _, ok := mc.mutation.Level(); !ok {
+		return &ValidationError{Name: "level", err: errors.New("ent: missing required field \"level\"")}
+	}
+	if _, ok := mc.mutation.KeepAlive(); !ok {
+		return &ValidationError{Name: "keepAlive", err: errors.New("ent: missing required field \"keepAlive\"")}
+	}
+	if _, ok := mc.mutation.CreatedAt(); !ok {
+		return &ValidationError{Name: "createdAt", err: errors.New("ent: missing required field \"createdAt\"")}
+	}
+	if _, ok := mc.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updatedAt", err: errors.New("ent: missing required field \"updatedAt\"")}
+	}
+	return nil
+}
+
 func (mc *MenuCreate) sqlSave(ctx context.Context) (*Menu, error) {
+	_node, _spec := mc.createSpec()
+	if err := sqlgraph.CreateNode(ctx, mc.driver, _spec); err != nil {
+		if cerr, ok := isSQLConstraintError(err); ok {
+			err = cerr
+		}
+		return nil, err
+	}
+	id := _spec.ID.Value.(int64)
+	_node.ID = int(id)
+	return _node, nil
+}
+
+func (mc *MenuCreate) createSpec() (*Menu, *sqlgraph.CreateSpec) {
 	var (
-		m     = &Menu{config: mc.config}
+		_node = &Menu{config: mc.config}
 		_spec = &sqlgraph.CreateSpec{
 			Table: menu.Table,
 			ID: &sqlgraph.FieldSpec{
@@ -286,7 +327,7 @@ func (mc *MenuCreate) sqlSave(ctx context.Context) (*Menu, error) {
 			Value:  value,
 			Column: menu.FieldPath,
 		})
-		m.Path = value
+		_node.Path = value
 	}
 	if value, ok := mc.mutation.Name(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -294,7 +335,7 @@ func (mc *MenuCreate) sqlSave(ctx context.Context) (*Menu, error) {
 			Value:  value,
 			Column: menu.FieldName,
 		})
-		m.Name = value
+		_node.Name = value
 	}
 	if value, ok := mc.mutation.Component(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -302,7 +343,7 @@ func (mc *MenuCreate) sqlSave(ctx context.Context) (*Menu, error) {
 			Value:  value,
 			Column: menu.FieldComponent,
 		})
-		m.Component = value
+		_node.Component = value
 	}
 	if value, ok := mc.mutation.ParentId(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -310,7 +351,7 @@ func (mc *MenuCreate) sqlSave(ctx context.Context) (*Menu, error) {
 			Value:  value,
 			Column: menu.FieldParentId,
 		})
-		m.ParentId = value
+		_node.ParentId = value
 	}
 	if value, ok := mc.mutation.Redirect(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -318,7 +359,7 @@ func (mc *MenuCreate) sqlSave(ctx context.Context) (*Menu, error) {
 			Value:  value,
 			Column: menu.FieldRedirect,
 		})
-		m.Redirect = value
+		_node.Redirect = value
 	}
 	if value, ok := mc.mutation.Weight(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -326,7 +367,7 @@ func (mc *MenuCreate) sqlSave(ctx context.Context) (*Menu, error) {
 			Value:  value,
 			Column: menu.FieldWeight,
 		})
-		m.Weight = value
+		_node.Weight = value
 	}
 	if value, ok := mc.mutation.Level(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -334,7 +375,7 @@ func (mc *MenuCreate) sqlSave(ctx context.Context) (*Menu, error) {
 			Value:  value,
 			Column: menu.FieldLevel,
 		})
-		m.Level = value
+		_node.Level = value
 	}
 	if value, ok := mc.mutation.Title(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -342,7 +383,7 @@ func (mc *MenuCreate) sqlSave(ctx context.Context) (*Menu, error) {
 			Value:  value,
 			Column: menu.FieldTitle,
 		})
-		m.Title = value
+		_node.Title = value
 	}
 	if value, ok := mc.mutation.Icon(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -350,7 +391,7 @@ func (mc *MenuCreate) sqlSave(ctx context.Context) (*Menu, error) {
 			Value:  value,
 			Column: menu.FieldIcon,
 		})
-		m.Icon = value
+		_node.Icon = value
 	}
 	if value, ok := mc.mutation.Target(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -358,7 +399,7 @@ func (mc *MenuCreate) sqlSave(ctx context.Context) (*Menu, error) {
 			Value:  value,
 			Column: menu.FieldTarget,
 		})
-		m.Target = value
+		_node.Target = value
 	}
 	if value, ok := mc.mutation.KeepAlive(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -366,7 +407,7 @@ func (mc *MenuCreate) sqlSave(ctx context.Context) (*Menu, error) {
 			Value:  value,
 			Column: menu.FieldKeepAlive,
 		})
-		m.KeepAlive = value
+		_node.KeepAlive = value
 	}
 	if value, ok := mc.mutation.Show(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -374,7 +415,7 @@ func (mc *MenuCreate) sqlSave(ctx context.Context) (*Menu, error) {
 			Value:  value,
 			Column: menu.FieldShow,
 		})
-		m.Show = &value
+		_node.Show = &value
 	}
 	if value, ok := mc.mutation.CreatedAt(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -382,7 +423,7 @@ func (mc *MenuCreate) sqlSave(ctx context.Context) (*Menu, error) {
 			Value:  value,
 			Column: menu.FieldCreatedAt,
 		})
-		m.CreatedAt = value
+		_node.CreatedAt = value
 	}
 	if value, ok := mc.mutation.UpdatedAt(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -390,7 +431,7 @@ func (mc *MenuCreate) sqlSave(ctx context.Context) (*Menu, error) {
 			Value:  value,
 			Column: menu.FieldUpdatedAt,
 		})
-		m.UpdatedAt = value
+		_node.UpdatedAt = value
 	}
 	if nodes := mc.mutation.ParentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -430,13 +471,72 @@ func (mc *MenuCreate) sqlSave(ctx context.Context) (*Menu, error) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if err := sqlgraph.CreateNode(ctx, mc.driver, _spec); err != nil {
-		if cerr, ok := isSQLConstraintError(err); ok {
-			err = cerr
-		}
-		return nil, err
+	return _node, _spec
+}
+
+// MenuCreateBulk is the builder for creating a bulk of Menu entities.
+type MenuCreateBulk struct {
+	config
+	builders []*MenuCreate
+}
+
+// Save creates the Menu entities in the database.
+func (mcb *MenuCreateBulk) Save(ctx context.Context) ([]*Menu, error) {
+	specs := make([]*sqlgraph.CreateSpec, len(mcb.builders))
+	nodes := make([]*Menu, len(mcb.builders))
+	mutators := make([]Mutator, len(mcb.builders))
+	for i := range mcb.builders {
+		func(i int, root context.Context) {
+			builder := mcb.builders[i]
+			builder.defaults()
+			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
+				mutation, ok := m.(*MenuMutation)
+				if !ok {
+					return nil, fmt.Errorf("unexpected mutation type %T", m)
+				}
+				if err := builder.check(); err != nil {
+					return nil, err
+				}
+				builder.mutation = mutation
+				nodes[i], specs[i] = builder.createSpec()
+				var err error
+				if i < len(mutators)-1 {
+					_, err = mutators[i+1].Mutate(root, mcb.builders[i+1].mutation)
+				} else {
+					// Invoke the actual operation on the latest mutation in the chain.
+					if err = sqlgraph.BatchCreate(ctx, mcb.driver, &sqlgraph.BatchCreateSpec{Nodes: specs}); err != nil {
+						if cerr, ok := isSQLConstraintError(err); ok {
+							err = cerr
+						}
+					}
+				}
+				mutation.done = true
+				if err != nil {
+					return nil, err
+				}
+				id := specs[i].ID.Value.(int64)
+				nodes[i].ID = int(id)
+				return nodes[i], nil
+			})
+			for i := len(builder.hooks) - 1; i >= 0; i-- {
+				mut = builder.hooks[i](mut)
+			}
+			mutators[i] = mut
+		}(i, ctx)
 	}
-	id := _spec.ID.Value.(int64)
-	m.ID = int(id)
-	return m, nil
+	if len(mutators) > 0 {
+		if _, err := mutators[0].Mutate(ctx, mcb.builders[0].mutation); err != nil {
+			return nil, err
+		}
+	}
+	return nodes, nil
+}
+
+// SaveX calls Save and panics if Save returns an error.
+func (mcb *MenuCreateBulk) SaveX(ctx context.Context) []*Menu {
+	v, err := mcb.Save(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
 }

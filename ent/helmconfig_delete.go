@@ -6,9 +6,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/helmconfig"
 	"github.com/lingfohn/lime/ent/predicate"
 )
@@ -16,14 +16,13 @@ import (
 // HelmConfigDelete is the builder for deleting a HelmConfig entity.
 type HelmConfigDelete struct {
 	config
-	hooks      []Hook
-	mutation   *HelmConfigMutation
-	predicates []predicate.HelmConfig
+	hooks    []Hook
+	mutation *HelmConfigMutation
 }
 
 // Where adds a new predicate to the delete builder.
 func (hcd *HelmConfigDelete) Where(ps ...predicate.HelmConfig) *HelmConfigDelete {
-	hcd.predicates = append(hcd.predicates, ps...)
+	hcd.mutation.predicates = append(hcd.mutation.predicates, ps...)
 	return hcd
 }
 
@@ -43,6 +42,7 @@ func (hcd *HelmConfigDelete) Exec(ctx context.Context) (int, error) {
 			}
 			hcd.mutation = mutation
 			affected, err = hcd.sqlExec(ctx)
+			mutation.done = true
 			return affected, err
 		})
 		for i := len(hcd.hooks) - 1; i >= 0; i-- {
@@ -74,7 +74,7 @@ func (hcd *HelmConfigDelete) sqlExec(ctx context.Context) (int, error) {
 			},
 		},
 	}
-	if ps := hcd.predicates; len(ps) > 0 {
+	if ps := hcd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)

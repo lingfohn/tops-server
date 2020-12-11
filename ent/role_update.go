@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/predicate"
 	"github.com/lingfohn/lime/ent/role"
 )
@@ -17,14 +17,13 @@ import (
 // RoleUpdate is the builder for updating Role entities.
 type RoleUpdate struct {
 	config
-	hooks      []Hook
-	mutation   *RoleMutation
-	predicates []predicate.Role
+	hooks    []Hook
+	mutation *RoleMutation
 }
 
 // Where adds a new predicate for the builder.
 func (ru *RoleUpdate) Where(ps ...predicate.Role) *RoleUpdate {
-	ru.predicates = append(ru.predicates, ps...)
+	ru.mutation.predicates = append(ru.mutation.predicates, ps...)
 	return ru
 }
 
@@ -81,16 +80,18 @@ func (ru *RoleUpdate) SetUpdatedAt(t time.Time) *RoleUpdate {
 	return ru
 }
 
-// Save executes the query and returns the number of rows/vertices matched by this operation.
+// Mutation returns the RoleMutation object of the builder.
+func (ru *RoleUpdate) Mutation() *RoleMutation {
+	return ru.mutation
+}
+
+// Save executes the query and returns the number of nodes affected by the update operation.
 func (ru *RoleUpdate) Save(ctx context.Context) (int, error) {
-	if _, ok := ru.mutation.UpdatedAt(); !ok {
-		v := role.UpdateDefaultUpdatedAt()
-		ru.mutation.SetUpdatedAt(v)
-	}
 	var (
 		err      error
 		affected int
 	)
+	ru.defaults()
 	if len(ru.hooks) == 0 {
 		affected, err = ru.sqlSave(ctx)
 	} else {
@@ -101,6 +102,7 @@ func (ru *RoleUpdate) Save(ctx context.Context) (int, error) {
 			}
 			ru.mutation = mutation
 			affected, err = ru.sqlSave(ctx)
+			mutation.done = true
 			return affected, err
 		})
 		for i := len(ru.hooks) - 1; i >= 0; i-- {
@@ -135,6 +137,14 @@ func (ru *RoleUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (ru *RoleUpdate) defaults() {
+	if _, ok := ru.mutation.UpdatedAt(); !ok {
+		v := role.UpdateDefaultUpdatedAt()
+		ru.mutation.SetUpdatedAt(v)
+	}
+}
+
 func (ru *RoleUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
@@ -146,7 +156,7 @@ func (ru *RoleUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			},
 		},
 	}
-	if ps := ru.predicates; len(ps) > 0 {
+	if ps := ru.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -265,16 +275,18 @@ func (ruo *RoleUpdateOne) SetUpdatedAt(t time.Time) *RoleUpdateOne {
 	return ruo
 }
 
+// Mutation returns the RoleMutation object of the builder.
+func (ruo *RoleUpdateOne) Mutation() *RoleMutation {
+	return ruo.mutation
+}
+
 // Save executes the query and returns the updated entity.
 func (ruo *RoleUpdateOne) Save(ctx context.Context) (*Role, error) {
-	if _, ok := ruo.mutation.UpdatedAt(); !ok {
-		v := role.UpdateDefaultUpdatedAt()
-		ruo.mutation.SetUpdatedAt(v)
-	}
 	var (
 		err  error
 		node *Role
 	)
+	ruo.defaults()
 	if len(ruo.hooks) == 0 {
 		node, err = ruo.sqlSave(ctx)
 	} else {
@@ -285,6 +297,7 @@ func (ruo *RoleUpdateOne) Save(ctx context.Context) (*Role, error) {
 			}
 			ruo.mutation = mutation
 			node, err = ruo.sqlSave(ctx)
+			mutation.done = true
 			return node, err
 		})
 		for i := len(ruo.hooks) - 1; i >= 0; i-- {
@@ -299,11 +312,11 @@ func (ruo *RoleUpdateOne) Save(ctx context.Context) (*Role, error) {
 
 // SaveX is like Save, but panics if an error occurs.
 func (ruo *RoleUpdateOne) SaveX(ctx context.Context) *Role {
-	r, err := ruo.Save(ctx)
+	node, err := ruo.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return r
+	return node
 }
 
 // Exec executes the query on the entity.
@@ -319,7 +332,15 @@ func (ruo *RoleUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-func (ruo *RoleUpdateOne) sqlSave(ctx context.Context) (r *Role, err error) {
+// defaults sets the default values of the builder before save.
+func (ruo *RoleUpdateOne) defaults() {
+	if _, ok := ruo.mutation.UpdatedAt(); !ok {
+		v := role.UpdateDefaultUpdatedAt()
+		ruo.mutation.SetUpdatedAt(v)
+	}
+}
+
+func (ruo *RoleUpdateOne) sqlSave(ctx context.Context) (_node *Role, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
 			Table:   role.Table,
@@ -332,7 +353,7 @@ func (ruo *RoleUpdateOne) sqlSave(ctx context.Context) (r *Role, err error) {
 	}
 	id, ok := ruo.mutation.ID()
 	if !ok {
-		return nil, fmt.Errorf("missing Role.ID for update")
+		return nil, &ValidationError{Name: "ID", err: fmt.Errorf("missing Role.ID for update")}
 	}
 	_spec.Node.ID.Value = id
 	if value, ok := ruo.mutation.Name(); ok {
@@ -376,9 +397,9 @@ func (ruo *RoleUpdateOne) sqlSave(ctx context.Context) (r *Role, err error) {
 			Column: role.FieldUpdatedAt,
 		})
 	}
-	r = &Role{config: ruo.config}
-	_spec.Assign = r.assignValues
-	_spec.ScanValues = r.scanValues()
+	_node = &Role{config: ruo.config}
+	_spec.Assign = _node.assignValues
+	_spec.ScanValues = _node.scanValues()
 	if err = sqlgraph.UpdateNode(ctx, ruo.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{role.Label}
@@ -387,5 +408,5 @@ func (ruo *RoleUpdateOne) sqlSave(ctx context.Context) (r *Role, err error) {
 		}
 		return nil, err
 	}
-	return r, nil
+	return _node, nil
 }

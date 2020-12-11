@@ -2,12 +2,41 @@
 
 package build
 
+import (
+	"time"
+)
+
 const (
 	// Label holds the string label denoting the build type in the database.
 	Label = "build"
 	// FieldID holds the string denoting the id field in the database.
-	FieldID   = "id" // FieldName holds the string denoting the name vertex property in the database.
+	FieldID = "id"
+	// FieldTag holds the string denoting the tag field in the database.
+	FieldTag = "tag"
+	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
+	// FieldStatus holds the string denoting the status field in the database.
+	FieldStatus = "status"
+	// FieldCommitId holds the string denoting the commitid field in the database.
+	FieldCommitId = "commitId"
+	// FieldShortId holds the string denoting the shortid field in the database.
+	FieldShortId = "shortId"
+	// FieldMessage holds the string denoting the message field in the database.
+	FieldMessage = "message"
+	// FieldCommitterName holds the string denoting the committername field in the database.
+	FieldCommitterName = "committerName"
+	// FieldCommittedData holds the string denoting the committeddata field in the database.
+	FieldCommittedData = "committedData"
+	// FieldBuildTime holds the string denoting the buildtime field in the database.
+	FieldBuildTime = "buildTime"
+	// FieldJenkinsQueueId holds the string denoting the jenkinsqueueid field in the database.
+	FieldJenkinsQueueId = "jenkinsQueueId"
+	// FieldJenkinsBuildId holds the string denoting the jenkinsbuildid field in the database.
+	FieldJenkinsBuildId = "jenkinsBuildId"
+	// FieldCreatedAt holds the string denoting the createdat field in the database.
+	FieldCreatedAt = "createdAt"
+	// FieldUpdatedAt holds the string denoting the updatedat field in the database.
+	FieldUpdatedAt = "updatedAt"
 
 	// EdgeInstance holds the string denoting the instance edge name in mutations.
 	EdgeInstance = "instance"
@@ -26,10 +55,48 @@ const (
 // Columns holds all SQL columns for build fields.
 var Columns = []string{
 	FieldID,
+	FieldTag,
 	FieldName,
+	FieldStatus,
+	FieldCommitId,
+	FieldShortId,
+	FieldMessage,
+	FieldCommitterName,
+	FieldCommittedData,
+	FieldBuildTime,
+	FieldJenkinsQueueId,
+	FieldJenkinsBuildId,
+	FieldCreatedAt,
+	FieldUpdatedAt,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the Build type.
 var ForeignKeys = []string{
 	"instance_builds",
 }
+
+// ValidColumn reports if the column name is valid (part of the table columns).
+func ValidColumn(column string) bool {
+	for i := range Columns {
+		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
+			return true
+		}
+	}
+	return false
+}
+
+var (
+	// DefaultStatus holds the default value on creation for the status field.
+	DefaultStatus int
+	// DefaultCreatedAt holds the default value on creation for the createdAt field.
+	DefaultCreatedAt func() time.Time
+	// DefaultUpdatedAt holds the default value on creation for the updatedAt field.
+	DefaultUpdatedAt func() time.Time
+	// UpdateDefaultUpdatedAt holds the default value on update for the updatedAt field.
+	UpdateDefaultUpdatedAt func() time.Time
+)

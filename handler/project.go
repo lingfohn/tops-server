@@ -6,6 +6,7 @@ import (
 	"github.com/lingfohn/lime/ent/project"
 	"github.com/lingfohn/lime/model"
 	"github.com/lingfohn/lime/svcerr"
+	"strconv"
 )
 
 type ProjectHandler struct {
@@ -41,4 +42,13 @@ func (p *ProjectHandler)CreateProject(c *gin.Context)(err error)  {
 	}
 	c.Set("data",pro)
 	return nil
+}
+
+func (p *ProjectHandler)DeleteProject(c *gin.Context)(err error)  {
+	id := c.Param("id")
+	idn,err:= strconv.Atoi(id)
+	if err != nil {
+		return err
+	}
+	return p.m.Delete(idn)
 }

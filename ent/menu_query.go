@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/menu"
 	"github.com/lingfohn/lime/ent/predicate"
 )
@@ -21,7 +21,7 @@ type MenuQuery struct {
 	config
 	limit      *int
 	offset     *int
-	order      []Order
+	order      []OrderFunc
 	unique     []string
 	predicates []predicate.Menu
 	// eager-loading edges.
@@ -52,7 +52,7 @@ func (mq *MenuQuery) Offset(offset int) *MenuQuery {
 }
 
 // Order adds an order step to the query.
-func (mq *MenuQuery) Order(o ...Order) *MenuQuery {
+func (mq *MenuQuery) Order(o ...OrderFunc) *MenuQuery {
 	mq.order = append(mq.order, o...)
 	return mq
 }
@@ -64,8 +64,12 @@ func (mq *MenuQuery) QueryParent() *MenuQuery {
 		if err := mq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
+		selector := mq.sqlQuery()
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(menu.Table, menu.FieldID, mq.sqlQuery()),
+			sqlgraph.From(menu.Table, menu.FieldID, selector),
 			sqlgraph.To(menu.Table, menu.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, menu.ParentTable, menu.ParentColumn),
 		)
@@ -82,8 +86,12 @@ func (mq *MenuQuery) QuerySubmenus() *MenuQuery {
 		if err := mq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
+		selector := mq.sqlQuery()
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(menu.Table, menu.FieldID, mq.sqlQuery()),
+			sqlgraph.From(menu.Table, menu.FieldID, selector),
 			sqlgraph.To(menu.Table, menu.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, menu.SubmenusTable, menu.SubmenusColumn),
 		)
@@ -95,23 +103,23 @@ func (mq *MenuQuery) QuerySubmenus() *MenuQuery {
 
 // First returns the first Menu entity in the query. Returns *NotFoundError when no menu was found.
 func (mq *MenuQuery) First(ctx context.Context) (*Menu, error) {
-	ms, err := mq.Limit(1).All(ctx)
+	nodes, err := mq.Limit(1).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if len(ms) == 0 {
+	if len(nodes) == 0 {
 		return nil, &NotFoundError{menu.Label}
 	}
-	return ms[0], nil
+	return nodes[0], nil
 }
 
 // FirstX is like First, but panics if an error occurs.
 func (mq *MenuQuery) FirstX(ctx context.Context) *Menu {
-	m, err := mq.First(ctx)
+	node, err := mq.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
-	return m
+	return node
 }
 
 // FirstID returns the first Menu id in the query. Returns *NotFoundError when no id was found.
@@ -127,8 +135,8 @@ func (mq *MenuQuery) FirstID(ctx context.Context) (id int, err error) {
 	return ids[0], nil
 }
 
-// FirstXID is like FirstID, but panics if an error occurs.
-func (mq *MenuQuery) FirstXID(ctx context.Context) int {
+// FirstIDX is like FirstID, but panics if an error occurs.
+func (mq *MenuQuery) FirstIDX(ctx context.Context) int {
 	id, err := mq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -138,13 +146,13 @@ func (mq *MenuQuery) FirstXID(ctx context.Context) int {
 
 // Only returns the only Menu entity in the query, returns an error if not exactly one entity was returned.
 func (mq *MenuQuery) Only(ctx context.Context) (*Menu, error) {
-	ms, err := mq.Limit(2).All(ctx)
+	nodes, err := mq.Limit(2).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	switch len(ms) {
+	switch len(nodes) {
 	case 1:
-		return ms[0], nil
+		return nodes[0], nil
 	case 0:
 		return nil, &NotFoundError{menu.Label}
 	default:
@@ -154,11 +162,11 @@ func (mq *MenuQuery) Only(ctx context.Context) (*Menu, error) {
 
 // OnlyX is like Only, but panics if an error occurs.
 func (mq *MenuQuery) OnlyX(ctx context.Context) *Menu {
-	m, err := mq.Only(ctx)
+	node, err := mq.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return m
+	return node
 }
 
 // OnlyID returns the only Menu id in the query, returns an error if not exactly one id was returned.
@@ -178,8 +186,8 @@ func (mq *MenuQuery) OnlyID(ctx context.Context) (id int, err error) {
 	return
 }
 
-// OnlyXID is like OnlyID, but panics if an error occurs.
-func (mq *MenuQuery) OnlyXID(ctx context.Context) int {
+// OnlyIDX is like OnlyID, but panics if an error occurs.
+func (mq *MenuQuery) OnlyIDX(ctx context.Context) int {
 	id, err := mq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -197,11 +205,11 @@ func (mq *MenuQuery) All(ctx context.Context) ([]*Menu, error) {
 
 // AllX is like All, but panics if an error occurs.
 func (mq *MenuQuery) AllX(ctx context.Context) []*Menu {
-	ms, err := mq.All(ctx)
+	nodes, err := mq.All(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return ms
+	return nodes
 }
 
 // IDs executes the query and returns a list of Menu ids.
@@ -259,13 +267,18 @@ func (mq *MenuQuery) ExistX(ctx context.Context) bool {
 // Clone returns a duplicate of the query builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
 func (mq *MenuQuery) Clone() *MenuQuery {
+	if mq == nil {
+		return nil
+	}
 	return &MenuQuery{
-		config:     mq.config,
-		limit:      mq.limit,
-		offset:     mq.offset,
-		order:      append([]Order{}, mq.order...),
-		unique:     append([]string{}, mq.unique...),
-		predicates: append([]predicate.Menu{}, mq.predicates...),
+		config:       mq.config,
+		limit:        mq.limit,
+		offset:       mq.offset,
+		order:        append([]OrderFunc{}, mq.order...),
+		unique:       append([]string{}, mq.unique...),
+		predicates:   append([]predicate.Menu{}, mq.predicates...),
+		withParent:   mq.withParent.Clone(),
+		withSubmenus: mq.withSubmenus.Clone(),
 		// clone intermediate query.
 		sql:  mq.sql.Clone(),
 		path: mq.path,
@@ -427,6 +440,7 @@ func (mq *MenuQuery) sqlAll(ctx context.Context) ([]*Menu, error) {
 		for i := range nodes {
 			fks = append(fks, nodes[i].ID)
 			nodeids[nodes[i].ID] = nodes[i]
+			nodes[i].Edges.Submenus = []*Menu{}
 		}
 		query.withFKs = true
 		query.Where(predicate.Menu(func(s *sql.Selector) {
@@ -494,7 +508,7 @@ func (mq *MenuQuery) querySpec() *sqlgraph.QuerySpec {
 	if ps := mq.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
-				ps[i](selector)
+				ps[i](selector, menu.ValidColumn)
 			}
 		}
 	}
@@ -513,7 +527,7 @@ func (mq *MenuQuery) sqlQuery() *sql.Selector {
 		p(selector)
 	}
 	for _, p := range mq.order {
-		p(selector)
+		p(selector, menu.ValidColumn)
 	}
 	if offset := mq.offset; offset != nil {
 		// limit is mandatory for offset clause. We start
@@ -530,14 +544,14 @@ func (mq *MenuQuery) sqlQuery() *sql.Selector {
 type MenuGroupBy struct {
 	config
 	fields []string
-	fns    []Aggregate
+	fns    []AggregateFunc
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (mgb *MenuGroupBy) Aggregate(fns ...Aggregate) *MenuGroupBy {
+func (mgb *MenuGroupBy) Aggregate(fns ...AggregateFunc) *MenuGroupBy {
 	mgb.fns = append(mgb.fns, fns...)
 	return mgb
 }
@@ -580,6 +594,32 @@ func (mgb *MenuGroupBy) StringsX(ctx context.Context) []string {
 	return v
 }
 
+// String returns a single string from group-by. It is only allowed when querying group-by with one field.
+func (mgb *MenuGroupBy) String(ctx context.Context) (_ string, err error) {
+	var v []string
+	if v, err = mgb.Strings(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{menu.Label}
+	default:
+		err = fmt.Errorf("ent: MenuGroupBy.Strings returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// StringX is like String, but panics if an error occurs.
+func (mgb *MenuGroupBy) StringX(ctx context.Context) string {
+	v, err := mgb.String(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // Ints returns list of ints from group-by. It is only allowed when querying group-by with one field.
 func (mgb *MenuGroupBy) Ints(ctx context.Context) ([]int, error) {
 	if len(mgb.fields) > 1 {
@@ -595,6 +635,32 @@ func (mgb *MenuGroupBy) Ints(ctx context.Context) ([]int, error) {
 // IntsX is like Ints, but panics if an error occurs.
 func (mgb *MenuGroupBy) IntsX(ctx context.Context) []int {
 	v, err := mgb.Ints(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// Int returns a single int from group-by. It is only allowed when querying group-by with one field.
+func (mgb *MenuGroupBy) Int(ctx context.Context) (_ int, err error) {
+	var v []int
+	if v, err = mgb.Ints(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{menu.Label}
+	default:
+		err = fmt.Errorf("ent: MenuGroupBy.Ints returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// IntX is like Int, but panics if an error occurs.
+func (mgb *MenuGroupBy) IntX(ctx context.Context) int {
+	v, err := mgb.Int(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -622,6 +688,32 @@ func (mgb *MenuGroupBy) Float64sX(ctx context.Context) []float64 {
 	return v
 }
 
+// Float64 returns a single float64 from group-by. It is only allowed when querying group-by with one field.
+func (mgb *MenuGroupBy) Float64(ctx context.Context) (_ float64, err error) {
+	var v []float64
+	if v, err = mgb.Float64s(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{menu.Label}
+	default:
+		err = fmt.Errorf("ent: MenuGroupBy.Float64s returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// Float64X is like Float64, but panics if an error occurs.
+func (mgb *MenuGroupBy) Float64X(ctx context.Context) float64 {
+	v, err := mgb.Float64(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // Bools returns list of bools from group-by. It is only allowed when querying group-by with one field.
 func (mgb *MenuGroupBy) Bools(ctx context.Context) ([]bool, error) {
 	if len(mgb.fields) > 1 {
@@ -643,9 +735,44 @@ func (mgb *MenuGroupBy) BoolsX(ctx context.Context) []bool {
 	return v
 }
 
+// Bool returns a single bool from group-by. It is only allowed when querying group-by with one field.
+func (mgb *MenuGroupBy) Bool(ctx context.Context) (_ bool, err error) {
+	var v []bool
+	if v, err = mgb.Bools(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{menu.Label}
+	default:
+		err = fmt.Errorf("ent: MenuGroupBy.Bools returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// BoolX is like Bool, but panics if an error occurs.
+func (mgb *MenuGroupBy) BoolX(ctx context.Context) bool {
+	v, err := mgb.Bool(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 func (mgb *MenuGroupBy) sqlScan(ctx context.Context, v interface{}) error {
+	for _, f := range mgb.fields {
+		if !menu.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
+		}
+	}
+	selector := mgb.sqlQuery()
+	if err := selector.Err(); err != nil {
+		return err
+	}
 	rows := &sql.Rows{}
-	query, args := mgb.sqlQuery().Query()
+	query, args := selector.Query()
 	if err := mgb.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
@@ -658,7 +785,7 @@ func (mgb *MenuGroupBy) sqlQuery() *sql.Selector {
 	columns := make([]string, 0, len(mgb.fields)+len(mgb.fns))
 	columns = append(columns, mgb.fields...)
 	for _, fn := range mgb.fns {
-		columns = append(columns, fn(selector))
+		columns = append(columns, fn(selector, menu.ValidColumn))
 	}
 	return selector.Select(columns...).GroupBy(mgb.fields...)
 }
@@ -710,6 +837,32 @@ func (ms *MenuSelect) StringsX(ctx context.Context) []string {
 	return v
 }
 
+// String returns a single string from selector. It is only allowed when selecting one field.
+func (ms *MenuSelect) String(ctx context.Context) (_ string, err error) {
+	var v []string
+	if v, err = ms.Strings(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{menu.Label}
+	default:
+		err = fmt.Errorf("ent: MenuSelect.Strings returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// StringX is like String, but panics if an error occurs.
+func (ms *MenuSelect) StringX(ctx context.Context) string {
+	v, err := ms.String(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // Ints returns list of ints from selector. It is only allowed when selecting one field.
 func (ms *MenuSelect) Ints(ctx context.Context) ([]int, error) {
 	if len(ms.fields) > 1 {
@@ -725,6 +878,32 @@ func (ms *MenuSelect) Ints(ctx context.Context) ([]int, error) {
 // IntsX is like Ints, but panics if an error occurs.
 func (ms *MenuSelect) IntsX(ctx context.Context) []int {
 	v, err := ms.Ints(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// Int returns a single int from selector. It is only allowed when selecting one field.
+func (ms *MenuSelect) Int(ctx context.Context) (_ int, err error) {
+	var v []int
+	if v, err = ms.Ints(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{menu.Label}
+	default:
+		err = fmt.Errorf("ent: MenuSelect.Ints returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// IntX is like Int, but panics if an error occurs.
+func (ms *MenuSelect) IntX(ctx context.Context) int {
+	v, err := ms.Int(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -752,6 +931,32 @@ func (ms *MenuSelect) Float64sX(ctx context.Context) []float64 {
 	return v
 }
 
+// Float64 returns a single float64 from selector. It is only allowed when selecting one field.
+func (ms *MenuSelect) Float64(ctx context.Context) (_ float64, err error) {
+	var v []float64
+	if v, err = ms.Float64s(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{menu.Label}
+	default:
+		err = fmt.Errorf("ent: MenuSelect.Float64s returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// Float64X is like Float64, but panics if an error occurs.
+func (ms *MenuSelect) Float64X(ctx context.Context) float64 {
+	v, err := ms.Float64(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // Bools returns list of bools from selector. It is only allowed when selecting one field.
 func (ms *MenuSelect) Bools(ctx context.Context) ([]bool, error) {
 	if len(ms.fields) > 1 {
@@ -773,7 +978,38 @@ func (ms *MenuSelect) BoolsX(ctx context.Context) []bool {
 	return v
 }
 
+// Bool returns a single bool from selector. It is only allowed when selecting one field.
+func (ms *MenuSelect) Bool(ctx context.Context) (_ bool, err error) {
+	var v []bool
+	if v, err = ms.Bools(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{menu.Label}
+	default:
+		err = fmt.Errorf("ent: MenuSelect.Bools returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// BoolX is like Bool, but panics if an error occurs.
+func (ms *MenuSelect) BoolX(ctx context.Context) bool {
+	v, err := ms.Bool(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 func (ms *MenuSelect) sqlScan(ctx context.Context, v interface{}) error {
+	for _, f := range ms.fields {
+		if !menu.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for selection", f)}
+		}
+	}
 	rows := &sql.Rows{}
 	query, args := ms.sqlQuery().Query()
 	if err := ms.driver.Query(ctx, query, args, rows); err != nil {

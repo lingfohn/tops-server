@@ -3,8 +3,10 @@
 package build
 
 import (
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
+	"time"
+
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
 	"github.com/lingfohn/lime/ent/predicate"
 )
 
@@ -91,10 +93,205 @@ func IDLTE(id int) predicate.Build {
 	})
 }
 
+// Tag applies equality check predicate on the "tag" field. It's identical to TagEQ.
+func Tag(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldTag), v))
+	})
+}
+
 // Name applies equality check predicate on the "name" field. It's identical to NameEQ.
 func Name(v string) predicate.Build {
 	return predicate.Build(func(s *sql.Selector) {
 		s.Where(sql.EQ(s.C(FieldName), v))
+	})
+}
+
+// Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
+func Status(v int) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldStatus), v))
+	})
+}
+
+// CommitId applies equality check predicate on the "commitId" field. It's identical to CommitIdEQ.
+func CommitId(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldCommitId), v))
+	})
+}
+
+// ShortId applies equality check predicate on the "shortId" field. It's identical to ShortIdEQ.
+func ShortId(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldShortId), v))
+	})
+}
+
+// Message applies equality check predicate on the "message" field. It's identical to MessageEQ.
+func Message(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldMessage), v))
+	})
+}
+
+// CommitterName applies equality check predicate on the "committerName" field. It's identical to CommitterNameEQ.
+func CommitterName(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldCommitterName), v))
+	})
+}
+
+// CommittedData applies equality check predicate on the "committedData" field. It's identical to CommittedDataEQ.
+func CommittedData(v time.Time) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldCommittedData), v))
+	})
+}
+
+// BuildTime applies equality check predicate on the "buildTime" field. It's identical to BuildTimeEQ.
+func BuildTime(v time.Time) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldBuildTime), v))
+	})
+}
+
+// JenkinsQueueId applies equality check predicate on the "jenkinsQueueId" field. It's identical to JenkinsQueueIdEQ.
+func JenkinsQueueId(v int) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldJenkinsQueueId), v))
+	})
+}
+
+// JenkinsBuildId applies equality check predicate on the "jenkinsBuildId" field. It's identical to JenkinsBuildIdEQ.
+func JenkinsBuildId(v int) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldJenkinsBuildId), v))
+	})
+}
+
+// CreatedAt applies equality check predicate on the "createdAt" field. It's identical to CreatedAtEQ.
+func CreatedAt(v time.Time) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldCreatedAt), v))
+	})
+}
+
+// UpdatedAt applies equality check predicate on the "updatedAt" field. It's identical to UpdatedAtEQ.
+func UpdatedAt(v time.Time) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldUpdatedAt), v))
+	})
+}
+
+// TagEQ applies the EQ predicate on the "tag" field.
+func TagEQ(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldTag), v))
+	})
+}
+
+// TagNEQ applies the NEQ predicate on the "tag" field.
+func TagNEQ(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldTag), v))
+	})
+}
+
+// TagIn applies the In predicate on the "tag" field.
+func TagIn(vs ...string) predicate.Build {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Build(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldTag), v...))
+	})
+}
+
+// TagNotIn applies the NotIn predicate on the "tag" field.
+func TagNotIn(vs ...string) predicate.Build {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Build(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldTag), v...))
+	})
+}
+
+// TagGT applies the GT predicate on the "tag" field.
+func TagGT(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldTag), v))
+	})
+}
+
+// TagGTE applies the GTE predicate on the "tag" field.
+func TagGTE(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldTag), v))
+	})
+}
+
+// TagLT applies the LT predicate on the "tag" field.
+func TagLT(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldTag), v))
+	})
+}
+
+// TagLTE applies the LTE predicate on the "tag" field.
+func TagLTE(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldTag), v))
+	})
+}
+
+// TagContains applies the Contains predicate on the "tag" field.
+func TagContains(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.Contains(s.C(FieldTag), v))
+	})
+}
+
+// TagHasPrefix applies the HasPrefix predicate on the "tag" field.
+func TagHasPrefix(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.HasPrefix(s.C(FieldTag), v))
+	})
+}
+
+// TagHasSuffix applies the HasSuffix predicate on the "tag" field.
+func TagHasSuffix(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.HasSuffix(s.C(FieldTag), v))
+	})
+}
+
+// TagEqualFold applies the EqualFold predicate on the "tag" field.
+func TagEqualFold(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.EqualFold(s.C(FieldTag), v))
+	})
+}
+
+// TagContainsFold applies the ContainsFold predicate on the "tag" field.
+func TagContainsFold(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.ContainsFold(s.C(FieldTag), v))
 	})
 }
 
@@ -121,7 +318,7 @@ func NameIn(vs ...string) predicate.Build {
 	return predicate.Build(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -138,7 +335,7 @@ func NameNotIn(vs ...string) predicate.Build {
 	return predicate.Build(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -206,6 +403,996 @@ func NameEqualFold(v string) predicate.Build {
 func NameContainsFold(v string) predicate.Build {
 	return predicate.Build(func(s *sql.Selector) {
 		s.Where(sql.ContainsFold(s.C(FieldName), v))
+	})
+}
+
+// StatusEQ applies the EQ predicate on the "status" field.
+func StatusEQ(v int) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldStatus), v))
+	})
+}
+
+// StatusNEQ applies the NEQ predicate on the "status" field.
+func StatusNEQ(v int) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldStatus), v))
+	})
+}
+
+// StatusIn applies the In predicate on the "status" field.
+func StatusIn(vs ...int) predicate.Build {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Build(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldStatus), v...))
+	})
+}
+
+// StatusNotIn applies the NotIn predicate on the "status" field.
+func StatusNotIn(vs ...int) predicate.Build {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Build(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldStatus), v...))
+	})
+}
+
+// StatusGT applies the GT predicate on the "status" field.
+func StatusGT(v int) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldStatus), v))
+	})
+}
+
+// StatusGTE applies the GTE predicate on the "status" field.
+func StatusGTE(v int) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldStatus), v))
+	})
+}
+
+// StatusLT applies the LT predicate on the "status" field.
+func StatusLT(v int) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldStatus), v))
+	})
+}
+
+// StatusLTE applies the LTE predicate on the "status" field.
+func StatusLTE(v int) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldStatus), v))
+	})
+}
+
+// CommitIdEQ applies the EQ predicate on the "commitId" field.
+func CommitIdEQ(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldCommitId), v))
+	})
+}
+
+// CommitIdNEQ applies the NEQ predicate on the "commitId" field.
+func CommitIdNEQ(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldCommitId), v))
+	})
+}
+
+// CommitIdIn applies the In predicate on the "commitId" field.
+func CommitIdIn(vs ...string) predicate.Build {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Build(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldCommitId), v...))
+	})
+}
+
+// CommitIdNotIn applies the NotIn predicate on the "commitId" field.
+func CommitIdNotIn(vs ...string) predicate.Build {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Build(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldCommitId), v...))
+	})
+}
+
+// CommitIdGT applies the GT predicate on the "commitId" field.
+func CommitIdGT(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldCommitId), v))
+	})
+}
+
+// CommitIdGTE applies the GTE predicate on the "commitId" field.
+func CommitIdGTE(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldCommitId), v))
+	})
+}
+
+// CommitIdLT applies the LT predicate on the "commitId" field.
+func CommitIdLT(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldCommitId), v))
+	})
+}
+
+// CommitIdLTE applies the LTE predicate on the "commitId" field.
+func CommitIdLTE(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldCommitId), v))
+	})
+}
+
+// CommitIdContains applies the Contains predicate on the "commitId" field.
+func CommitIdContains(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.Contains(s.C(FieldCommitId), v))
+	})
+}
+
+// CommitIdHasPrefix applies the HasPrefix predicate on the "commitId" field.
+func CommitIdHasPrefix(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.HasPrefix(s.C(FieldCommitId), v))
+	})
+}
+
+// CommitIdHasSuffix applies the HasSuffix predicate on the "commitId" field.
+func CommitIdHasSuffix(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.HasSuffix(s.C(FieldCommitId), v))
+	})
+}
+
+// CommitIdEqualFold applies the EqualFold predicate on the "commitId" field.
+func CommitIdEqualFold(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.EqualFold(s.C(FieldCommitId), v))
+	})
+}
+
+// CommitIdContainsFold applies the ContainsFold predicate on the "commitId" field.
+func CommitIdContainsFold(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.ContainsFold(s.C(FieldCommitId), v))
+	})
+}
+
+// ShortIdEQ applies the EQ predicate on the "shortId" field.
+func ShortIdEQ(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldShortId), v))
+	})
+}
+
+// ShortIdNEQ applies the NEQ predicate on the "shortId" field.
+func ShortIdNEQ(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldShortId), v))
+	})
+}
+
+// ShortIdIn applies the In predicate on the "shortId" field.
+func ShortIdIn(vs ...string) predicate.Build {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Build(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldShortId), v...))
+	})
+}
+
+// ShortIdNotIn applies the NotIn predicate on the "shortId" field.
+func ShortIdNotIn(vs ...string) predicate.Build {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Build(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldShortId), v...))
+	})
+}
+
+// ShortIdGT applies the GT predicate on the "shortId" field.
+func ShortIdGT(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldShortId), v))
+	})
+}
+
+// ShortIdGTE applies the GTE predicate on the "shortId" field.
+func ShortIdGTE(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldShortId), v))
+	})
+}
+
+// ShortIdLT applies the LT predicate on the "shortId" field.
+func ShortIdLT(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldShortId), v))
+	})
+}
+
+// ShortIdLTE applies the LTE predicate on the "shortId" field.
+func ShortIdLTE(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldShortId), v))
+	})
+}
+
+// ShortIdContains applies the Contains predicate on the "shortId" field.
+func ShortIdContains(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.Contains(s.C(FieldShortId), v))
+	})
+}
+
+// ShortIdHasPrefix applies the HasPrefix predicate on the "shortId" field.
+func ShortIdHasPrefix(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.HasPrefix(s.C(FieldShortId), v))
+	})
+}
+
+// ShortIdHasSuffix applies the HasSuffix predicate on the "shortId" field.
+func ShortIdHasSuffix(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.HasSuffix(s.C(FieldShortId), v))
+	})
+}
+
+// ShortIdEqualFold applies the EqualFold predicate on the "shortId" field.
+func ShortIdEqualFold(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.EqualFold(s.C(FieldShortId), v))
+	})
+}
+
+// ShortIdContainsFold applies the ContainsFold predicate on the "shortId" field.
+func ShortIdContainsFold(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.ContainsFold(s.C(FieldShortId), v))
+	})
+}
+
+// MessageEQ applies the EQ predicate on the "message" field.
+func MessageEQ(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldMessage), v))
+	})
+}
+
+// MessageNEQ applies the NEQ predicate on the "message" field.
+func MessageNEQ(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldMessage), v))
+	})
+}
+
+// MessageIn applies the In predicate on the "message" field.
+func MessageIn(vs ...string) predicate.Build {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Build(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldMessage), v...))
+	})
+}
+
+// MessageNotIn applies the NotIn predicate on the "message" field.
+func MessageNotIn(vs ...string) predicate.Build {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Build(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldMessage), v...))
+	})
+}
+
+// MessageGT applies the GT predicate on the "message" field.
+func MessageGT(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldMessage), v))
+	})
+}
+
+// MessageGTE applies the GTE predicate on the "message" field.
+func MessageGTE(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldMessage), v))
+	})
+}
+
+// MessageLT applies the LT predicate on the "message" field.
+func MessageLT(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldMessage), v))
+	})
+}
+
+// MessageLTE applies the LTE predicate on the "message" field.
+func MessageLTE(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldMessage), v))
+	})
+}
+
+// MessageContains applies the Contains predicate on the "message" field.
+func MessageContains(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.Contains(s.C(FieldMessage), v))
+	})
+}
+
+// MessageHasPrefix applies the HasPrefix predicate on the "message" field.
+func MessageHasPrefix(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.HasPrefix(s.C(FieldMessage), v))
+	})
+}
+
+// MessageHasSuffix applies the HasSuffix predicate on the "message" field.
+func MessageHasSuffix(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.HasSuffix(s.C(FieldMessage), v))
+	})
+}
+
+// MessageEqualFold applies the EqualFold predicate on the "message" field.
+func MessageEqualFold(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.EqualFold(s.C(FieldMessage), v))
+	})
+}
+
+// MessageContainsFold applies the ContainsFold predicate on the "message" field.
+func MessageContainsFold(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.ContainsFold(s.C(FieldMessage), v))
+	})
+}
+
+// CommitterNameEQ applies the EQ predicate on the "committerName" field.
+func CommitterNameEQ(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldCommitterName), v))
+	})
+}
+
+// CommitterNameNEQ applies the NEQ predicate on the "committerName" field.
+func CommitterNameNEQ(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldCommitterName), v))
+	})
+}
+
+// CommitterNameIn applies the In predicate on the "committerName" field.
+func CommitterNameIn(vs ...string) predicate.Build {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Build(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldCommitterName), v...))
+	})
+}
+
+// CommitterNameNotIn applies the NotIn predicate on the "committerName" field.
+func CommitterNameNotIn(vs ...string) predicate.Build {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Build(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldCommitterName), v...))
+	})
+}
+
+// CommitterNameGT applies the GT predicate on the "committerName" field.
+func CommitterNameGT(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldCommitterName), v))
+	})
+}
+
+// CommitterNameGTE applies the GTE predicate on the "committerName" field.
+func CommitterNameGTE(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldCommitterName), v))
+	})
+}
+
+// CommitterNameLT applies the LT predicate on the "committerName" field.
+func CommitterNameLT(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldCommitterName), v))
+	})
+}
+
+// CommitterNameLTE applies the LTE predicate on the "committerName" field.
+func CommitterNameLTE(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldCommitterName), v))
+	})
+}
+
+// CommitterNameContains applies the Contains predicate on the "committerName" field.
+func CommitterNameContains(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.Contains(s.C(FieldCommitterName), v))
+	})
+}
+
+// CommitterNameHasPrefix applies the HasPrefix predicate on the "committerName" field.
+func CommitterNameHasPrefix(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.HasPrefix(s.C(FieldCommitterName), v))
+	})
+}
+
+// CommitterNameHasSuffix applies the HasSuffix predicate on the "committerName" field.
+func CommitterNameHasSuffix(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.HasSuffix(s.C(FieldCommitterName), v))
+	})
+}
+
+// CommitterNameEqualFold applies the EqualFold predicate on the "committerName" field.
+func CommitterNameEqualFold(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.EqualFold(s.C(FieldCommitterName), v))
+	})
+}
+
+// CommitterNameContainsFold applies the ContainsFold predicate on the "committerName" field.
+func CommitterNameContainsFold(v string) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.ContainsFold(s.C(FieldCommitterName), v))
+	})
+}
+
+// CommittedDataEQ applies the EQ predicate on the "committedData" field.
+func CommittedDataEQ(v time.Time) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldCommittedData), v))
+	})
+}
+
+// CommittedDataNEQ applies the NEQ predicate on the "committedData" field.
+func CommittedDataNEQ(v time.Time) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldCommittedData), v))
+	})
+}
+
+// CommittedDataIn applies the In predicate on the "committedData" field.
+func CommittedDataIn(vs ...time.Time) predicate.Build {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Build(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldCommittedData), v...))
+	})
+}
+
+// CommittedDataNotIn applies the NotIn predicate on the "committedData" field.
+func CommittedDataNotIn(vs ...time.Time) predicate.Build {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Build(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldCommittedData), v...))
+	})
+}
+
+// CommittedDataGT applies the GT predicate on the "committedData" field.
+func CommittedDataGT(v time.Time) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldCommittedData), v))
+	})
+}
+
+// CommittedDataGTE applies the GTE predicate on the "committedData" field.
+func CommittedDataGTE(v time.Time) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldCommittedData), v))
+	})
+}
+
+// CommittedDataLT applies the LT predicate on the "committedData" field.
+func CommittedDataLT(v time.Time) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldCommittedData), v))
+	})
+}
+
+// CommittedDataLTE applies the LTE predicate on the "committedData" field.
+func CommittedDataLTE(v time.Time) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldCommittedData), v))
+	})
+}
+
+// BuildTimeEQ applies the EQ predicate on the "buildTime" field.
+func BuildTimeEQ(v time.Time) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldBuildTime), v))
+	})
+}
+
+// BuildTimeNEQ applies the NEQ predicate on the "buildTime" field.
+func BuildTimeNEQ(v time.Time) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldBuildTime), v))
+	})
+}
+
+// BuildTimeIn applies the In predicate on the "buildTime" field.
+func BuildTimeIn(vs ...time.Time) predicate.Build {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Build(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldBuildTime), v...))
+	})
+}
+
+// BuildTimeNotIn applies the NotIn predicate on the "buildTime" field.
+func BuildTimeNotIn(vs ...time.Time) predicate.Build {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Build(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldBuildTime), v...))
+	})
+}
+
+// BuildTimeGT applies the GT predicate on the "buildTime" field.
+func BuildTimeGT(v time.Time) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldBuildTime), v))
+	})
+}
+
+// BuildTimeGTE applies the GTE predicate on the "buildTime" field.
+func BuildTimeGTE(v time.Time) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldBuildTime), v))
+	})
+}
+
+// BuildTimeLT applies the LT predicate on the "buildTime" field.
+func BuildTimeLT(v time.Time) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldBuildTime), v))
+	})
+}
+
+// BuildTimeLTE applies the LTE predicate on the "buildTime" field.
+func BuildTimeLTE(v time.Time) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldBuildTime), v))
+	})
+}
+
+// JenkinsQueueIdEQ applies the EQ predicate on the "jenkinsQueueId" field.
+func JenkinsQueueIdEQ(v int) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldJenkinsQueueId), v))
+	})
+}
+
+// JenkinsQueueIdNEQ applies the NEQ predicate on the "jenkinsQueueId" field.
+func JenkinsQueueIdNEQ(v int) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldJenkinsQueueId), v))
+	})
+}
+
+// JenkinsQueueIdIn applies the In predicate on the "jenkinsQueueId" field.
+func JenkinsQueueIdIn(vs ...int) predicate.Build {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Build(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldJenkinsQueueId), v...))
+	})
+}
+
+// JenkinsQueueIdNotIn applies the NotIn predicate on the "jenkinsQueueId" field.
+func JenkinsQueueIdNotIn(vs ...int) predicate.Build {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Build(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldJenkinsQueueId), v...))
+	})
+}
+
+// JenkinsQueueIdGT applies the GT predicate on the "jenkinsQueueId" field.
+func JenkinsQueueIdGT(v int) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldJenkinsQueueId), v))
+	})
+}
+
+// JenkinsQueueIdGTE applies the GTE predicate on the "jenkinsQueueId" field.
+func JenkinsQueueIdGTE(v int) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldJenkinsQueueId), v))
+	})
+}
+
+// JenkinsQueueIdLT applies the LT predicate on the "jenkinsQueueId" field.
+func JenkinsQueueIdLT(v int) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldJenkinsQueueId), v))
+	})
+}
+
+// JenkinsQueueIdLTE applies the LTE predicate on the "jenkinsQueueId" field.
+func JenkinsQueueIdLTE(v int) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldJenkinsQueueId), v))
+	})
+}
+
+// JenkinsBuildIdEQ applies the EQ predicate on the "jenkinsBuildId" field.
+func JenkinsBuildIdEQ(v int) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldJenkinsBuildId), v))
+	})
+}
+
+// JenkinsBuildIdNEQ applies the NEQ predicate on the "jenkinsBuildId" field.
+func JenkinsBuildIdNEQ(v int) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldJenkinsBuildId), v))
+	})
+}
+
+// JenkinsBuildIdIn applies the In predicate on the "jenkinsBuildId" field.
+func JenkinsBuildIdIn(vs ...int) predicate.Build {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Build(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldJenkinsBuildId), v...))
+	})
+}
+
+// JenkinsBuildIdNotIn applies the NotIn predicate on the "jenkinsBuildId" field.
+func JenkinsBuildIdNotIn(vs ...int) predicate.Build {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Build(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldJenkinsBuildId), v...))
+	})
+}
+
+// JenkinsBuildIdGT applies the GT predicate on the "jenkinsBuildId" field.
+func JenkinsBuildIdGT(v int) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldJenkinsBuildId), v))
+	})
+}
+
+// JenkinsBuildIdGTE applies the GTE predicate on the "jenkinsBuildId" field.
+func JenkinsBuildIdGTE(v int) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldJenkinsBuildId), v))
+	})
+}
+
+// JenkinsBuildIdLT applies the LT predicate on the "jenkinsBuildId" field.
+func JenkinsBuildIdLT(v int) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldJenkinsBuildId), v))
+	})
+}
+
+// JenkinsBuildIdLTE applies the LTE predicate on the "jenkinsBuildId" field.
+func JenkinsBuildIdLTE(v int) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldJenkinsBuildId), v))
+	})
+}
+
+// JenkinsBuildIdIsNil applies the IsNil predicate on the "jenkinsBuildId" field.
+func JenkinsBuildIdIsNil() predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.IsNull(s.C(FieldJenkinsBuildId)))
+	})
+}
+
+// JenkinsBuildIdNotNil applies the NotNil predicate on the "jenkinsBuildId" field.
+func JenkinsBuildIdNotNil() predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.NotNull(s.C(FieldJenkinsBuildId)))
+	})
+}
+
+// CreatedAtEQ applies the EQ predicate on the "createdAt" field.
+func CreatedAtEQ(v time.Time) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldCreatedAt), v))
+	})
+}
+
+// CreatedAtNEQ applies the NEQ predicate on the "createdAt" field.
+func CreatedAtNEQ(v time.Time) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldCreatedAt), v))
+	})
+}
+
+// CreatedAtIn applies the In predicate on the "createdAt" field.
+func CreatedAtIn(vs ...time.Time) predicate.Build {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Build(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldCreatedAt), v...))
+	})
+}
+
+// CreatedAtNotIn applies the NotIn predicate on the "createdAt" field.
+func CreatedAtNotIn(vs ...time.Time) predicate.Build {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Build(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldCreatedAt), v...))
+	})
+}
+
+// CreatedAtGT applies the GT predicate on the "createdAt" field.
+func CreatedAtGT(v time.Time) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldCreatedAt), v))
+	})
+}
+
+// CreatedAtGTE applies the GTE predicate on the "createdAt" field.
+func CreatedAtGTE(v time.Time) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldCreatedAt), v))
+	})
+}
+
+// CreatedAtLT applies the LT predicate on the "createdAt" field.
+func CreatedAtLT(v time.Time) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldCreatedAt), v))
+	})
+}
+
+// CreatedAtLTE applies the LTE predicate on the "createdAt" field.
+func CreatedAtLTE(v time.Time) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldCreatedAt), v))
+	})
+}
+
+// UpdatedAtEQ applies the EQ predicate on the "updatedAt" field.
+func UpdatedAtEQ(v time.Time) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldUpdatedAt), v))
+	})
+}
+
+// UpdatedAtNEQ applies the NEQ predicate on the "updatedAt" field.
+func UpdatedAtNEQ(v time.Time) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldUpdatedAt), v))
+	})
+}
+
+// UpdatedAtIn applies the In predicate on the "updatedAt" field.
+func UpdatedAtIn(vs ...time.Time) predicate.Build {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Build(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldUpdatedAt), v...))
+	})
+}
+
+// UpdatedAtNotIn applies the NotIn predicate on the "updatedAt" field.
+func UpdatedAtNotIn(vs ...time.Time) predicate.Build {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Build(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldUpdatedAt), v...))
+	})
+}
+
+// UpdatedAtGT applies the GT predicate on the "updatedAt" field.
+func UpdatedAtGT(v time.Time) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldUpdatedAt), v))
+	})
+}
+
+// UpdatedAtGTE applies the GTE predicate on the "updatedAt" field.
+func UpdatedAtGTE(v time.Time) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldUpdatedAt), v))
+	})
+}
+
+// UpdatedAtLT applies the LT predicate on the "updatedAt" field.
+func UpdatedAtLT(v time.Time) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldUpdatedAt), v))
+	})
+}
+
+// UpdatedAtLTE applies the LTE predicate on the "updatedAt" field.
+func UpdatedAtLTE(v time.Time) predicate.Build {
+	return predicate.Build(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldUpdatedAt), v))
 	})
 }
 

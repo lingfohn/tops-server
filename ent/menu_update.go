@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/menu"
 	"github.com/lingfohn/lime/ent/predicate"
 )
@@ -17,14 +17,13 @@ import (
 // MenuUpdate is the builder for updating Menu entities.
 type MenuUpdate struct {
 	config
-	hooks      []Hook
-	mutation   *MenuMutation
-	predicates []predicate.Menu
+	hooks    []Hook
+	mutation *MenuMutation
 }
 
 // Where adds a new predicate for the builder.
 func (mu *MenuUpdate) Where(ps ...predicate.Menu) *MenuUpdate {
-	mu.predicates = append(mu.predicates, ps...)
+	mu.mutation.predicates = append(mu.mutation.predicates, ps...)
 	return mu
 }
 
@@ -245,9 +244,20 @@ func (mu *MenuUpdate) AddSubmenus(m ...*Menu) *MenuUpdate {
 	return mu.AddSubmenuIDs(ids...)
 }
 
-// ClearParent clears the parent edge to Menu.
+// Mutation returns the MenuMutation object of the builder.
+func (mu *MenuUpdate) Mutation() *MenuMutation {
+	return mu.mutation
+}
+
+// ClearParent clears the "parent" edge to type Menu.
 func (mu *MenuUpdate) ClearParent() *MenuUpdate {
 	mu.mutation.ClearParent()
+	return mu
+}
+
+// ClearSubmenus clears all "submenus" edges to type Menu.
+func (mu *MenuUpdate) ClearSubmenus() *MenuUpdate {
+	mu.mutation.ClearSubmenus()
 	return mu
 }
 
@@ -266,17 +276,13 @@ func (mu *MenuUpdate) RemoveSubmenus(m ...*Menu) *MenuUpdate {
 	return mu.RemoveSubmenuIDs(ids...)
 }
 
-// Save executes the query and returns the number of rows/vertices matched by this operation.
+// Save executes the query and returns the number of nodes affected by the update operation.
 func (mu *MenuUpdate) Save(ctx context.Context) (int, error) {
-	if _, ok := mu.mutation.UpdatedAt(); !ok {
-		v := menu.UpdateDefaultUpdatedAt()
-		mu.mutation.SetUpdatedAt(v)
-	}
-
 	var (
 		err      error
 		affected int
 	)
+	mu.defaults()
 	if len(mu.hooks) == 0 {
 		affected, err = mu.sqlSave(ctx)
 	} else {
@@ -287,6 +293,7 @@ func (mu *MenuUpdate) Save(ctx context.Context) (int, error) {
 			}
 			mu.mutation = mutation
 			affected, err = mu.sqlSave(ctx)
+			mutation.done = true
 			return affected, err
 		})
 		for i := len(mu.hooks) - 1; i >= 0; i-- {
@@ -321,6 +328,14 @@ func (mu *MenuUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (mu *MenuUpdate) defaults() {
+	if _, ok := mu.mutation.UpdatedAt(); !ok {
+		v := menu.UpdateDefaultUpdatedAt()
+		mu.mutation.SetUpdatedAt(v)
+	}
+}
+
 func (mu *MenuUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
@@ -332,7 +347,7 @@ func (mu *MenuUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			},
 		},
 	}
-	if ps := mu.predicates; len(ps) > 0 {
+	if ps := mu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -522,7 +537,23 @@ func (mu *MenuUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := mu.mutation.RemovedSubmenusIDs(); len(nodes) > 0 {
+	if mu.mutation.SubmenusCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   menu.SubmenusTable,
+			Columns: []string{menu.SubmenusColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: menu.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := mu.mutation.RemovedSubmenusIDs(); len(nodes) > 0 && !mu.mutation.SubmenusCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -795,9 +826,20 @@ func (muo *MenuUpdateOne) AddSubmenus(m ...*Menu) *MenuUpdateOne {
 	return muo.AddSubmenuIDs(ids...)
 }
 
-// ClearParent clears the parent edge to Menu.
+// Mutation returns the MenuMutation object of the builder.
+func (muo *MenuUpdateOne) Mutation() *MenuMutation {
+	return muo.mutation
+}
+
+// ClearParent clears the "parent" edge to type Menu.
 func (muo *MenuUpdateOne) ClearParent() *MenuUpdateOne {
 	muo.mutation.ClearParent()
+	return muo
+}
+
+// ClearSubmenus clears all "submenus" edges to type Menu.
+func (muo *MenuUpdateOne) ClearSubmenus() *MenuUpdateOne {
+	muo.mutation.ClearSubmenus()
 	return muo
 }
 
@@ -818,15 +860,11 @@ func (muo *MenuUpdateOne) RemoveSubmenus(m ...*Menu) *MenuUpdateOne {
 
 // Save executes the query and returns the updated entity.
 func (muo *MenuUpdateOne) Save(ctx context.Context) (*Menu, error) {
-	if _, ok := muo.mutation.UpdatedAt(); !ok {
-		v := menu.UpdateDefaultUpdatedAt()
-		muo.mutation.SetUpdatedAt(v)
-	}
-
 	var (
 		err  error
 		node *Menu
 	)
+	muo.defaults()
 	if len(muo.hooks) == 0 {
 		node, err = muo.sqlSave(ctx)
 	} else {
@@ -837,6 +875,7 @@ func (muo *MenuUpdateOne) Save(ctx context.Context) (*Menu, error) {
 			}
 			muo.mutation = mutation
 			node, err = muo.sqlSave(ctx)
+			mutation.done = true
 			return node, err
 		})
 		for i := len(muo.hooks) - 1; i >= 0; i-- {
@@ -851,11 +890,11 @@ func (muo *MenuUpdateOne) Save(ctx context.Context) (*Menu, error) {
 
 // SaveX is like Save, but panics if an error occurs.
 func (muo *MenuUpdateOne) SaveX(ctx context.Context) *Menu {
-	m, err := muo.Save(ctx)
+	node, err := muo.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return m
+	return node
 }
 
 // Exec executes the query on the entity.
@@ -871,7 +910,15 @@ func (muo *MenuUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-func (muo *MenuUpdateOne) sqlSave(ctx context.Context) (m *Menu, err error) {
+// defaults sets the default values of the builder before save.
+func (muo *MenuUpdateOne) defaults() {
+	if _, ok := muo.mutation.UpdatedAt(); !ok {
+		v := menu.UpdateDefaultUpdatedAt()
+		muo.mutation.SetUpdatedAt(v)
+	}
+}
+
+func (muo *MenuUpdateOne) sqlSave(ctx context.Context) (_node *Menu, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
 			Table:   menu.Table,
@@ -884,7 +931,7 @@ func (muo *MenuUpdateOne) sqlSave(ctx context.Context) (m *Menu, err error) {
 	}
 	id, ok := muo.mutation.ID()
 	if !ok {
-		return nil, fmt.Errorf("missing Menu.ID for update")
+		return nil, &ValidationError{Name: "ID", err: fmt.Errorf("missing Menu.ID for update")}
 	}
 	_spec.Node.ID.Value = id
 	if value, ok := muo.mutation.Path(); ok {
@@ -1070,7 +1117,23 @@ func (muo *MenuUpdateOne) sqlSave(ctx context.Context) (m *Menu, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := muo.mutation.RemovedSubmenusIDs(); len(nodes) > 0 {
+	if muo.mutation.SubmenusCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   menu.SubmenusTable,
+			Columns: []string{menu.SubmenusColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: menu.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := muo.mutation.RemovedSubmenusIDs(); len(nodes) > 0 && !muo.mutation.SubmenusCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -1108,9 +1171,9 @@ func (muo *MenuUpdateOne) sqlSave(ctx context.Context) (m *Menu, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	m = &Menu{config: muo.config}
-	_spec.Assign = m.assignValues
-	_spec.ScanValues = m.scanValues()
+	_node = &Menu{config: muo.config}
+	_spec.Assign = _node.assignValues
+	_spec.ScanValues = _node.scanValues()
 	if err = sqlgraph.UpdateNode(ctx, muo.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{menu.Label}
@@ -1119,5 +1182,5 @@ func (muo *MenuUpdateOne) sqlSave(ctx context.Context) (m *Menu, err error) {
 		}
 		return nil, err
 	}
-	return m, nil
+	return _node, nil
 }

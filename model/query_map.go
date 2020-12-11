@@ -53,8 +53,8 @@ func (p QueryMap) Limit() int {
 }
 
 // Order 查询的排序方式
-func (p QueryMap) Order() []ent.Order {
-	var order []ent.Order
+func (p QueryMap) Order() []ent.OrderFunc {
+	var order []ent.OrderFunc
 	SortField, ok := p.GetString("sortField")
 	if ok {
 		if SortOrder, ok2 := p.GetString("sortOrder"); ok2 && SortOrder == "ascend" {
@@ -102,6 +102,10 @@ func (p QueryMap) GetBool(key string) (val bool, ok bool) {
 func (p QueryMap) GetString(key string) (val string, ok bool) {
 	val, ok = p.qm[key]
 	return
+}
+
+func (p QueryMap) SetInt(key string,val int)  {
+	p.qm[key]=strconv.Itoa(val)
 }
 
 func (p QueryMap) Query() map[string]string {

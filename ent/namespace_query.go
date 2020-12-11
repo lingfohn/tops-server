@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/application"
 	"github.com/lingfohn/lime/ent/k8scluster"
 	"github.com/lingfohn/lime/ent/namespace"
@@ -23,7 +23,7 @@ type NamespaceQuery struct {
 	config
 	limit      *int
 	offset     *int
-	order      []Order
+	order      []OrderFunc
 	unique     []string
 	predicates []predicate.Namespace
 	// eager-loading edges.
@@ -54,7 +54,7 @@ func (nq *NamespaceQuery) Offset(offset int) *NamespaceQuery {
 }
 
 // Order adds an order step to the query.
-func (nq *NamespaceQuery) Order(o ...Order) *NamespaceQuery {
+func (nq *NamespaceQuery) Order(o ...OrderFunc) *NamespaceQuery {
 	nq.order = append(nq.order, o...)
 	return nq
 }
@@ -66,8 +66,12 @@ func (nq *NamespaceQuery) QueryCluster() *K8sClusterQuery {
 		if err := nq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
+		selector := nq.sqlQuery()
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(namespace.Table, namespace.FieldID, nq.sqlQuery()),
+			sqlgraph.From(namespace.Table, namespace.FieldID, selector),
 			sqlgraph.To(k8scluster.Table, k8scluster.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, namespace.ClusterTable, namespace.ClusterColumn),
 		)
@@ -84,8 +88,12 @@ func (nq *NamespaceQuery) QueryApplications() *ApplicationQuery {
 		if err := nq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
+		selector := nq.sqlQuery()
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(namespace.Table, namespace.FieldID, nq.sqlQuery()),
+			sqlgraph.From(namespace.Table, namespace.FieldID, selector),
 			sqlgraph.To(application.Table, application.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, namespace.ApplicationsTable, namespace.ApplicationsColumn),
 		)
@@ -97,23 +105,23 @@ func (nq *NamespaceQuery) QueryApplications() *ApplicationQuery {
 
 // First returns the first Namespace entity in the query. Returns *NotFoundError when no namespace was found.
 func (nq *NamespaceQuery) First(ctx context.Context) (*Namespace, error) {
-	ns, err := nq.Limit(1).All(ctx)
+	nodes, err := nq.Limit(1).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if len(ns) == 0 {
+	if len(nodes) == 0 {
 		return nil, &NotFoundError{namespace.Label}
 	}
-	return ns[0], nil
+	return nodes[0], nil
 }
 
 // FirstX is like First, but panics if an error occurs.
 func (nq *NamespaceQuery) FirstX(ctx context.Context) *Namespace {
-	n, err := nq.First(ctx)
+	node, err := nq.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
-	return n
+	return node
 }
 
 // FirstID returns the first Namespace id in the query. Returns *NotFoundError when no id was found.
@@ -129,8 +137,8 @@ func (nq *NamespaceQuery) FirstID(ctx context.Context) (id int, err error) {
 	return ids[0], nil
 }
 
-// FirstXID is like FirstID, but panics if an error occurs.
-func (nq *NamespaceQuery) FirstXID(ctx context.Context) int {
+// FirstIDX is like FirstID, but panics if an error occurs.
+func (nq *NamespaceQuery) FirstIDX(ctx context.Context) int {
 	id, err := nq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -140,13 +148,13 @@ func (nq *NamespaceQuery) FirstXID(ctx context.Context) int {
 
 // Only returns the only Namespace entity in the query, returns an error if not exactly one entity was returned.
 func (nq *NamespaceQuery) Only(ctx context.Context) (*Namespace, error) {
-	ns, err := nq.Limit(2).All(ctx)
+	nodes, err := nq.Limit(2).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	switch len(ns) {
+	switch len(nodes) {
 	case 1:
-		return ns[0], nil
+		return nodes[0], nil
 	case 0:
 		return nil, &NotFoundError{namespace.Label}
 	default:
@@ -156,11 +164,11 @@ func (nq *NamespaceQuery) Only(ctx context.Context) (*Namespace, error) {
 
 // OnlyX is like Only, but panics if an error occurs.
 func (nq *NamespaceQuery) OnlyX(ctx context.Context) *Namespace {
-	n, err := nq.Only(ctx)
+	node, err := nq.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return n
+	return node
 }
 
 // OnlyID returns the only Namespace id in the query, returns an error if not exactly one id was returned.
@@ -180,8 +188,8 @@ func (nq *NamespaceQuery) OnlyID(ctx context.Context) (id int, err error) {
 	return
 }
 
-// OnlyXID is like OnlyID, but panics if an error occurs.
-func (nq *NamespaceQuery) OnlyXID(ctx context.Context) int {
+// OnlyIDX is like OnlyID, but panics if an error occurs.
+func (nq *NamespaceQuery) OnlyIDX(ctx context.Context) int {
 	id, err := nq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -199,11 +207,11 @@ func (nq *NamespaceQuery) All(ctx context.Context) ([]*Namespace, error) {
 
 // AllX is like All, but panics if an error occurs.
 func (nq *NamespaceQuery) AllX(ctx context.Context) []*Namespace {
-	ns, err := nq.All(ctx)
+	nodes, err := nq.All(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return ns
+	return nodes
 }
 
 // IDs executes the query and returns a list of Namespace ids.
@@ -261,13 +269,18 @@ func (nq *NamespaceQuery) ExistX(ctx context.Context) bool {
 // Clone returns a duplicate of the query builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
 func (nq *NamespaceQuery) Clone() *NamespaceQuery {
+	if nq == nil {
+		return nil
+	}
 	return &NamespaceQuery{
-		config:     nq.config,
-		limit:      nq.limit,
-		offset:     nq.offset,
-		order:      append([]Order{}, nq.order...),
-		unique:     append([]string{}, nq.unique...),
-		predicates: append([]predicate.Namespace{}, nq.predicates...),
+		config:           nq.config,
+		limit:            nq.limit,
+		offset:           nq.offset,
+		order:            append([]OrderFunc{}, nq.order...),
+		unique:           append([]string{}, nq.unique...),
+		predicates:       append([]predicate.Namespace{}, nq.predicates...),
+		withCluster:      nq.withCluster.Clone(),
+		withApplications: nq.withApplications.Clone(),
 		// clone intermediate query.
 		sql:  nq.sql.Clone(),
 		path: nq.path,
@@ -302,7 +315,7 @@ func (nq *NamespaceQuery) WithApplications(opts ...func(*ApplicationQuery)) *Nam
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		Name string `json:"name"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -328,7 +341,7 @@ func (nq *NamespaceQuery) GroupBy(field string, fields ...string) *NamespaceGrou
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		Name string `json:"name"`
 //	}
 //
 //	client.Namespace.Query().
@@ -429,6 +442,7 @@ func (nq *NamespaceQuery) sqlAll(ctx context.Context) ([]*Namespace, error) {
 		for i := range nodes {
 			fks = append(fks, nodes[i].ID)
 			nodeids[nodes[i].ID] = nodes[i]
+			nodes[i].Edges.Applications = []*Application{}
 		}
 		query.withFKs = true
 		query.Where(predicate.Application(func(s *sql.Selector) {
@@ -496,7 +510,7 @@ func (nq *NamespaceQuery) querySpec() *sqlgraph.QuerySpec {
 	if ps := nq.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
-				ps[i](selector)
+				ps[i](selector, namespace.ValidColumn)
 			}
 		}
 	}
@@ -515,7 +529,7 @@ func (nq *NamespaceQuery) sqlQuery() *sql.Selector {
 		p(selector)
 	}
 	for _, p := range nq.order {
-		p(selector)
+		p(selector, namespace.ValidColumn)
 	}
 	if offset := nq.offset; offset != nil {
 		// limit is mandatory for offset clause. We start
@@ -532,14 +546,14 @@ func (nq *NamespaceQuery) sqlQuery() *sql.Selector {
 type NamespaceGroupBy struct {
 	config
 	fields []string
-	fns    []Aggregate
+	fns    []AggregateFunc
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (ngb *NamespaceGroupBy) Aggregate(fns ...Aggregate) *NamespaceGroupBy {
+func (ngb *NamespaceGroupBy) Aggregate(fns ...AggregateFunc) *NamespaceGroupBy {
 	ngb.fns = append(ngb.fns, fns...)
 	return ngb
 }
@@ -582,6 +596,32 @@ func (ngb *NamespaceGroupBy) StringsX(ctx context.Context) []string {
 	return v
 }
 
+// String returns a single string from group-by. It is only allowed when querying group-by with one field.
+func (ngb *NamespaceGroupBy) String(ctx context.Context) (_ string, err error) {
+	var v []string
+	if v, err = ngb.Strings(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{namespace.Label}
+	default:
+		err = fmt.Errorf("ent: NamespaceGroupBy.Strings returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// StringX is like String, but panics if an error occurs.
+func (ngb *NamespaceGroupBy) StringX(ctx context.Context) string {
+	v, err := ngb.String(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // Ints returns list of ints from group-by. It is only allowed when querying group-by with one field.
 func (ngb *NamespaceGroupBy) Ints(ctx context.Context) ([]int, error) {
 	if len(ngb.fields) > 1 {
@@ -597,6 +637,32 @@ func (ngb *NamespaceGroupBy) Ints(ctx context.Context) ([]int, error) {
 // IntsX is like Ints, but panics if an error occurs.
 func (ngb *NamespaceGroupBy) IntsX(ctx context.Context) []int {
 	v, err := ngb.Ints(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// Int returns a single int from group-by. It is only allowed when querying group-by with one field.
+func (ngb *NamespaceGroupBy) Int(ctx context.Context) (_ int, err error) {
+	var v []int
+	if v, err = ngb.Ints(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{namespace.Label}
+	default:
+		err = fmt.Errorf("ent: NamespaceGroupBy.Ints returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// IntX is like Int, but panics if an error occurs.
+func (ngb *NamespaceGroupBy) IntX(ctx context.Context) int {
+	v, err := ngb.Int(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -624,6 +690,32 @@ func (ngb *NamespaceGroupBy) Float64sX(ctx context.Context) []float64 {
 	return v
 }
 
+// Float64 returns a single float64 from group-by. It is only allowed when querying group-by with one field.
+func (ngb *NamespaceGroupBy) Float64(ctx context.Context) (_ float64, err error) {
+	var v []float64
+	if v, err = ngb.Float64s(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{namespace.Label}
+	default:
+		err = fmt.Errorf("ent: NamespaceGroupBy.Float64s returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// Float64X is like Float64, but panics if an error occurs.
+func (ngb *NamespaceGroupBy) Float64X(ctx context.Context) float64 {
+	v, err := ngb.Float64(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // Bools returns list of bools from group-by. It is only allowed when querying group-by with one field.
 func (ngb *NamespaceGroupBy) Bools(ctx context.Context) ([]bool, error) {
 	if len(ngb.fields) > 1 {
@@ -645,9 +737,44 @@ func (ngb *NamespaceGroupBy) BoolsX(ctx context.Context) []bool {
 	return v
 }
 
+// Bool returns a single bool from group-by. It is only allowed when querying group-by with one field.
+func (ngb *NamespaceGroupBy) Bool(ctx context.Context) (_ bool, err error) {
+	var v []bool
+	if v, err = ngb.Bools(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{namespace.Label}
+	default:
+		err = fmt.Errorf("ent: NamespaceGroupBy.Bools returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// BoolX is like Bool, but panics if an error occurs.
+func (ngb *NamespaceGroupBy) BoolX(ctx context.Context) bool {
+	v, err := ngb.Bool(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 func (ngb *NamespaceGroupBy) sqlScan(ctx context.Context, v interface{}) error {
+	for _, f := range ngb.fields {
+		if !namespace.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
+		}
+	}
+	selector := ngb.sqlQuery()
+	if err := selector.Err(); err != nil {
+		return err
+	}
 	rows := &sql.Rows{}
-	query, args := ngb.sqlQuery().Query()
+	query, args := selector.Query()
 	if err := ngb.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
@@ -660,7 +787,7 @@ func (ngb *NamespaceGroupBy) sqlQuery() *sql.Selector {
 	columns := make([]string, 0, len(ngb.fields)+len(ngb.fns))
 	columns = append(columns, ngb.fields...)
 	for _, fn := range ngb.fns {
-		columns = append(columns, fn(selector))
+		columns = append(columns, fn(selector, namespace.ValidColumn))
 	}
 	return selector.Select(columns...).GroupBy(ngb.fields...)
 }
@@ -712,6 +839,32 @@ func (ns *NamespaceSelect) StringsX(ctx context.Context) []string {
 	return v
 }
 
+// String returns a single string from selector. It is only allowed when selecting one field.
+func (ns *NamespaceSelect) String(ctx context.Context) (_ string, err error) {
+	var v []string
+	if v, err = ns.Strings(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{namespace.Label}
+	default:
+		err = fmt.Errorf("ent: NamespaceSelect.Strings returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// StringX is like String, but panics if an error occurs.
+func (ns *NamespaceSelect) StringX(ctx context.Context) string {
+	v, err := ns.String(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // Ints returns list of ints from selector. It is only allowed when selecting one field.
 func (ns *NamespaceSelect) Ints(ctx context.Context) ([]int, error) {
 	if len(ns.fields) > 1 {
@@ -727,6 +880,32 @@ func (ns *NamespaceSelect) Ints(ctx context.Context) ([]int, error) {
 // IntsX is like Ints, but panics if an error occurs.
 func (ns *NamespaceSelect) IntsX(ctx context.Context) []int {
 	v, err := ns.Ints(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// Int returns a single int from selector. It is only allowed when selecting one field.
+func (ns *NamespaceSelect) Int(ctx context.Context) (_ int, err error) {
+	var v []int
+	if v, err = ns.Ints(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{namespace.Label}
+	default:
+		err = fmt.Errorf("ent: NamespaceSelect.Ints returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// IntX is like Int, but panics if an error occurs.
+func (ns *NamespaceSelect) IntX(ctx context.Context) int {
+	v, err := ns.Int(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -754,6 +933,32 @@ func (ns *NamespaceSelect) Float64sX(ctx context.Context) []float64 {
 	return v
 }
 
+// Float64 returns a single float64 from selector. It is only allowed when selecting one field.
+func (ns *NamespaceSelect) Float64(ctx context.Context) (_ float64, err error) {
+	var v []float64
+	if v, err = ns.Float64s(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{namespace.Label}
+	default:
+		err = fmt.Errorf("ent: NamespaceSelect.Float64s returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// Float64X is like Float64, but panics if an error occurs.
+func (ns *NamespaceSelect) Float64X(ctx context.Context) float64 {
+	v, err := ns.Float64(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // Bools returns list of bools from selector. It is only allowed when selecting one field.
 func (ns *NamespaceSelect) Bools(ctx context.Context) ([]bool, error) {
 	if len(ns.fields) > 1 {
@@ -775,7 +980,38 @@ func (ns *NamespaceSelect) BoolsX(ctx context.Context) []bool {
 	return v
 }
 
+// Bool returns a single bool from selector. It is only allowed when selecting one field.
+func (ns *NamespaceSelect) Bool(ctx context.Context) (_ bool, err error) {
+	var v []bool
+	if v, err = ns.Bools(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{namespace.Label}
+	default:
+		err = fmt.Errorf("ent: NamespaceSelect.Bools returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// BoolX is like Bool, but panics if an error occurs.
+func (ns *NamespaceSelect) BoolX(ctx context.Context) bool {
+	v, err := ns.Bool(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 func (ns *NamespaceSelect) sqlScan(ctx context.Context, v interface{}) error {
+	for _, f := range ns.fields {
+		if !namespace.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for selection", f)}
+		}
+	}
 	rows := &sql.Rows{}
 	query, args := ns.sqlQuery().Query()
 	if err := ns.driver.Query(ctx, query, args, rows); err != nil {

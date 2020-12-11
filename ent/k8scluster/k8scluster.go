@@ -10,12 +10,17 @@ const (
 	// Label holds the string label denoting the k8scluster type in the database.
 	Label = "k8s_cluster"
 	// FieldID holds the string denoting the id field in the database.
-	FieldID          = "id"          // FieldCluster holds the string denoting the cluster vertex property in the database.
-	FieldCluster     = "cluster"     // FieldHelmApi holds the string denoting the helmapi vertex property in the database.
-	FieldHelmApi     = "helmApi"     // FieldAccessToken holds the string denoting the accesstoken vertex property in the database.
-	FieldAccessToken = "accessToken" // FieldCreatedAt holds the string denoting the createdat vertex property in the database.
-	FieldCreatedAt   = "createdAt"   // FieldUpdatedAt holds the string denoting the updatedat vertex property in the database.
-	FieldUpdatedAt   = "updatedAt"
+	FieldID = "id"
+	// FieldCluster holds the string denoting the cluster field in the database.
+	FieldCluster = "cluster"
+	// FieldHelmApi holds the string denoting the helmapi field in the database.
+	FieldHelmApi = "helmApi"
+	// FieldAccessToken holds the string denoting the accesstoken field in the database.
+	FieldAccessToken = "accessToken"
+	// FieldCreatedAt holds the string denoting the createdat field in the database.
+	FieldCreatedAt = "createdAt"
+	// FieldUpdatedAt holds the string denoting the updatedat field in the database.
+	FieldUpdatedAt = "updatedAt"
 
 	// EdgeNamespaces holds the string denoting the namespaces edge name in mutations.
 	EdgeNamespaces = "namespaces"
@@ -39,6 +44,16 @@ var Columns = []string{
 	FieldAccessToken,
 	FieldCreatedAt,
 	FieldUpdatedAt,
+}
+
+// ValidColumn reports if the column name is valid (part of the table columns).
+func ValidColumn(column string) bool {
+	for i := range Columns {
+		if column == Columns[i] {
+			return true
+		}
+	}
+	return false
 }
 
 var (

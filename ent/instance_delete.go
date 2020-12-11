@@ -6,9 +6,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/instance"
 	"github.com/lingfohn/lime/ent/predicate"
 )
@@ -16,14 +16,13 @@ import (
 // InstanceDelete is the builder for deleting a Instance entity.
 type InstanceDelete struct {
 	config
-	hooks      []Hook
-	mutation   *InstanceMutation
-	predicates []predicate.Instance
+	hooks    []Hook
+	mutation *InstanceMutation
 }
 
 // Where adds a new predicate to the delete builder.
 func (id *InstanceDelete) Where(ps ...predicate.Instance) *InstanceDelete {
-	id.predicates = append(id.predicates, ps...)
+	id.mutation.predicates = append(id.mutation.predicates, ps...)
 	return id
 }
 
@@ -43,6 +42,7 @@ func (id *InstanceDelete) Exec(ctx context.Context) (int, error) {
 			}
 			id.mutation = mutation
 			affected, err = id.sqlExec(ctx)
+			mutation.done = true
 			return affected, err
 		})
 		for i := len(id.hooks) - 1; i >= 0; i-- {
@@ -74,7 +74,7 @@ func (id *InstanceDelete) sqlExec(ctx context.Context) (int, error) {
 			},
 		},
 	}
-	if ps := id.predicates; len(ps) > 0 {
+	if ps := id.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)

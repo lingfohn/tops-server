@@ -6,9 +6,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/application"
 	"github.com/lingfohn/lime/ent/build"
 	"github.com/lingfohn/lime/ent/helmconfig"
@@ -25,6 +26,40 @@ type InstanceCreate struct {
 // SetName sets the name field.
 func (ic *InstanceCreate) SetName(s string) *InstanceCreate {
 	ic.mutation.SetName(s)
+	return ic
+}
+
+// SetApplicationId sets the applicationId field.
+func (ic *InstanceCreate) SetApplicationId(i int) *InstanceCreate {
+	ic.mutation.SetApplicationId(i)
+	return ic
+}
+
+// SetCreatedAt sets the createdAt field.
+func (ic *InstanceCreate) SetCreatedAt(t time.Time) *InstanceCreate {
+	ic.mutation.SetCreatedAt(t)
+	return ic
+}
+
+// SetNillableCreatedAt sets the createdAt field if the given value is not nil.
+func (ic *InstanceCreate) SetNillableCreatedAt(t *time.Time) *InstanceCreate {
+	if t != nil {
+		ic.SetCreatedAt(*t)
+	}
+	return ic
+}
+
+// SetUpdatedAt sets the updatedAt field.
+func (ic *InstanceCreate) SetUpdatedAt(t time.Time) *InstanceCreate {
+	ic.mutation.SetUpdatedAt(t)
+	return ic
+}
+
+// SetNillableUpdatedAt sets the updatedAt field if the given value is not nil.
+func (ic *InstanceCreate) SetNillableUpdatedAt(t *time.Time) *InstanceCreate {
+	if t != nil {
+		ic.SetUpdatedAt(*t)
+	}
 	return ic
 }
 
@@ -81,16 +116,22 @@ func (ic *InstanceCreate) SetConfig(h *HelmConfig) *InstanceCreate {
 	return ic.SetConfigID(h.ID)
 }
 
+// Mutation returns the InstanceMutation object of the builder.
+func (ic *InstanceCreate) Mutation() *InstanceMutation {
+	return ic.mutation
+}
+
 // Save creates the Instance in the database.
 func (ic *InstanceCreate) Save(ctx context.Context) (*Instance, error) {
-	if _, ok := ic.mutation.Name(); !ok {
-		return nil, errors.New("ent: missing required field \"name\"")
-	}
 	var (
 		err  error
 		node *Instance
 	)
+	ic.defaults()
 	if len(ic.hooks) == 0 {
+		if err = ic.check(); err != nil {
+			return nil, err
+		}
 		node, err = ic.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
@@ -98,8 +139,12 @@ func (ic *InstanceCreate) Save(ctx context.Context) (*Instance, error) {
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
 			}
+			if err = ic.check(); err != nil {
+				return nil, err
+			}
 			ic.mutation = mutation
 			node, err = ic.sqlSave(ctx)
+			mutation.done = true
 			return node, err
 		})
 		for i := len(ic.hooks) - 1; i >= 0; i-- {
@@ -121,9 +166,51 @@ func (ic *InstanceCreate) SaveX(ctx context.Context) *Instance {
 	return v
 }
 
+// defaults sets the default values of the builder before save.
+func (ic *InstanceCreate) defaults() {
+	if _, ok := ic.mutation.CreatedAt(); !ok {
+		v := instance.DefaultCreatedAt()
+		ic.mutation.SetCreatedAt(v)
+	}
+	if _, ok := ic.mutation.UpdatedAt(); !ok {
+		v := instance.DefaultUpdatedAt()
+		ic.mutation.SetUpdatedAt(v)
+	}
+}
+
+// check runs all checks and user-defined validators on the builder.
+func (ic *InstanceCreate) check() error {
+	if _, ok := ic.mutation.Name(); !ok {
+		return &ValidationError{Name: "name", err: errors.New("ent: missing required field \"name\"")}
+	}
+	if _, ok := ic.mutation.ApplicationId(); !ok {
+		return &ValidationError{Name: "applicationId", err: errors.New("ent: missing required field \"applicationId\"")}
+	}
+	if _, ok := ic.mutation.CreatedAt(); !ok {
+		return &ValidationError{Name: "createdAt", err: errors.New("ent: missing required field \"createdAt\"")}
+	}
+	if _, ok := ic.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updatedAt", err: errors.New("ent: missing required field \"updatedAt\"")}
+	}
+	return nil
+}
+
 func (ic *InstanceCreate) sqlSave(ctx context.Context) (*Instance, error) {
+	_node, _spec := ic.createSpec()
+	if err := sqlgraph.CreateNode(ctx, ic.driver, _spec); err != nil {
+		if cerr, ok := isSQLConstraintError(err); ok {
+			err = cerr
+		}
+		return nil, err
+	}
+	id := _spec.ID.Value.(int64)
+	_node.ID = int(id)
+	return _node, nil
+}
+
+func (ic *InstanceCreate) createSpec() (*Instance, *sqlgraph.CreateSpec) {
 	var (
-		i     = &Instance{config: ic.config}
+		_node = &Instance{config: ic.config}
 		_spec = &sqlgraph.CreateSpec{
 			Table: instance.Table,
 			ID: &sqlgraph.FieldSpec{
@@ -138,7 +225,31 @@ func (ic *InstanceCreate) sqlSave(ctx context.Context) (*Instance, error) {
 			Value:  value,
 			Column: instance.FieldName,
 		})
-		i.Name = value
+		_node.Name = value
+	}
+	if value, ok := ic.mutation.ApplicationId(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt,
+			Value:  value,
+			Column: instance.FieldApplicationId,
+		})
+		_node.ApplicationId = value
+	}
+	if value, ok := ic.mutation.CreatedAt(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: instance.FieldCreatedAt,
+		})
+		_node.CreatedAt = value
+	}
+	if value, ok := ic.mutation.UpdatedAt(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: instance.FieldUpdatedAt,
+		})
+		_node.UpdatedAt = value
 	}
 	if nodes := ic.mutation.ApplicationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -197,13 +308,72 @@ func (ic *InstanceCreate) sqlSave(ctx context.Context) (*Instance, error) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if err := sqlgraph.CreateNode(ctx, ic.driver, _spec); err != nil {
-		if cerr, ok := isSQLConstraintError(err); ok {
-			err = cerr
-		}
-		return nil, err
+	return _node, _spec
+}
+
+// InstanceCreateBulk is the builder for creating a bulk of Instance entities.
+type InstanceCreateBulk struct {
+	config
+	builders []*InstanceCreate
+}
+
+// Save creates the Instance entities in the database.
+func (icb *InstanceCreateBulk) Save(ctx context.Context) ([]*Instance, error) {
+	specs := make([]*sqlgraph.CreateSpec, len(icb.builders))
+	nodes := make([]*Instance, len(icb.builders))
+	mutators := make([]Mutator, len(icb.builders))
+	for i := range icb.builders {
+		func(i int, root context.Context) {
+			builder := icb.builders[i]
+			builder.defaults()
+			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
+				mutation, ok := m.(*InstanceMutation)
+				if !ok {
+					return nil, fmt.Errorf("unexpected mutation type %T", m)
+				}
+				if err := builder.check(); err != nil {
+					return nil, err
+				}
+				builder.mutation = mutation
+				nodes[i], specs[i] = builder.createSpec()
+				var err error
+				if i < len(mutators)-1 {
+					_, err = mutators[i+1].Mutate(root, icb.builders[i+1].mutation)
+				} else {
+					// Invoke the actual operation on the latest mutation in the chain.
+					if err = sqlgraph.BatchCreate(ctx, icb.driver, &sqlgraph.BatchCreateSpec{Nodes: specs}); err != nil {
+						if cerr, ok := isSQLConstraintError(err); ok {
+							err = cerr
+						}
+					}
+				}
+				mutation.done = true
+				if err != nil {
+					return nil, err
+				}
+				id := specs[i].ID.Value.(int64)
+				nodes[i].ID = int(id)
+				return nodes[i], nil
+			})
+			for i := len(builder.hooks) - 1; i >= 0; i-- {
+				mut = builder.hooks[i](mut)
+			}
+			mutators[i] = mut
+		}(i, ctx)
 	}
-	id := _spec.ID.Value.(int64)
-	i.ID = int(id)
-	return i, nil
+	if len(mutators) > 0 {
+		if _, err := mutators[0].Mutate(ctx, icb.builders[0].mutation); err != nil {
+			return nil, err
+		}
+	}
+	return nodes, nil
+}
+
+// SaveX calls Save and panics if Save returns an error.
+func (icb *InstanceCreateBulk) SaveX(ctx context.Context) []*Instance {
+	v, err := icb.Save(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
 }

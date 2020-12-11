@@ -20,8 +20,8 @@ type orderQuery struct {
 	SortOrder string `form:"sortOrder" json:"sortOrder,omitempty"`
 }
 
-func (o orderQuery) order() []ent.Order {
-	var order []ent.Order
+func (o orderQuery) order() []ent.OrderFunc{
+	var order []ent.OrderFunc
 	if o.SortField != "" || o.SortOrder != "" {
 		if o.SortOrder == "ascend" {
 			order = append(order, ent.Asc(o.SortField))

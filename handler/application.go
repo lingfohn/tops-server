@@ -6,14 +6,19 @@ import (
 	"github.com/lingfohn/lime/ent/application"
 	"github.com/lingfohn/lime/model"
 	"github.com/lingfohn/lime/svcerr"
+	"strconv"
 )
 
 type ApplicationHandler struct {
 	m *model.ApplicationManage
+	jenkins *model.JenkinsManage
 }
 
 func NewApplicationHandler() *ApplicationHandler {
-	return &ApplicationHandler{ m:model.NewApplicationManage()}
+	return &ApplicationHandler{
+		m:model.NewApplicationManage(),
+		jenkins: model.NewJenkinsManage(),
+	}
 }
 
 func (a *ApplicationHandler)CreateApplication(c *gin.Context)(err error)  {
@@ -23,7 +28,14 @@ func (a *ApplicationHandler)CreateApplication(c *gin.Context)(err error)  {
 	}
 	app,err:=a.m.CreateApplication(m)
 	if err != nil {
-		return err
+		return
+	}
+	if err =a.jenkins.GetJob(app.Name);err!=nil{
+		// 测试用
+		err =a.jenkins.CreateDevServiceJob(app.Name)
+		if err != nil {
+			return
+		}
 	}
 	c.Set("data",app)
 	return
@@ -38,5 +50,28 @@ func (a *ApplicationHandler)QueryApplication(c *gin.Context)(err error)  {
 	}
 	c.Set("data",apps)
 	c.Set("total",count)
+	return
+}
+
+func (a *ApplicationHandler)DeleteApplication(c *gin.Context)(err error)  {
+	id := c.Param("id")
+	idn, err := strconv.Atoi(id)
+	if err != nil {
+		return err
+	}
+	return a.m.Delete(idn)
+}
+
+func (a *ApplicationHandler)GetApplication(c *gin.Context)(err error)  {
+	id := c.Param("id")
+	idn, err := strconv.Atoi(id)
+	if err != nil {
+		return err
+	}
+	app,err:=a.m.GetApplication(idn)
+	if err != nil {
+		return err
+	}
+	c.Set("data",app)
 	return
 }

@@ -5,8 +5,8 @@ package k8scluster
 import (
 	"time"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
 	"github.com/lingfohn/lime/ent/predicate"
 )
 
@@ -151,7 +151,7 @@ func ClusterIn(vs ...string) predicate.K8sCluster {
 	return predicate.K8sCluster(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -168,7 +168,7 @@ func ClusterNotIn(vs ...string) predicate.K8sCluster {
 	return predicate.K8sCluster(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -262,7 +262,7 @@ func HelmApiIn(vs ...string) predicate.K8sCluster {
 	return predicate.K8sCluster(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -279,7 +279,7 @@ func HelmApiNotIn(vs ...string) predicate.K8sCluster {
 	return predicate.K8sCluster(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -373,7 +373,7 @@ func AccessTokenIn(vs ...string) predicate.K8sCluster {
 	return predicate.K8sCluster(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -390,7 +390,7 @@ func AccessTokenNotIn(vs ...string) predicate.K8sCluster {
 	return predicate.K8sCluster(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -498,7 +498,7 @@ func CreatedAtIn(vs ...time.Time) predicate.K8sCluster {
 	return predicate.K8sCluster(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -515,7 +515,7 @@ func CreatedAtNotIn(vs ...time.Time) predicate.K8sCluster {
 	return predicate.K8sCluster(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -574,7 +574,7 @@ func UpdatedAtIn(vs ...time.Time) predicate.K8sCluster {
 	return predicate.K8sCluster(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}
@@ -591,7 +591,7 @@ func UpdatedAtNotIn(vs ...time.Time) predicate.K8sCluster {
 	return predicate.K8sCluster(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(vs) == 0 {
+		if len(v) == 0 {
 			s.Where(sql.False())
 			return
 		}

@@ -6,9 +6,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/k8scluster"
 	"github.com/lingfohn/lime/ent/predicate"
 )
@@ -16,14 +16,13 @@ import (
 // K8sClusterDelete is the builder for deleting a K8sCluster entity.
 type K8sClusterDelete struct {
 	config
-	hooks      []Hook
-	mutation   *K8sClusterMutation
-	predicates []predicate.K8sCluster
+	hooks    []Hook
+	mutation *K8sClusterMutation
 }
 
 // Where adds a new predicate to the delete builder.
 func (kcd *K8sClusterDelete) Where(ps ...predicate.K8sCluster) *K8sClusterDelete {
-	kcd.predicates = append(kcd.predicates, ps...)
+	kcd.mutation.predicates = append(kcd.mutation.predicates, ps...)
 	return kcd
 }
 
@@ -43,6 +42,7 @@ func (kcd *K8sClusterDelete) Exec(ctx context.Context) (int, error) {
 			}
 			kcd.mutation = mutation
 			affected, err = kcd.sqlExec(ctx)
+			mutation.done = true
 			return affected, err
 		})
 		for i := len(kcd.hooks) - 1; i >= 0; i-- {
@@ -74,7 +74,7 @@ func (kcd *K8sClusterDelete) sqlExec(ctx context.Context) (int, error) {
 			},
 		},
 	}
-	if ps := kcd.predicates; len(ps) > 0 {
+	if ps := kcd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)

@@ -5,8 +5,9 @@ package ent
 import (
 	"fmt"
 	"strings"
+	"time"
 
-	"github.com/facebookincubator/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql"
 	"github.com/lingfohn/lime/ent/application"
 	"github.com/lingfohn/lime/ent/helmconfig"
 	"github.com/lingfohn/lime/ent/instance"
@@ -19,6 +20,12 @@ type Instance struct {
 	ID int `json:"id,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
+	// ApplicationId holds the value of the "applicationId" field.
+	ApplicationId int `json:"applicationId"`
+	// CreatedAt holds the value of the "createdAt" field.
+	CreatedAt time.Time `json:"createdAt,omitempty"`
+	// UpdatedAt holds the value of the "updatedAt" field.
+	UpdatedAt time.Time `json:"updatedAt,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the InstanceQuery when eager-loading is set.
 	Edges                 InstanceEdges `json:"edges"`
@@ -29,11 +36,11 @@ type Instance struct {
 // InstanceEdges holds the relations/edges for other nodes in the graph.
 type InstanceEdges struct {
 	// Application holds the value of the application edge.
-	Application *Application
+	Application *Application `json:"application,omitempty"`
 	// Builds holds the value of the builds edge.
-	Builds []*Build
+	Builds []*Build `json:"builds,omitempty"`
 	// Config holds the value of the config edge.
-	Config *HelmConfig
+	Config *HelmConfig `json:"config,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [3]bool
@@ -81,6 +88,9 @@ func (*Instance) scanValues() []interface{} {
 	return []interface{}{
 		&sql.NullInt64{},  // id
 		&sql.NullString{}, // name
+		&sql.NullInt64{},  // applicationId
+		&sql.NullTime{},   // createdAt
+		&sql.NullTime{},   // updatedAt
 	}
 }
 
@@ -109,7 +119,22 @@ func (i *Instance) assignValues(values ...interface{}) error {
 	} else if value.Valid {
 		i.Name = value.String
 	}
-	values = values[1:]
+	if value, ok := values[1].(*sql.NullInt64); !ok {
+		return fmt.Errorf("unexpected type %T for field applicationId", values[1])
+	} else if value.Valid {
+		i.ApplicationId = int(value.Int64)
+	}
+	if value, ok := values[2].(*sql.NullTime); !ok {
+		return fmt.Errorf("unexpected type %T for field createdAt", values[2])
+	} else if value.Valid {
+		i.CreatedAt = value.Time
+	}
+	if value, ok := values[3].(*sql.NullTime); !ok {
+		return fmt.Errorf("unexpected type %T for field updatedAt", values[3])
+	} else if value.Valid {
+		i.UpdatedAt = value.Time
+	}
+	values = values[4:]
 	if len(values) == len(instance.ForeignKeys) {
 		if value, ok := values[0].(*sql.NullInt64); !ok {
 			return fmt.Errorf("unexpected type %T for edge-field application_instances", value)
@@ -167,6 +192,12 @@ func (i *Instance) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v", i.ID))
 	builder.WriteString(", name=")
 	builder.WriteString(i.Name)
+	builder.WriteString(", applicationId=")
+	builder.WriteString(fmt.Sprintf("%v", i.ApplicationId))
+	builder.WriteString(", createdAt=")
+	builder.WriteString(i.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", updatedAt=")
+	builder.WriteString(i.UpdatedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

@@ -3,8 +3,8 @@
 package migrate
 
 import (
-	"github.com/facebookincubator/ent/dialect/sql/schema"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql/schema"
+	"github.com/facebook/ent/schema/field"
 )
 
 var (
@@ -60,7 +60,19 @@ var (
 	// BuildsColumns holds the columns for the "builds" table.
 	BuildsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "tag", Type: field.TypeString},
 		{Name: "name", Type: field.TypeString},
+		{Name: "status", Type: field.TypeInt},
+		{Name: "commitId", Type: field.TypeString},
+		{Name: "shortId", Type: field.TypeString},
+		{Name: "message", Type: field.TypeString},
+		{Name: "committerName", Type: field.TypeString},
+		{Name: "committedData", Type: field.TypeTime},
+		{Name: "buildTime", Type: field.TypeTime},
+		{Name: "jenkinsQueueId", Type: field.TypeInt},
+		{Name: "jenkinsBuildId", Type: field.TypeInt, Nullable: true},
+		{Name: "createdAt", Type: field.TypeTime},
+		{Name: "updatedAt", Type: field.TypeTime},
 		{Name: "instance_builds", Type: field.TypeInt, Nullable: true},
 	}
 	// BuildsTable holds the schema information for the "builds" table.
@@ -71,7 +83,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:  "builds_instances_builds",
-				Columns: []*schema.Column{BuildsColumns[2]},
+				Columns: []*schema.Column{BuildsColumns[14]},
 
 				RefColumns: []*schema.Column{InstancesColumns[0]},
 				OnDelete:   schema.SetNull,
@@ -104,6 +116,9 @@ var (
 	InstancesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString},
+		{Name: "applicationId", Type: field.TypeInt},
+		{Name: "createdAt", Type: field.TypeTime},
+		{Name: "updatedAt", Type: field.TypeTime},
 		{Name: "application_instances", Type: field.TypeInt, Nullable: true},
 		{Name: "instance_config", Type: field.TypeInt, Nullable: true},
 	}
@@ -115,14 +130,14 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:  "instances_applications_instances",
-				Columns: []*schema.Column{InstancesColumns[2]},
+				Columns: []*schema.Column{InstancesColumns[5]},
 
 				RefColumns: []*schema.Column{ApplicationsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:  "instances_helm_configs_config",
-				Columns: []*schema.Column{InstancesColumns[3]},
+				Columns: []*schema.Column{InstancesColumns[6]},
 
 				RefColumns: []*schema.Column{HelmConfigsColumns[0]},
 				OnDelete:   schema.SetNull,
@@ -183,6 +198,9 @@ var (
 	NamespacesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString},
+		{Name: "dockerRepo", Type: field.TypeString},
+		{Name: "repoNamespace", Type: field.TypeString},
+		{Name: "active", Type: field.TypeString},
 		{Name: "createdAt", Type: field.TypeTime},
 		{Name: "updatedAt", Type: field.TypeTime},
 		{Name: "k8s_cluster_namespaces", Type: field.TypeInt, Nullable: true},
@@ -195,7 +213,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:  "namespaces_k8s_clusters_namespaces",
-				Columns: []*schema.Column{NamespacesColumns[4]},
+				Columns: []*schema.Column{NamespacesColumns[7]},
 
 				RefColumns: []*schema.Column{K8sClustersColumns[0]},
 				OnDelete:   schema.SetNull,

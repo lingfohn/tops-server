@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/facebookincubator/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql"
 	"github.com/lingfohn/lime/ent/k8scluster"
 	"github.com/lingfohn/lime/ent/namespace"
 )
@@ -18,7 +18,13 @@ type Namespace struct {
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
 	// Name holds the value of the "name" field.
-	Name string `json:"name,omitempty"`
+	Name string `json:"name"`
+	// DockerRepo holds the value of the "dockerRepo" field.
+	DockerRepo string `json:"dockerRepo"`
+	// RepoNamespace holds the value of the "repoNamespace" field.
+	RepoNamespace string `json:"repoNamespace"`
+	// Active holds the value of the "active" field.
+	Active string `json:"active"`
 	// CreatedAt holds the value of the "createdAt" field.
 	CreatedAt time.Time `json:"createdAt,omitempty"`
 	// UpdatedAt holds the value of the "updatedAt" field.
@@ -68,6 +74,9 @@ func (*Namespace) scanValues() []interface{} {
 	return []interface{}{
 		&sql.NullInt64{},  // id
 		&sql.NullString{}, // name
+		&sql.NullString{}, // dockerRepo
+		&sql.NullString{}, // repoNamespace
+		&sql.NullString{}, // active
 		&sql.NullTime{},   // createdAt
 		&sql.NullTime{},   // updatedAt
 	}
@@ -97,17 +106,32 @@ func (n *Namespace) assignValues(values ...interface{}) error {
 	} else if value.Valid {
 		n.Name = value.String
 	}
-	if value, ok := values[1].(*sql.NullTime); !ok {
-		return fmt.Errorf("unexpected type %T for field createdAt", values[1])
+	if value, ok := values[1].(*sql.NullString); !ok {
+		return fmt.Errorf("unexpected type %T for field dockerRepo", values[1])
+	} else if value.Valid {
+		n.DockerRepo = value.String
+	}
+	if value, ok := values[2].(*sql.NullString); !ok {
+		return fmt.Errorf("unexpected type %T for field repoNamespace", values[2])
+	} else if value.Valid {
+		n.RepoNamespace = value.String
+	}
+	if value, ok := values[3].(*sql.NullString); !ok {
+		return fmt.Errorf("unexpected type %T for field active", values[3])
+	} else if value.Valid {
+		n.Active = value.String
+	}
+	if value, ok := values[4].(*sql.NullTime); !ok {
+		return fmt.Errorf("unexpected type %T for field createdAt", values[4])
 	} else if value.Valid {
 		n.CreatedAt = value.Time
 	}
-	if value, ok := values[2].(*sql.NullTime); !ok {
-		return fmt.Errorf("unexpected type %T for field updatedAt", values[2])
+	if value, ok := values[5].(*sql.NullTime); !ok {
+		return fmt.Errorf("unexpected type %T for field updatedAt", values[5])
 	} else if value.Valid {
 		n.UpdatedAt = value.Time
 	}
-	values = values[3:]
+	values = values[6:]
 	if len(values) == len(namespace.ForeignKeys) {
 		if value, ok := values[0].(*sql.NullInt64); !ok {
 			return fmt.Errorf("unexpected type %T for edge-field k8s_cluster_namespaces", value)
@@ -154,6 +178,12 @@ func (n *Namespace) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v", n.ID))
 	builder.WriteString(", name=")
 	builder.WriteString(n.Name)
+	builder.WriteString(", dockerRepo=")
+	builder.WriteString(n.DockerRepo)
+	builder.WriteString(", repoNamespace=")
+	builder.WriteString(n.RepoNamespace)
+	builder.WriteString(", active=")
+	builder.WriteString(n.Active)
 	builder.WriteString(", createdAt=")
 	builder.WriteString(n.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", updatedAt=")

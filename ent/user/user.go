@@ -10,19 +10,32 @@ const (
 	// Label holds the string label denoting the user type in the database.
 	Label = "user"
 	// FieldID holds the string denoting the id field in the database.
-	FieldID        = "id"        // FieldUsername holds the string denoting the username vertex property in the database.
-	FieldUsername  = "username"  // FieldPassword holds the string denoting the password vertex property in the database.
-	FieldPassword  = "password"  // FieldInitial holds the string denoting the initial vertex property in the database.
-	FieldInitial   = "initial"   // FieldOauser holds the string denoting the oauser vertex property in the database.
-	FieldOauser    = "oauser"    // FieldName holds the string denoting the name vertex property in the database.
-	FieldName      = "name"      // FieldTelephone holds the string denoting the telephone vertex property in the database.
-	FieldTelephone = "telephone" // FieldEmail holds the string denoting the email vertex property in the database.
-	FieldEmail     = "email"     // FieldAvatar holds the string denoting the avatar vertex property in the database.
-	FieldAvatar    = "avatar"    // FieldSuper holds the string denoting the super vertex property in the database.
-	FieldSuper     = "super"     // FieldStatus holds the string denoting the status vertex property in the database.
-	FieldStatus    = "status"    // FieldLastLogin holds the string denoting the lastlogin vertex property in the database.
-	FieldLastLogin = "lastLogin" // FieldCreatedAt holds the string denoting the createdat vertex property in the database.
-	FieldCreatedAt = "createdAt" // FieldUpdatedAt holds the string denoting the updatedat vertex property in the database.
+	FieldID = "id"
+	// FieldUsername holds the string denoting the username field in the database.
+	FieldUsername = "username"
+	// FieldPassword holds the string denoting the password field in the database.
+	FieldPassword = "password"
+	// FieldInitial holds the string denoting the initial field in the database.
+	FieldInitial = "initial"
+	// FieldOauser holds the string denoting the oauser field in the database.
+	FieldOauser = "oauser"
+	// FieldName holds the string denoting the name field in the database.
+	FieldName = "name"
+	// FieldTelephone holds the string denoting the telephone field in the database.
+	FieldTelephone = "telephone"
+	// FieldEmail holds the string denoting the email field in the database.
+	FieldEmail = "email"
+	// FieldAvatar holds the string denoting the avatar field in the database.
+	FieldAvatar = "avatar"
+	// FieldSuper holds the string denoting the super field in the database.
+	FieldSuper = "super"
+	// FieldStatus holds the string denoting the status field in the database.
+	FieldStatus = "status"
+	// FieldLastLogin holds the string denoting the lastlogin field in the database.
+	FieldLastLogin = "lastLogin"
+	// FieldCreatedAt holds the string denoting the createdat field in the database.
+	FieldCreatedAt = "createdAt"
+	// FieldUpdatedAt holds the string denoting the updatedat field in the database.
 	FieldUpdatedAt = "updatedAt"
 
 	// Table holds the table name of the user in the database.
@@ -45,6 +58,16 @@ var Columns = []string{
 	FieldLastLogin,
 	FieldCreatedAt,
 	FieldUpdatedAt,
+}
+
+// ValidColumn reports if the column name is valid (part of the table columns).
+func ValidColumn(column string) bool {
+	for i := range Columns {
+		if column == Columns[i] {
+			return true
+		}
+	}
+	return false
 }
 
 var (

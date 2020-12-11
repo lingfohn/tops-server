@@ -10,12 +10,17 @@ const (
 	// Label holds the string label denoting the role type in the database.
 	Label = "role"
 	// FieldID holds the string denoting the id field in the database.
-	FieldID          = "id"          // FieldName holds the string denoting the name vertex property in the database.
-	FieldName        = "name"        // FieldDescription holds the string denoting the description vertex property in the database.
-	FieldDescription = "description" // FieldStatus holds the string denoting the status vertex property in the database.
-	FieldStatus      = "status"      // FieldCreatedAt holds the string denoting the createdat vertex property in the database.
-	FieldCreatedAt   = "createdAt"   // FieldUpdatedAt holds the string denoting the updatedat vertex property in the database.
-	FieldUpdatedAt   = "updatedAt"
+	FieldID = "id"
+	// FieldName holds the string denoting the name field in the database.
+	FieldName = "name"
+	// FieldDescription holds the string denoting the description field in the database.
+	FieldDescription = "description"
+	// FieldStatus holds the string denoting the status field in the database.
+	FieldStatus = "status"
+	// FieldCreatedAt holds the string denoting the createdat field in the database.
+	FieldCreatedAt = "createdAt"
+	// FieldUpdatedAt holds the string denoting the updatedat field in the database.
+	FieldUpdatedAt = "updatedAt"
 
 	// Table holds the table name of the role in the database.
 	Table = "roles"
@@ -29,6 +34,16 @@ var Columns = []string{
 	FieldStatus,
 	FieldCreatedAt,
 	FieldUpdatedAt,
+}
+
+// ValidColumn reports if the column name is valid (part of the table columns).
+func ValidColumn(column string) bool {
+	for i := range Columns {
+		if column == Columns[i] {
+			return true
+		}
+	}
+	return false
 }
 
 var (

@@ -6,9 +6,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/namespace"
 	"github.com/lingfohn/lime/ent/predicate"
 )
@@ -16,14 +16,13 @@ import (
 // NamespaceDelete is the builder for deleting a Namespace entity.
 type NamespaceDelete struct {
 	config
-	hooks      []Hook
-	mutation   *NamespaceMutation
-	predicates []predicate.Namespace
+	hooks    []Hook
+	mutation *NamespaceMutation
 }
 
 // Where adds a new predicate to the delete builder.
 func (nd *NamespaceDelete) Where(ps ...predicate.Namespace) *NamespaceDelete {
-	nd.predicates = append(nd.predicates, ps...)
+	nd.mutation.predicates = append(nd.mutation.predicates, ps...)
 	return nd
 }
 
@@ -43,6 +42,7 @@ func (nd *NamespaceDelete) Exec(ctx context.Context) (int, error) {
 			}
 			nd.mutation = mutation
 			affected, err = nd.sqlExec(ctx)
+			mutation.done = true
 			return affected, err
 		})
 		for i := len(nd.hooks) - 1; i >= 0; i-- {
@@ -74,7 +74,7 @@ func (nd *NamespaceDelete) sqlExec(ctx context.Context) (int, error) {
 			},
 		},
 	}
-	if ps := nd.predicates; len(ps) > 0 {
+	if ps := nd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)

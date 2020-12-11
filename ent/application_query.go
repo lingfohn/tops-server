@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/application"
 	"github.com/lingfohn/lime/ent/helmconfig"
 	"github.com/lingfohn/lime/ent/instance"
@@ -25,7 +25,7 @@ type ApplicationQuery struct {
 	config
 	limit      *int
 	offset     *int
-	order      []Order
+	order      []OrderFunc
 	unique     []string
 	predicates []predicate.Application
 	// eager-loading edges.
@@ -58,7 +58,7 @@ func (aq *ApplicationQuery) Offset(offset int) *ApplicationQuery {
 }
 
 // Order adds an order step to the query.
-func (aq *ApplicationQuery) Order(o ...Order) *ApplicationQuery {
+func (aq *ApplicationQuery) Order(o ...OrderFunc) *ApplicationQuery {
 	aq.order = append(aq.order, o...)
 	return aq
 }
@@ -70,8 +70,12 @@ func (aq *ApplicationQuery) QueryNamespace() *NamespaceQuery {
 		if err := aq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
+		selector := aq.sqlQuery()
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(application.Table, application.FieldID, aq.sqlQuery()),
+			sqlgraph.From(application.Table, application.FieldID, selector),
 			sqlgraph.To(namespace.Table, namespace.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, application.NamespaceTable, application.NamespaceColumn),
 		)
@@ -88,8 +92,12 @@ func (aq *ApplicationQuery) QueryProject() *ProjectQuery {
 		if err := aq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
+		selector := aq.sqlQuery()
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(application.Table, application.FieldID, aq.sqlQuery()),
+			sqlgraph.From(application.Table, application.FieldID, selector),
 			sqlgraph.To(project.Table, project.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, application.ProjectTable, application.ProjectColumn),
 		)
@@ -106,8 +114,12 @@ func (aq *ApplicationQuery) QueryInstances() *InstanceQuery {
 		if err := aq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
+		selector := aq.sqlQuery()
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(application.Table, application.FieldID, aq.sqlQuery()),
+			sqlgraph.From(application.Table, application.FieldID, selector),
 			sqlgraph.To(instance.Table, instance.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, application.InstancesTable, application.InstancesColumn),
 		)
@@ -124,8 +136,12 @@ func (aq *ApplicationQuery) QueryConfig() *HelmConfigQuery {
 		if err := aq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
+		selector := aq.sqlQuery()
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(application.Table, application.FieldID, aq.sqlQuery()),
+			sqlgraph.From(application.Table, application.FieldID, selector),
 			sqlgraph.To(helmconfig.Table, helmconfig.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, application.ConfigTable, application.ConfigColumn),
 		)
@@ -137,23 +153,23 @@ func (aq *ApplicationQuery) QueryConfig() *HelmConfigQuery {
 
 // First returns the first Application entity in the query. Returns *NotFoundError when no application was found.
 func (aq *ApplicationQuery) First(ctx context.Context) (*Application, error) {
-	as, err := aq.Limit(1).All(ctx)
+	nodes, err := aq.Limit(1).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if len(as) == 0 {
+	if len(nodes) == 0 {
 		return nil, &NotFoundError{application.Label}
 	}
-	return as[0], nil
+	return nodes[0], nil
 }
 
 // FirstX is like First, but panics if an error occurs.
 func (aq *ApplicationQuery) FirstX(ctx context.Context) *Application {
-	a, err := aq.First(ctx)
+	node, err := aq.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
-	return a
+	return node
 }
 
 // FirstID returns the first Application id in the query. Returns *NotFoundError when no id was found.
@@ -169,8 +185,8 @@ func (aq *ApplicationQuery) FirstID(ctx context.Context) (id int, err error) {
 	return ids[0], nil
 }
 
-// FirstXID is like FirstID, but panics if an error occurs.
-func (aq *ApplicationQuery) FirstXID(ctx context.Context) int {
+// FirstIDX is like FirstID, but panics if an error occurs.
+func (aq *ApplicationQuery) FirstIDX(ctx context.Context) int {
 	id, err := aq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -180,13 +196,13 @@ func (aq *ApplicationQuery) FirstXID(ctx context.Context) int {
 
 // Only returns the only Application entity in the query, returns an error if not exactly one entity was returned.
 func (aq *ApplicationQuery) Only(ctx context.Context) (*Application, error) {
-	as, err := aq.Limit(2).All(ctx)
+	nodes, err := aq.Limit(2).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	switch len(as) {
+	switch len(nodes) {
 	case 1:
-		return as[0], nil
+		return nodes[0], nil
 	case 0:
 		return nil, &NotFoundError{application.Label}
 	default:
@@ -196,11 +212,11 @@ func (aq *ApplicationQuery) Only(ctx context.Context) (*Application, error) {
 
 // OnlyX is like Only, but panics if an error occurs.
 func (aq *ApplicationQuery) OnlyX(ctx context.Context) *Application {
-	a, err := aq.Only(ctx)
+	node, err := aq.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return a
+	return node
 }
 
 // OnlyID returns the only Application id in the query, returns an error if not exactly one id was returned.
@@ -220,8 +236,8 @@ func (aq *ApplicationQuery) OnlyID(ctx context.Context) (id int, err error) {
 	return
 }
 
-// OnlyXID is like OnlyID, but panics if an error occurs.
-func (aq *ApplicationQuery) OnlyXID(ctx context.Context) int {
+// OnlyIDX is like OnlyID, but panics if an error occurs.
+func (aq *ApplicationQuery) OnlyIDX(ctx context.Context) int {
 	id, err := aq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -239,11 +255,11 @@ func (aq *ApplicationQuery) All(ctx context.Context) ([]*Application, error) {
 
 // AllX is like All, but panics if an error occurs.
 func (aq *ApplicationQuery) AllX(ctx context.Context) []*Application {
-	as, err := aq.All(ctx)
+	nodes, err := aq.All(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return as
+	return nodes
 }
 
 // IDs executes the query and returns a list of Application ids.
@@ -301,13 +317,20 @@ func (aq *ApplicationQuery) ExistX(ctx context.Context) bool {
 // Clone returns a duplicate of the query builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
 func (aq *ApplicationQuery) Clone() *ApplicationQuery {
+	if aq == nil {
+		return nil
+	}
 	return &ApplicationQuery{
-		config:     aq.config,
-		limit:      aq.limit,
-		offset:     aq.offset,
-		order:      append([]Order{}, aq.order...),
-		unique:     append([]string{}, aq.unique...),
-		predicates: append([]predicate.Application{}, aq.predicates...),
+		config:        aq.config,
+		limit:         aq.limit,
+		offset:        aq.offset,
+		order:         append([]OrderFunc{}, aq.order...),
+		unique:        append([]string{}, aq.unique...),
+		predicates:    append([]predicate.Application{}, aq.predicates...),
+		withNamespace: aq.withNamespace.Clone(),
+		withProject:   aq.withProject.Clone(),
+		withInstances: aq.withInstances.Clone(),
+		withConfig:    aq.withConfig.Clone(),
 		// clone intermediate query.
 		sql:  aq.sql.Clone(),
 		path: aq.path,
@@ -518,6 +541,7 @@ func (aq *ApplicationQuery) sqlAll(ctx context.Context) ([]*Application, error) 
 		for i := range nodes {
 			fks = append(fks, nodes[i].ID)
 			nodeids[nodes[i].ID] = nodes[i]
+			nodes[i].Edges.Instances = []*Instance{}
 		}
 		query.withFKs = true
 		query.Where(predicate.Instance(func(s *sql.Selector) {
@@ -610,7 +634,7 @@ func (aq *ApplicationQuery) querySpec() *sqlgraph.QuerySpec {
 	if ps := aq.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
-				ps[i](selector)
+				ps[i](selector, application.ValidColumn)
 			}
 		}
 	}
@@ -629,7 +653,7 @@ func (aq *ApplicationQuery) sqlQuery() *sql.Selector {
 		p(selector)
 	}
 	for _, p := range aq.order {
-		p(selector)
+		p(selector, application.ValidColumn)
 	}
 	if offset := aq.offset; offset != nil {
 		// limit is mandatory for offset clause. We start
@@ -646,14 +670,14 @@ func (aq *ApplicationQuery) sqlQuery() *sql.Selector {
 type ApplicationGroupBy struct {
 	config
 	fields []string
-	fns    []Aggregate
+	fns    []AggregateFunc
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (agb *ApplicationGroupBy) Aggregate(fns ...Aggregate) *ApplicationGroupBy {
+func (agb *ApplicationGroupBy) Aggregate(fns ...AggregateFunc) *ApplicationGroupBy {
 	agb.fns = append(agb.fns, fns...)
 	return agb
 }
@@ -696,6 +720,32 @@ func (agb *ApplicationGroupBy) StringsX(ctx context.Context) []string {
 	return v
 }
 
+// String returns a single string from group-by. It is only allowed when querying group-by with one field.
+func (agb *ApplicationGroupBy) String(ctx context.Context) (_ string, err error) {
+	var v []string
+	if v, err = agb.Strings(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{application.Label}
+	default:
+		err = fmt.Errorf("ent: ApplicationGroupBy.Strings returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// StringX is like String, but panics if an error occurs.
+func (agb *ApplicationGroupBy) StringX(ctx context.Context) string {
+	v, err := agb.String(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // Ints returns list of ints from group-by. It is only allowed when querying group-by with one field.
 func (agb *ApplicationGroupBy) Ints(ctx context.Context) ([]int, error) {
 	if len(agb.fields) > 1 {
@@ -711,6 +761,32 @@ func (agb *ApplicationGroupBy) Ints(ctx context.Context) ([]int, error) {
 // IntsX is like Ints, but panics if an error occurs.
 func (agb *ApplicationGroupBy) IntsX(ctx context.Context) []int {
 	v, err := agb.Ints(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// Int returns a single int from group-by. It is only allowed when querying group-by with one field.
+func (agb *ApplicationGroupBy) Int(ctx context.Context) (_ int, err error) {
+	var v []int
+	if v, err = agb.Ints(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{application.Label}
+	default:
+		err = fmt.Errorf("ent: ApplicationGroupBy.Ints returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// IntX is like Int, but panics if an error occurs.
+func (agb *ApplicationGroupBy) IntX(ctx context.Context) int {
+	v, err := agb.Int(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -738,6 +814,32 @@ func (agb *ApplicationGroupBy) Float64sX(ctx context.Context) []float64 {
 	return v
 }
 
+// Float64 returns a single float64 from group-by. It is only allowed when querying group-by with one field.
+func (agb *ApplicationGroupBy) Float64(ctx context.Context) (_ float64, err error) {
+	var v []float64
+	if v, err = agb.Float64s(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{application.Label}
+	default:
+		err = fmt.Errorf("ent: ApplicationGroupBy.Float64s returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// Float64X is like Float64, but panics if an error occurs.
+func (agb *ApplicationGroupBy) Float64X(ctx context.Context) float64 {
+	v, err := agb.Float64(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // Bools returns list of bools from group-by. It is only allowed when querying group-by with one field.
 func (agb *ApplicationGroupBy) Bools(ctx context.Context) ([]bool, error) {
 	if len(agb.fields) > 1 {
@@ -759,9 +861,44 @@ func (agb *ApplicationGroupBy) BoolsX(ctx context.Context) []bool {
 	return v
 }
 
+// Bool returns a single bool from group-by. It is only allowed when querying group-by with one field.
+func (agb *ApplicationGroupBy) Bool(ctx context.Context) (_ bool, err error) {
+	var v []bool
+	if v, err = agb.Bools(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{application.Label}
+	default:
+		err = fmt.Errorf("ent: ApplicationGroupBy.Bools returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// BoolX is like Bool, but panics if an error occurs.
+func (agb *ApplicationGroupBy) BoolX(ctx context.Context) bool {
+	v, err := agb.Bool(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 func (agb *ApplicationGroupBy) sqlScan(ctx context.Context, v interface{}) error {
+	for _, f := range agb.fields {
+		if !application.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
+		}
+	}
+	selector := agb.sqlQuery()
+	if err := selector.Err(); err != nil {
+		return err
+	}
 	rows := &sql.Rows{}
-	query, args := agb.sqlQuery().Query()
+	query, args := selector.Query()
 	if err := agb.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
@@ -774,7 +911,7 @@ func (agb *ApplicationGroupBy) sqlQuery() *sql.Selector {
 	columns := make([]string, 0, len(agb.fields)+len(agb.fns))
 	columns = append(columns, agb.fields...)
 	for _, fn := range agb.fns {
-		columns = append(columns, fn(selector))
+		columns = append(columns, fn(selector, application.ValidColumn))
 	}
 	return selector.Select(columns...).GroupBy(agb.fields...)
 }
@@ -826,6 +963,32 @@ func (as *ApplicationSelect) StringsX(ctx context.Context) []string {
 	return v
 }
 
+// String returns a single string from selector. It is only allowed when selecting one field.
+func (as *ApplicationSelect) String(ctx context.Context) (_ string, err error) {
+	var v []string
+	if v, err = as.Strings(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{application.Label}
+	default:
+		err = fmt.Errorf("ent: ApplicationSelect.Strings returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// StringX is like String, but panics if an error occurs.
+func (as *ApplicationSelect) StringX(ctx context.Context) string {
+	v, err := as.String(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // Ints returns list of ints from selector. It is only allowed when selecting one field.
 func (as *ApplicationSelect) Ints(ctx context.Context) ([]int, error) {
 	if len(as.fields) > 1 {
@@ -841,6 +1004,32 @@ func (as *ApplicationSelect) Ints(ctx context.Context) ([]int, error) {
 // IntsX is like Ints, but panics if an error occurs.
 func (as *ApplicationSelect) IntsX(ctx context.Context) []int {
 	v, err := as.Ints(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// Int returns a single int from selector. It is only allowed when selecting one field.
+func (as *ApplicationSelect) Int(ctx context.Context) (_ int, err error) {
+	var v []int
+	if v, err = as.Ints(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{application.Label}
+	default:
+		err = fmt.Errorf("ent: ApplicationSelect.Ints returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// IntX is like Int, but panics if an error occurs.
+func (as *ApplicationSelect) IntX(ctx context.Context) int {
+	v, err := as.Int(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -868,6 +1057,32 @@ func (as *ApplicationSelect) Float64sX(ctx context.Context) []float64 {
 	return v
 }
 
+// Float64 returns a single float64 from selector. It is only allowed when selecting one field.
+func (as *ApplicationSelect) Float64(ctx context.Context) (_ float64, err error) {
+	var v []float64
+	if v, err = as.Float64s(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{application.Label}
+	default:
+		err = fmt.Errorf("ent: ApplicationSelect.Float64s returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// Float64X is like Float64, but panics if an error occurs.
+func (as *ApplicationSelect) Float64X(ctx context.Context) float64 {
+	v, err := as.Float64(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // Bools returns list of bools from selector. It is only allowed when selecting one field.
 func (as *ApplicationSelect) Bools(ctx context.Context) ([]bool, error) {
 	if len(as.fields) > 1 {
@@ -889,7 +1104,38 @@ func (as *ApplicationSelect) BoolsX(ctx context.Context) []bool {
 	return v
 }
 
+// Bool returns a single bool from selector. It is only allowed when selecting one field.
+func (as *ApplicationSelect) Bool(ctx context.Context) (_ bool, err error) {
+	var v []bool
+	if v, err = as.Bools(ctx); err != nil {
+		return
+	}
+	switch len(v) {
+	case 1:
+		return v[0], nil
+	case 0:
+		err = &NotFoundError{application.Label}
+	default:
+		err = fmt.Errorf("ent: ApplicationSelect.Bools returned %d results when one was expected", len(v))
+	}
+	return
+}
+
+// BoolX is like Bool, but panics if an error occurs.
+func (as *ApplicationSelect) BoolX(ctx context.Context) bool {
+	v, err := as.Bool(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 func (as *ApplicationSelect) sqlScan(ctx context.Context, v interface{}) error {
+	for _, f := range as.fields {
+		if !application.ValidColumn(f) {
+			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for selection", f)}
+		}
+	}
 	rows := &sql.Rows{}
 	query, args := as.sqlQuery().Query()
 	if err := as.driver.Query(ctx, query, args, rows); err != nil {

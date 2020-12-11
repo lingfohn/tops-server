@@ -3,6 +3,7 @@ package model
 import (
 	"context"
 	"github.com/lingfohn/lime/ent"
+	"github.com/lingfohn/lime/ent/application"
 	"github.com/lingfohn/lime/ent/predicate"
 	"github.com/lingfohn/lime/storage"
 )
@@ -39,6 +40,9 @@ func (a *ApplicationManage)CreateApplication(m ent.Application)(app *ent.Applica
 
 func (a *ApplicationManage)predicate(q QueryMap) []predicate.Application  {
 	var query []predicate.Application
+	if val,ok:= q.GetString(application.FieldName);ok {
+		query = append(query,application.NameContains(val))
+	}
 	return query
 }
 
@@ -60,4 +64,18 @@ func (a *ApplicationManage)QueryApplication(qm QueryMap)(ct int,apps ent.Applica
 		Order(qm.Order()...).
 		All(context.TODO())
 	return
+}
+
+func (a *ApplicationManage)Delete(id int)(err error)  {
+	return a.db.Application.DeleteOneID(id).Exec(context.TODO())
+}
+
+func (a *ApplicationManage)GetApplication(id int) (app *ent.Application,err error) {
+	return a.db.Application.Query().
+		Where(application.ID(id)).
+		WithNamespace().
+		WithProject().
+		WithInstances().
+		WithConfig().
+		Only(context.TODO())
 }

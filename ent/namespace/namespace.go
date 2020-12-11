@@ -10,9 +10,18 @@ const (
 	// Label holds the string label denoting the namespace type in the database.
 	Label = "namespace"
 	// FieldID holds the string denoting the id field in the database.
-	FieldID        = "id"        // FieldName holds the string denoting the name vertex property in the database.
-	FieldName      = "name"      // FieldCreatedAt holds the string denoting the createdat vertex property in the database.
-	FieldCreatedAt = "createdAt" // FieldUpdatedAt holds the string denoting the updatedat vertex property in the database.
+	FieldID = "id"
+	// FieldName holds the string denoting the name field in the database.
+	FieldName = "name"
+	// FieldDockerRepo holds the string denoting the dockerrepo field in the database.
+	FieldDockerRepo = "dockerRepo"
+	// FieldRepoNamespace holds the string denoting the reponamespace field in the database.
+	FieldRepoNamespace = "repoNamespace"
+	// FieldActive holds the string denoting the active field in the database.
+	FieldActive = "active"
+	// FieldCreatedAt holds the string denoting the createdat field in the database.
+	FieldCreatedAt = "createdAt"
+	// FieldUpdatedAt holds the string denoting the updatedat field in the database.
 	FieldUpdatedAt = "updatedAt"
 
 	// EdgeCluster holds the string denoting the cluster edge name in mutations.
@@ -42,6 +51,9 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldName,
+	FieldDockerRepo,
+	FieldRepoNamespace,
+	FieldActive,
 	FieldCreatedAt,
 	FieldUpdatedAt,
 }
@@ -49,6 +61,21 @@ var Columns = []string{
 // ForeignKeys holds the SQL foreign-keys that are owned by the Namespace type.
 var ForeignKeys = []string{
 	"k8s_cluster_namespaces",
+}
+
+// ValidColumn reports if the column name is valid (part of the table columns).
+func ValidColumn(column string) bool {
+	for i := range Columns {
+		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
+			return true
+		}
+	}
+	return false
 }
 
 var (

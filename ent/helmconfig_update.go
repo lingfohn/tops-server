@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/facebookincubator/ent/dialect/sql"
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/helmconfig"
 	"github.com/lingfohn/lime/ent/predicate"
 )
@@ -17,14 +17,13 @@ import (
 // HelmConfigUpdate is the builder for updating HelmConfig entities.
 type HelmConfigUpdate struct {
 	config
-	hooks      []Hook
-	mutation   *HelmConfigMutation
-	predicates []predicate.HelmConfig
+	hooks    []Hook
+	mutation *HelmConfigMutation
 }
 
 // Where adds a new predicate for the builder.
 func (hcu *HelmConfigUpdate) Where(ps ...predicate.HelmConfig) *HelmConfigUpdate {
-	hcu.predicates = append(hcu.predicates, ps...)
+	hcu.mutation.predicates = append(hcu.mutation.predicates, ps...)
 	return hcu
 }
 
@@ -111,16 +110,18 @@ func (hcu *HelmConfigUpdate) SetUpdatedAt(t time.Time) *HelmConfigUpdate {
 	return hcu
 }
 
-// Save executes the query and returns the number of rows/vertices matched by this operation.
+// Mutation returns the HelmConfigMutation object of the builder.
+func (hcu *HelmConfigUpdate) Mutation() *HelmConfigMutation {
+	return hcu.mutation
+}
+
+// Save executes the query and returns the number of nodes affected by the update operation.
 func (hcu *HelmConfigUpdate) Save(ctx context.Context) (int, error) {
-	if _, ok := hcu.mutation.UpdatedAt(); !ok {
-		v := helmconfig.UpdateDefaultUpdatedAt()
-		hcu.mutation.SetUpdatedAt(v)
-	}
 	var (
 		err      error
 		affected int
 	)
+	hcu.defaults()
 	if len(hcu.hooks) == 0 {
 		affected, err = hcu.sqlSave(ctx)
 	} else {
@@ -131,6 +132,7 @@ func (hcu *HelmConfigUpdate) Save(ctx context.Context) (int, error) {
 			}
 			hcu.mutation = mutation
 			affected, err = hcu.sqlSave(ctx)
+			mutation.done = true
 			return affected, err
 		})
 		for i := len(hcu.hooks) - 1; i >= 0; i-- {
@@ -165,6 +167,14 @@ func (hcu *HelmConfigUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (hcu *HelmConfigUpdate) defaults() {
+	if _, ok := hcu.mutation.UpdatedAt(); !ok {
+		v := helmconfig.UpdateDefaultUpdatedAt()
+		hcu.mutation.SetUpdatedAt(v)
+	}
+}
+
 func (hcu *HelmConfigUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
@@ -176,7 +186,7 @@ func (hcu *HelmConfigUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			},
 		},
 	}
-	if ps := hcu.predicates; len(ps) > 0 {
+	if ps := hcu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -361,16 +371,18 @@ func (hcuo *HelmConfigUpdateOne) SetUpdatedAt(t time.Time) *HelmConfigUpdateOne 
 	return hcuo
 }
 
+// Mutation returns the HelmConfigMutation object of the builder.
+func (hcuo *HelmConfigUpdateOne) Mutation() *HelmConfigMutation {
+	return hcuo.mutation
+}
+
 // Save executes the query and returns the updated entity.
 func (hcuo *HelmConfigUpdateOne) Save(ctx context.Context) (*HelmConfig, error) {
-	if _, ok := hcuo.mutation.UpdatedAt(); !ok {
-		v := helmconfig.UpdateDefaultUpdatedAt()
-		hcuo.mutation.SetUpdatedAt(v)
-	}
 	var (
 		err  error
 		node *HelmConfig
 	)
+	hcuo.defaults()
 	if len(hcuo.hooks) == 0 {
 		node, err = hcuo.sqlSave(ctx)
 	} else {
@@ -381,6 +393,7 @@ func (hcuo *HelmConfigUpdateOne) Save(ctx context.Context) (*HelmConfig, error) 
 			}
 			hcuo.mutation = mutation
 			node, err = hcuo.sqlSave(ctx)
+			mutation.done = true
 			return node, err
 		})
 		for i := len(hcuo.hooks) - 1; i >= 0; i-- {
@@ -395,11 +408,11 @@ func (hcuo *HelmConfigUpdateOne) Save(ctx context.Context) (*HelmConfig, error) 
 
 // SaveX is like Save, but panics if an error occurs.
 func (hcuo *HelmConfigUpdateOne) SaveX(ctx context.Context) *HelmConfig {
-	hc, err := hcuo.Save(ctx)
+	node, err := hcuo.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return hc
+	return node
 }
 
 // Exec executes the query on the entity.
@@ -415,7 +428,15 @@ func (hcuo *HelmConfigUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-func (hcuo *HelmConfigUpdateOne) sqlSave(ctx context.Context) (hc *HelmConfig, err error) {
+// defaults sets the default values of the builder before save.
+func (hcuo *HelmConfigUpdateOne) defaults() {
+	if _, ok := hcuo.mutation.UpdatedAt(); !ok {
+		v := helmconfig.UpdateDefaultUpdatedAt()
+		hcuo.mutation.SetUpdatedAt(v)
+	}
+}
+
+func (hcuo *HelmConfigUpdateOne) sqlSave(ctx context.Context) (_node *HelmConfig, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
 			Table:   helmconfig.Table,
@@ -428,7 +449,7 @@ func (hcuo *HelmConfigUpdateOne) sqlSave(ctx context.Context) (hc *HelmConfig, e
 	}
 	id, ok := hcuo.mutation.ID()
 	if !ok {
-		return nil, fmt.Errorf("missing HelmConfig.ID for update")
+		return nil, &ValidationError{Name: "ID", err: fmt.Errorf("missing HelmConfig.ID for update")}
 	}
 	_spec.Node.ID.Value = id
 	if value, ok := hcuo.mutation.ChartVersion(); ok {
@@ -508,9 +529,9 @@ func (hcuo *HelmConfigUpdateOne) sqlSave(ctx context.Context) (hc *HelmConfig, e
 			Column: helmconfig.FieldUpdatedAt,
 		})
 	}
-	hc = &HelmConfig{config: hcuo.config}
-	_spec.Assign = hc.assignValues
-	_spec.ScanValues = hc.scanValues()
+	_node = &HelmConfig{config: hcuo.config}
+	_spec.Assign = _node.assignValues
+	_spec.ScanValues = _node.scanValues()
 	if err = sqlgraph.UpdateNode(ctx, hcuo.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{helmconfig.Label}
@@ -519,5 +540,5 @@ func (hcuo *HelmConfigUpdateOne) sqlSave(ctx context.Context) (hc *HelmConfig, e
 		}
 		return nil, err
 	}
-	return hc, nil
+	return _node, nil
 }

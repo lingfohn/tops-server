@@ -10,15 +10,23 @@ const (
 	// Label holds the string label denoting the project type in the database.
 	Label = "project"
 	// FieldID holds the string denoting the id field in the database.
-	FieldID          = "id"          // FieldProjectName holds the string denoting the projectname vertex property in the database.
-	FieldProjectName = "projectName" // FieldProType holds the string denoting the protype vertex property in the database.
-	FieldProType     = "proType"     // FieldDescription holds the string denoting the description vertex property in the database.
-	FieldDescription = "description" // FieldGitlab holds the string denoting the gitlab vertex property in the database.
-	FieldGitlab      = "gitlab"      // FieldPort holds the string denoting the port vertex property in the database.
-	FieldPort        = "port"        // FieldDebugPort holds the string denoting the debugport vertex property in the database.
-	FieldDebugPort   = "debugPort"   // FieldCreatedAt holds the string denoting the createdat vertex property in the database.
-	FieldCreatedAt   = "createdAt"   // FieldUpdatedAt holds the string denoting the updatedat vertex property in the database.
-	FieldUpdatedAt   = "updatedAt"
+	FieldID = "id"
+	// FieldProjectName holds the string denoting the projectname field in the database.
+	FieldProjectName = "projectName"
+	// FieldProType holds the string denoting the protype field in the database.
+	FieldProType = "proType"
+	// FieldDescription holds the string denoting the description field in the database.
+	FieldDescription = "description"
+	// FieldGitlab holds the string denoting the gitlab field in the database.
+	FieldGitlab = "gitlab"
+	// FieldPort holds the string denoting the port field in the database.
+	FieldPort = "port"
+	// FieldDebugPort holds the string denoting the debugport field in the database.
+	FieldDebugPort = "debugPort"
+	// FieldCreatedAt holds the string denoting the createdat field in the database.
+	FieldCreatedAt = "createdAt"
+	// FieldUpdatedAt holds the string denoting the updatedat field in the database.
+	FieldUpdatedAt = "updatedAt"
 
 	// EdgeApplications holds the string denoting the applications edge name in mutations.
 	EdgeApplications = "applications"
@@ -45,6 +53,16 @@ var Columns = []string{
 	FieldDebugPort,
 	FieldCreatedAt,
 	FieldUpdatedAt,
+}
+
+// ValidColumn reports if the column name is valid (part of the table columns).
+func ValidColumn(column string) bool {
+	for i := range Columns {
+		if column == Columns[i] {
+			return true
+		}
+	}
+	return false
 }
 
 var (

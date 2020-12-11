@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/application"
 	"github.com/lingfohn/lime/ent/k8scluster"
 	"github.com/lingfohn/lime/ent/namespace"
@@ -25,6 +25,24 @@ type NamespaceCreate struct {
 // SetName sets the name field.
 func (nc *NamespaceCreate) SetName(s string) *NamespaceCreate {
 	nc.mutation.SetName(s)
+	return nc
+}
+
+// SetDockerRepo sets the dockerRepo field.
+func (nc *NamespaceCreate) SetDockerRepo(s string) *NamespaceCreate {
+	nc.mutation.SetDockerRepo(s)
+	return nc
+}
+
+// SetRepoNamespace sets the repoNamespace field.
+func (nc *NamespaceCreate) SetRepoNamespace(s string) *NamespaceCreate {
+	nc.mutation.SetRepoNamespace(s)
+	return nc
+}
+
+// SetActive sets the active field.
+func (nc *NamespaceCreate) SetActive(s string) *NamespaceCreate {
+	nc.mutation.SetActive(s)
 	return nc
 }
 
@@ -90,24 +108,22 @@ func (nc *NamespaceCreate) AddApplications(a ...*Application) *NamespaceCreate {
 	return nc.AddApplicationIDs(ids...)
 }
 
+// Mutation returns the NamespaceMutation object of the builder.
+func (nc *NamespaceCreate) Mutation() *NamespaceMutation {
+	return nc.mutation
+}
+
 // Save creates the Namespace in the database.
 func (nc *NamespaceCreate) Save(ctx context.Context) (*Namespace, error) {
-	if _, ok := nc.mutation.Name(); !ok {
-		return nil, errors.New("ent: missing required field \"name\"")
-	}
-	if _, ok := nc.mutation.CreatedAt(); !ok {
-		v := namespace.DefaultCreatedAt()
-		nc.mutation.SetCreatedAt(v)
-	}
-	if _, ok := nc.mutation.UpdatedAt(); !ok {
-		v := namespace.DefaultUpdatedAt()
-		nc.mutation.SetUpdatedAt(v)
-	}
 	var (
 		err  error
 		node *Namespace
 	)
+	nc.defaults()
 	if len(nc.hooks) == 0 {
+		if err = nc.check(); err != nil {
+			return nil, err
+		}
 		node, err = nc.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
@@ -115,8 +131,12 @@ func (nc *NamespaceCreate) Save(ctx context.Context) (*Namespace, error) {
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
 			}
+			if err = nc.check(); err != nil {
+				return nil, err
+			}
 			nc.mutation = mutation
 			node, err = nc.sqlSave(ctx)
+			mutation.done = true
 			return node, err
 		})
 		for i := len(nc.hooks) - 1; i >= 0; i-- {
@@ -138,9 +158,57 @@ func (nc *NamespaceCreate) SaveX(ctx context.Context) *Namespace {
 	return v
 }
 
+// defaults sets the default values of the builder before save.
+func (nc *NamespaceCreate) defaults() {
+	if _, ok := nc.mutation.CreatedAt(); !ok {
+		v := namespace.DefaultCreatedAt()
+		nc.mutation.SetCreatedAt(v)
+	}
+	if _, ok := nc.mutation.UpdatedAt(); !ok {
+		v := namespace.DefaultUpdatedAt()
+		nc.mutation.SetUpdatedAt(v)
+	}
+}
+
+// check runs all checks and user-defined validators on the builder.
+func (nc *NamespaceCreate) check() error {
+	if _, ok := nc.mutation.Name(); !ok {
+		return &ValidationError{Name: "name", err: errors.New("ent: missing required field \"name\"")}
+	}
+	if _, ok := nc.mutation.DockerRepo(); !ok {
+		return &ValidationError{Name: "dockerRepo", err: errors.New("ent: missing required field \"dockerRepo\"")}
+	}
+	if _, ok := nc.mutation.RepoNamespace(); !ok {
+		return &ValidationError{Name: "repoNamespace", err: errors.New("ent: missing required field \"repoNamespace\"")}
+	}
+	if _, ok := nc.mutation.Active(); !ok {
+		return &ValidationError{Name: "active", err: errors.New("ent: missing required field \"active\"")}
+	}
+	if _, ok := nc.mutation.CreatedAt(); !ok {
+		return &ValidationError{Name: "createdAt", err: errors.New("ent: missing required field \"createdAt\"")}
+	}
+	if _, ok := nc.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updatedAt", err: errors.New("ent: missing required field \"updatedAt\"")}
+	}
+	return nil
+}
+
 func (nc *NamespaceCreate) sqlSave(ctx context.Context) (*Namespace, error) {
+	_node, _spec := nc.createSpec()
+	if err := sqlgraph.CreateNode(ctx, nc.driver, _spec); err != nil {
+		if cerr, ok := isSQLConstraintError(err); ok {
+			err = cerr
+		}
+		return nil, err
+	}
+	id := _spec.ID.Value.(int64)
+	_node.ID = int(id)
+	return _node, nil
+}
+
+func (nc *NamespaceCreate) createSpec() (*Namespace, *sqlgraph.CreateSpec) {
 	var (
-		n     = &Namespace{config: nc.config}
+		_node = &Namespace{config: nc.config}
 		_spec = &sqlgraph.CreateSpec{
 			Table: namespace.Table,
 			ID: &sqlgraph.FieldSpec{
@@ -155,7 +223,31 @@ func (nc *NamespaceCreate) sqlSave(ctx context.Context) (*Namespace, error) {
 			Value:  value,
 			Column: namespace.FieldName,
 		})
-		n.Name = value
+		_node.Name = value
+	}
+	if value, ok := nc.mutation.DockerRepo(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: namespace.FieldDockerRepo,
+		})
+		_node.DockerRepo = value
+	}
+	if value, ok := nc.mutation.RepoNamespace(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: namespace.FieldRepoNamespace,
+		})
+		_node.RepoNamespace = value
+	}
+	if value, ok := nc.mutation.Active(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: namespace.FieldActive,
+		})
+		_node.Active = value
 	}
 	if value, ok := nc.mutation.CreatedAt(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -163,7 +255,7 @@ func (nc *NamespaceCreate) sqlSave(ctx context.Context) (*Namespace, error) {
 			Value:  value,
 			Column: namespace.FieldCreatedAt,
 		})
-		n.CreatedAt = value
+		_node.CreatedAt = value
 	}
 	if value, ok := nc.mutation.UpdatedAt(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -171,7 +263,7 @@ func (nc *NamespaceCreate) sqlSave(ctx context.Context) (*Namespace, error) {
 			Value:  value,
 			Column: namespace.FieldUpdatedAt,
 		})
-		n.UpdatedAt = value
+		_node.UpdatedAt = value
 	}
 	if nodes := nc.mutation.ClusterIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -211,13 +303,72 @@ func (nc *NamespaceCreate) sqlSave(ctx context.Context) (*Namespace, error) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if err := sqlgraph.CreateNode(ctx, nc.driver, _spec); err != nil {
-		if cerr, ok := isSQLConstraintError(err); ok {
-			err = cerr
-		}
-		return nil, err
+	return _node, _spec
+}
+
+// NamespaceCreateBulk is the builder for creating a bulk of Namespace entities.
+type NamespaceCreateBulk struct {
+	config
+	builders []*NamespaceCreate
+}
+
+// Save creates the Namespace entities in the database.
+func (ncb *NamespaceCreateBulk) Save(ctx context.Context) ([]*Namespace, error) {
+	specs := make([]*sqlgraph.CreateSpec, len(ncb.builders))
+	nodes := make([]*Namespace, len(ncb.builders))
+	mutators := make([]Mutator, len(ncb.builders))
+	for i := range ncb.builders {
+		func(i int, root context.Context) {
+			builder := ncb.builders[i]
+			builder.defaults()
+			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
+				mutation, ok := m.(*NamespaceMutation)
+				if !ok {
+					return nil, fmt.Errorf("unexpected mutation type %T", m)
+				}
+				if err := builder.check(); err != nil {
+					return nil, err
+				}
+				builder.mutation = mutation
+				nodes[i], specs[i] = builder.createSpec()
+				var err error
+				if i < len(mutators)-1 {
+					_, err = mutators[i+1].Mutate(root, ncb.builders[i+1].mutation)
+				} else {
+					// Invoke the actual operation on the latest mutation in the chain.
+					if err = sqlgraph.BatchCreate(ctx, ncb.driver, &sqlgraph.BatchCreateSpec{Nodes: specs}); err != nil {
+						if cerr, ok := isSQLConstraintError(err); ok {
+							err = cerr
+						}
+					}
+				}
+				mutation.done = true
+				if err != nil {
+					return nil, err
+				}
+				id := specs[i].ID.Value.(int64)
+				nodes[i].ID = int(id)
+				return nodes[i], nil
+			})
+			for i := len(builder.hooks) - 1; i >= 0; i-- {
+				mut = builder.hooks[i](mut)
+			}
+			mutators[i] = mut
+		}(i, ctx)
 	}
-	id := _spec.ID.Value.(int64)
-	n.ID = int(id)
-	return n, nil
+	if len(mutators) > 0 {
+		if _, err := mutators[0].Mutate(ctx, ncb.builders[0].mutation); err != nil {
+			return nil, err
+		}
+	}
+	return nodes, nil
+}
+
+// SaveX calls Save and panics if Save returns an error.
+func (ncb *NamespaceCreateBulk) SaveX(ctx context.Context) []*Namespace {
+	v, err := ncb.Save(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
 }

@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
-	"github.com/facebookincubator/ent/schema/field"
+	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"github.com/facebook/ent/schema/field"
 	"github.com/lingfohn/lime/ent/application"
 	"github.com/lingfohn/lime/ent/helmconfig"
 	"github.com/lingfohn/lime/ent/instance"
@@ -156,34 +156,22 @@ func (ac *ApplicationCreate) SetConfig(h *HelmConfig) *ApplicationCreate {
 	return ac.SetConfigID(h.ID)
 }
 
+// Mutation returns the ApplicationMutation object of the builder.
+func (ac *ApplicationCreate) Mutation() *ApplicationMutation {
+	return ac.mutation
+}
+
 // Save creates the Application in the database.
 func (ac *ApplicationCreate) Save(ctx context.Context) (*Application, error) {
-	if _, ok := ac.mutation.Name(); !ok {
-		return nil, errors.New("ent: missing required field \"name\"")
-	}
-	if _, ok := ac.mutation.Multi(); !ok {
-		v := application.DefaultMulti
-		ac.mutation.SetMulti(v)
-	}
-	if _, ok := ac.mutation.ProjectId(); !ok {
-		return nil, errors.New("ent: missing required field \"projectId\"")
-	}
-	if _, ok := ac.mutation.NamespaceId(); !ok {
-		return nil, errors.New("ent: missing required field \"namespaceId\"")
-	}
-	if _, ok := ac.mutation.CreatedAt(); !ok {
-		v := application.DefaultCreatedAt()
-		ac.mutation.SetCreatedAt(v)
-	}
-	if _, ok := ac.mutation.UpdatedAt(); !ok {
-		v := application.DefaultUpdatedAt()
-		ac.mutation.SetUpdatedAt(v)
-	}
 	var (
 		err  error
 		node *Application
 	)
+	ac.defaults()
 	if len(ac.hooks) == 0 {
+		if err = ac.check(); err != nil {
+			return nil, err
+		}
 		node, err = ac.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
@@ -191,8 +179,12 @@ func (ac *ApplicationCreate) Save(ctx context.Context) (*Application, error) {
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
 			}
+			if err = ac.check(); err != nil {
+				return nil, err
+			}
 			ac.mutation = mutation
 			node, err = ac.sqlSave(ctx)
+			mutation.done = true
 			return node, err
 		})
 		for i := len(ac.hooks) - 1; i >= 0; i-- {
@@ -214,9 +206,61 @@ func (ac *ApplicationCreate) SaveX(ctx context.Context) *Application {
 	return v
 }
 
+// defaults sets the default values of the builder before save.
+func (ac *ApplicationCreate) defaults() {
+	if _, ok := ac.mutation.Multi(); !ok {
+		v := application.DefaultMulti
+		ac.mutation.SetMulti(v)
+	}
+	if _, ok := ac.mutation.CreatedAt(); !ok {
+		v := application.DefaultCreatedAt()
+		ac.mutation.SetCreatedAt(v)
+	}
+	if _, ok := ac.mutation.UpdatedAt(); !ok {
+		v := application.DefaultUpdatedAt()
+		ac.mutation.SetUpdatedAt(v)
+	}
+}
+
+// check runs all checks and user-defined validators on the builder.
+func (ac *ApplicationCreate) check() error {
+	if _, ok := ac.mutation.Name(); !ok {
+		return &ValidationError{Name: "name", err: errors.New("ent: missing required field \"name\"")}
+	}
+	if _, ok := ac.mutation.Multi(); !ok {
+		return &ValidationError{Name: "multi", err: errors.New("ent: missing required field \"multi\"")}
+	}
+	if _, ok := ac.mutation.ProjectId(); !ok {
+		return &ValidationError{Name: "projectId", err: errors.New("ent: missing required field \"projectId\"")}
+	}
+	if _, ok := ac.mutation.NamespaceId(); !ok {
+		return &ValidationError{Name: "namespaceId", err: errors.New("ent: missing required field \"namespaceId\"")}
+	}
+	if _, ok := ac.mutation.CreatedAt(); !ok {
+		return &ValidationError{Name: "createdAt", err: errors.New("ent: missing required field \"createdAt\"")}
+	}
+	if _, ok := ac.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updatedAt", err: errors.New("ent: missing required field \"updatedAt\"")}
+	}
+	return nil
+}
+
 func (ac *ApplicationCreate) sqlSave(ctx context.Context) (*Application, error) {
+	_node, _spec := ac.createSpec()
+	if err := sqlgraph.CreateNode(ctx, ac.driver, _spec); err != nil {
+		if cerr, ok := isSQLConstraintError(err); ok {
+			err = cerr
+		}
+		return nil, err
+	}
+	id := _spec.ID.Value.(int64)
+	_node.ID = int(id)
+	return _node, nil
+}
+
+func (ac *ApplicationCreate) createSpec() (*Application, *sqlgraph.CreateSpec) {
 	var (
-		a     = &Application{config: ac.config}
+		_node = &Application{config: ac.config}
 		_spec = &sqlgraph.CreateSpec{
 			Table: application.Table,
 			ID: &sqlgraph.FieldSpec{
@@ -231,7 +275,7 @@ func (ac *ApplicationCreate) sqlSave(ctx context.Context) (*Application, error) 
 			Value:  value,
 			Column: application.FieldName,
 		})
-		a.Name = value
+		_node.Name = value
 	}
 	if value, ok := ac.mutation.Multi(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -239,7 +283,7 @@ func (ac *ApplicationCreate) sqlSave(ctx context.Context) (*Application, error) 
 			Value:  value,
 			Column: application.FieldMulti,
 		})
-		a.Multi = value
+		_node.Multi = value
 	}
 	if value, ok := ac.mutation.ProjectId(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -247,7 +291,7 @@ func (ac *ApplicationCreate) sqlSave(ctx context.Context) (*Application, error) 
 			Value:  value,
 			Column: application.FieldProjectId,
 		})
-		a.ProjectId = value
+		_node.ProjectId = value
 	}
 	if value, ok := ac.mutation.NamespaceId(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -255,7 +299,7 @@ func (ac *ApplicationCreate) sqlSave(ctx context.Context) (*Application, error) 
 			Value:  value,
 			Column: application.FieldNamespaceId,
 		})
-		a.NamespaceId = value
+		_node.NamespaceId = value
 	}
 	if value, ok := ac.mutation.CreatedAt(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -263,7 +307,7 @@ func (ac *ApplicationCreate) sqlSave(ctx context.Context) (*Application, error) 
 			Value:  value,
 			Column: application.FieldCreatedAt,
 		})
-		a.CreatedAt = value
+		_node.CreatedAt = value
 	}
 	if value, ok := ac.mutation.UpdatedAt(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -271,7 +315,7 @@ func (ac *ApplicationCreate) sqlSave(ctx context.Context) (*Application, error) 
 			Value:  value,
 			Column: application.FieldUpdatedAt,
 		})
-		a.UpdatedAt = value
+		_node.UpdatedAt = value
 	}
 	if nodes := ac.mutation.NamespaceIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -349,13 +393,72 @@ func (ac *ApplicationCreate) sqlSave(ctx context.Context) (*Application, error) 
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if err := sqlgraph.CreateNode(ctx, ac.driver, _spec); err != nil {
-		if cerr, ok := isSQLConstraintError(err); ok {
-			err = cerr
-		}
-		return nil, err
+	return _node, _spec
+}
+
+// ApplicationCreateBulk is the builder for creating a bulk of Application entities.
+type ApplicationCreateBulk struct {
+	config
+	builders []*ApplicationCreate
+}
+
+// Save creates the Application entities in the database.
+func (acb *ApplicationCreateBulk) Save(ctx context.Context) ([]*Application, error) {
+	specs := make([]*sqlgraph.CreateSpec, len(acb.builders))
+	nodes := make([]*Application, len(acb.builders))
+	mutators := make([]Mutator, len(acb.builders))
+	for i := range acb.builders {
+		func(i int, root context.Context) {
+			builder := acb.builders[i]
+			builder.defaults()
+			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
+				mutation, ok := m.(*ApplicationMutation)
+				if !ok {
+					return nil, fmt.Errorf("unexpected mutation type %T", m)
+				}
+				if err := builder.check(); err != nil {
+					return nil, err
+				}
+				builder.mutation = mutation
+				nodes[i], specs[i] = builder.createSpec()
+				var err error
+				if i < len(mutators)-1 {
+					_, err = mutators[i+1].Mutate(root, acb.builders[i+1].mutation)
+				} else {
+					// Invoke the actual operation on the latest mutation in the chain.
+					if err = sqlgraph.BatchCreate(ctx, acb.driver, &sqlgraph.BatchCreateSpec{Nodes: specs}); err != nil {
+						if cerr, ok := isSQLConstraintError(err); ok {
+							err = cerr
+						}
+					}
+				}
+				mutation.done = true
+				if err != nil {
+					return nil, err
+				}
+				id := specs[i].ID.Value.(int64)
+				nodes[i].ID = int(id)
+				return nodes[i], nil
+			})
+			for i := len(builder.hooks) - 1; i >= 0; i-- {
+				mut = builder.hooks[i](mut)
+			}
+			mutators[i] = mut
+		}(i, ctx)
 	}
-	id := _spec.ID.Value.(int64)
-	a.ID = int(id)
-	return a, nil
+	if len(mutators) > 0 {
+		if _, err := mutators[0].Mutate(ctx, acb.builders[0].mutation); err != nil {
+			return nil, err
+		}
+	}
+	return nodes, nil
+}
+
+// SaveX calls Save and panics if Save returns an error.
+func (acb *ApplicationCreateBulk) SaveX(ctx context.Context) []*Application {
+	v, err := acb.Save(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return v
 }

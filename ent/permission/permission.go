@@ -10,15 +10,23 @@ const (
 	// Label holds the string label denoting the permission type in the database.
 	Label = "permission"
 	// FieldID holds the string denoting the id field in the database.
-	FieldID           = "id"           // FieldMethod holds the string denoting the method vertex property in the database.
-	FieldMethod       = "method"       // FieldFullpath holds the string denoting the fullpath vertex property in the database.
-	FieldFullpath     = "fullpath"     // FieldAction holds the string denoting the action vertex property in the database.
-	FieldAction       = "action"       // FieldSummary holds the string denoting the summary vertex property in the database.
-	FieldSummary      = "summary"      // FieldControlLevel holds the string denoting the controllevel vertex property in the database.
-	FieldControlLevel = "controlLevel" // FieldStatus holds the string denoting the status vertex property in the database.
-	FieldStatus       = "status"       // FieldCreatedAt holds the string denoting the createdat vertex property in the database.
-	FieldCreatedAt    = "createdAt"    // FieldUpdatedAt holds the string denoting the updatedat vertex property in the database.
-	FieldUpdatedAt    = "updatedAt"
+	FieldID = "id"
+	// FieldMethod holds the string denoting the method field in the database.
+	FieldMethod = "method"
+	// FieldFullpath holds the string denoting the fullpath field in the database.
+	FieldFullpath = "fullpath"
+	// FieldAction holds the string denoting the action field in the database.
+	FieldAction = "action"
+	// FieldSummary holds the string denoting the summary field in the database.
+	FieldSummary = "summary"
+	// FieldControlLevel holds the string denoting the controllevel field in the database.
+	FieldControlLevel = "controlLevel"
+	// FieldStatus holds the string denoting the status field in the database.
+	FieldStatus = "status"
+	// FieldCreatedAt holds the string denoting the createdat field in the database.
+	FieldCreatedAt = "createdAt"
+	// FieldUpdatedAt holds the string denoting the updatedat field in the database.
+	FieldUpdatedAt = "updatedAt"
 
 	// Table holds the table name of the permission in the database.
 	Table = "permissions"
@@ -35,6 +43,16 @@ var Columns = []string{
 	FieldStatus,
 	FieldCreatedAt,
 	FieldUpdatedAt,
+}
+
+// ValidColumn reports if the column name is valid (part of the table columns).
+func ValidColumn(column string) bool {
+	for i := range Columns {
+		if column == Columns[i] {
+			return true
+		}
+	}
+	return false
 }
 
 var (

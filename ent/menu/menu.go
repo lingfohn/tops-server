@@ -10,20 +10,34 @@ const (
 	// Label holds the string label denoting the menu type in the database.
 	Label = "menu"
 	// FieldID holds the string denoting the id field in the database.
-	FieldID        = "id"        // FieldPath holds the string denoting the path vertex property in the database.
-	FieldPath      = "path"      // FieldName holds the string denoting the name vertex property in the database.
-	FieldName      = "name"      // FieldComponent holds the string denoting the component vertex property in the database.
-	FieldComponent = "component" // FieldParentId holds the string denoting the parentid vertex property in the database.
-	FieldParentId  = "parentId"  // FieldRedirect holds the string denoting the redirect vertex property in the database.
-	FieldRedirect  = "redirect"  // FieldWeight holds the string denoting the weight vertex property in the database.
-	FieldWeight    = "weight"    // FieldLevel holds the string denoting the level vertex property in the database.
-	FieldLevel     = "level"     // FieldTitle holds the string denoting the title vertex property in the database.
-	FieldTitle     = "title"     // FieldIcon holds the string denoting the icon vertex property in the database.
-	FieldIcon      = "icon"      // FieldTarget holds the string denoting the target vertex property in the database.
-	FieldTarget    = "target"    // FieldKeepAlive holds the string denoting the keepalive vertex property in the database.
-	FieldKeepAlive = "keepAlive" // FieldShow holds the string denoting the show vertex property in the database.
-	FieldShow      = "show"      // FieldCreatedAt holds the string denoting the createdat vertex property in the database.
-	FieldCreatedAt = "createdAt" // FieldUpdatedAt holds the string denoting the updatedat vertex property in the database.
+	FieldID = "id"
+	// FieldPath holds the string denoting the path field in the database.
+	FieldPath = "path"
+	// FieldName holds the string denoting the name field in the database.
+	FieldName = "name"
+	// FieldComponent holds the string denoting the component field in the database.
+	FieldComponent = "component"
+	// FieldParentId holds the string denoting the parentid field in the database.
+	FieldParentId = "parentId"
+	// FieldRedirect holds the string denoting the redirect field in the database.
+	FieldRedirect = "redirect"
+	// FieldWeight holds the string denoting the weight field in the database.
+	FieldWeight = "weight"
+	// FieldLevel holds the string denoting the level field in the database.
+	FieldLevel = "level"
+	// FieldTitle holds the string denoting the title field in the database.
+	FieldTitle = "title"
+	// FieldIcon holds the string denoting the icon field in the database.
+	FieldIcon = "icon"
+	// FieldTarget holds the string denoting the target field in the database.
+	FieldTarget = "target"
+	// FieldKeepAlive holds the string denoting the keepalive field in the database.
+	FieldKeepAlive = "keepAlive"
+	// FieldShow holds the string denoting the show field in the database.
+	FieldShow = "show"
+	// FieldCreatedAt holds the string denoting the createdat field in the database.
+	FieldCreatedAt = "createdAt"
+	// FieldUpdatedAt holds the string denoting the updatedat field in the database.
 	FieldUpdatedAt = "updatedAt"
 
 	// EdgeParent holds the string denoting the parent edge name in mutations.
@@ -65,6 +79,21 @@ var Columns = []string{
 // ForeignKeys holds the SQL foreign-keys that are owned by the Menu type.
 var ForeignKeys = []string{
 	"menu_submenus",
+}
+
+// ValidColumn reports if the column name is valid (part of the table columns).
+func ValidColumn(column string) bool {
+	for i := range Columns {
+		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
+			return true
+		}
+	}
+	return false
 }
 
 var (
